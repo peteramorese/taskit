@@ -1,0 +1,7 @@
+string[] world_config
+string prev_state
+---
+string action
+int64 obj
+string to_loc
+string curr_state
