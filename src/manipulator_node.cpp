@@ -2,7 +2,7 @@
 #include <ros/callback_queue.h>
 #include <iostream>
 #include "geometry_msgs/PoseStamped.h"
-#include "vicon_franka_integration/PlanningQuery_srv.h"
+#include "manipulation_interface/PlanningQuery.h"
 #include <vector>
 #include <cmath>
 
@@ -121,7 +121,7 @@ class PlanningQuerySrv {
 				ROS_ERROR_NAMED("manipulator_node","Object id was not found. Cannot update domain label");
 			}
 		}
-		bool planQuery_serviceCB(vicon_franka_integration::PlanningQuery_srv::Request &request, vicon_franka_integration::PlanningQuery_srv::Response &response) {
+		bool planQuery_serviceCB(manipulation_interface::PlanningQuery::Request &request, manipulation_interface::PlanningQuery::Response &response) {
 			std::cout<<"\n";
 			std::cout<<"HELLO"<<std::endl;
 			std::cout<<"Recieved planning domain: "<<request.planning_domain<<std::endl;
