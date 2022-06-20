@@ -67,7 +67,9 @@ include_directories(
 
 add_subdirectory(task_planner)
 #add_executable(${PROJECT_NAME}_node src/vicon_franka_integration_node.cpp)
-#add_executable(manipulator_node src/manipulator_node.cpp)
+add_executable(manipulator_node src/manipulator_node.cpp)
+target_link_libraries(manipulator_node ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+add_dependencies(manipulator_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 #add_executable(manipulator_node_grasp src/manipulator_node_grasp.cpp)
 #add_executable(com_node src/com_node.cpp)
 #add_executable(planning_node src/planning_node.cpp)
