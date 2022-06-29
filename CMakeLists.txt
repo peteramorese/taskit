@@ -66,10 +66,22 @@ include_directories(
 	)
 
 add_subdirectory(task_planner)
+
 add_executable(manipulator_node src/manipulator_node.cpp)
 target_link_libraries(manipulator_node ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 install(TARGETS manipulator_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 add_dependencies(manipulator_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+add_executable(manipulator_node_grasp src/manipulator_node_grasp.cpp)
+target_link_libraries(manipulator_node_grasp ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+install(TARGETS manipulator_node_grasp DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+add_dependencies(manipulator_node_grasp ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+add_executable(com_node src/com_node.cpp)
+target_link_libraries(com_node ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+install(TARGETS com_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+add_dependencies(com_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
 #add_executable(manipulator_node_grasp src/manipulator_node_grasp.cpp)
 #add_executable(com_node src/com_node.cpp)
 #add_executable(planning_node src/planning_node.cpp)

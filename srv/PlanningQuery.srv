@@ -1,5 +1,5 @@
 geometry_msgs/Pose manipulator_pose
-geometry_msgs/PoseArray bag_poses
+geometry_msgs/Pose[] bag_poses
 bool setup_environment
 string[] bag_labels
 string[] bag_domain_labels

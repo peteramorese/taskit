@@ -129,10 +129,10 @@ class PlanningQuerySrv {
 			ROS_INFO_NAMED("manipulator_node", "Recieved Planning Query");
 
 			if (request.setup_environment) {
-				//col_obj_vec.resize(request.bag_poses.poses.size());
+				//col_obj_vec.resize(request.bag_poses.size());
 				//bag_domain_labels = request.bag_domain_labels;
 
-				for (int i=0; i<request.bag_poses.poses.size(); ++i) {
+				for (int i=0; i<request.bag_poses.size(); ++i) {
 					moveit_msgs::CollisionObject temp_col_obj;
 					temp_col_obj.header.frame_id = "panda_link0";
 					temp_col_obj.id = request.bag_labels[i];
@@ -144,16 +144,16 @@ class PlanningQuerySrv {
 					temp_col_obj.primitives[0].dimensions[2] = bag_h;
 
 					temp_col_obj.primitive_poses.resize(1);
-					std::cout<<" i see : "<<request.bag_poses.poses[i].position.x<<std::endl;
-					std::cout<<" i see : "<<request.bag_poses.poses[i].position.y<<std::endl;
-					std::cout<<" i see : "<<request.bag_poses.poses[i].position.z<<std::endl;
-					temp_col_obj.primitive_poses[0].position.x = request.bag_poses.poses[i].position.x;
-					temp_col_obj.primitive_poses[0].position.y = request.bag_poses.poses[i].position.y;
-					temp_col_obj.primitive_poses[0].position.z = request.bag_poses.poses[i].position.z;
-					temp_col_obj.primitive_poses[0].orientation.x = request.bag_poses.poses[i].orientation.x;
-					temp_col_obj.primitive_poses[0].orientation.y = request.bag_poses.poses[i].orientation.y;
-					temp_col_obj.primitive_poses[0].orientation.z = request.bag_poses.poses[i].orientation.z;
-					temp_col_obj.primitive_poses[0].orientation.w = request.bag_poses.poses[i].orientation.w;
+					std::cout<<" i see : "<<request.bag_poses[i].position.x<<std::endl;
+					std::cout<<" i see : "<<request.bag_poses[i].position.y<<std::endl;
+					std::cout<<" i see : "<<request.bag_poses[i].position.z<<std::endl;
+					temp_col_obj.primitive_poses[0].position.x = request.bag_poses[i].position.x;
+					temp_col_obj.primitive_poses[0].position.y = request.bag_poses[i].position.y;
+					temp_col_obj.primitive_poses[0].position.z = request.bag_poses[i].position.z;
+					temp_col_obj.primitive_poses[0].orientation.x = request.bag_poses[i].orientation.x;
+					temp_col_obj.primitive_poses[0].orientation.y = request.bag_poses[i].orientation.y;
+					temp_col_obj.primitive_poses[0].orientation.z = request.bag_poses[i].orientation.z;
+					temp_col_obj.primitive_poses[0].orientation.w = request.bag_poses[i].orientation.w;
 					col_obj_vec.push_back(temp_col_obj);
 					obs_domain_labels.push_back(request.bag_domain_labels[i]);
 					std::cout<<"Adding object: "<<temp_col_obj.id<<" to domain: "<<request.bag_domain_labels[i]<<std::endl;
@@ -351,8 +351,9 @@ int main(int argc, char **argv) {
 	ros::AsyncSpinner spinner(2);
 	spinner.start();
 
-	bool sim_only;
+	bool sim_only, mock_observer;
 	M_NH.getParam("sim_only", sim_only);
+	M_NH.getParam("mock_observer", mock_observer);
 
 
 	std::cout<<"\n\n\n\n sim only: "<<sim_only<<std::endl;
