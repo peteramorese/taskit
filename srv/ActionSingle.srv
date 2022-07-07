@@ -1,0 +1,4 @@
+string[] curr_state
+string action
+---
+string[] next_state
