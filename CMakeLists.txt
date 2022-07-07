@@ -82,6 +82,11 @@ target_link_libraries(com_node ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 install(TARGETS com_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 add_dependencies(com_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
+add_executable(planning_node src/planning_node.cpp)
+target_link_libraries(planning_node ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+install(TARGETS planning_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+add_dependencies(planning_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
 #add_executable(manipulator_node_grasp src/manipulator_node_grasp.cpp)
 #add_executable(com_node src/com_node.cpp)
 #add_executable(planning_node src/planning_node.cpp)
