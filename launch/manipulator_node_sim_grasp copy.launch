@@ -75,11 +75,12 @@
   </include>
 
 
-  <node name="manipulator_node" pkg="vicon_franka_integration" type="manipulator_node" respawn="false" output="screen">
+  <node name="manipulator_node_grasp" pkg="vicon_franka_integration" type="manipulator_node_grasp" respawn="false" output="screen">
     <rosparam command="load" file="$(find panda_moveit_config)/config/kinematics.yaml"/>
     <param name="/planning_plugin" value="ompl_interface/OMPLPlanner"/>
     <rosparam command="load" file="$(find panda_moveit_config)/config/ompl_planning.yaml"/>
     <param name="sim_only" value="true"/>
+    <param name="mock_observer" value="true"/>
   </node>
 
   <!-- Run Rviz -->
