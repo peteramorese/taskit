@@ -1,4 +1,8 @@
-string[] curr_state
+string[] init_state
+string to_obj
+string to_eeLoc
+string to_grasp_obj
+string release_obj
 string action
 ---
-string[] next_state
+bool success

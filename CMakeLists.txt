@@ -34,6 +34,7 @@ add_service_files(
 	FILES
 	PlanningQuery.srv
 	Strategy.srv
+	ActionSingle.srv
 	)
 
 generate_messages(
@@ -82,19 +83,34 @@ target_link_libraries(com_node ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 install(TARGETS com_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 add_dependencies(com_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-add_executable(planning_node src/planning_node.cpp)
-target_link_libraries(planning_node ${catkin_LIBRARIES} ${Boost_LIBRARIES})
-install(TARGETS planning_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-add_dependencies(planning_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_executable(action_primitive_node src/action_primitive_node.cpp)
+target_link_libraries(action_primitive_node ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+install(TARGETS action_primitive_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+add_dependencies(action_primitive_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
+add_executable(planner_node src/planner_node.cpp)
+target_include_directories(planner_node PUBLIC task_planner/include/headers)
+target_link_libraries(planner_node 
+	${catkin_LIBRARIES} 
+	${Boost_LIBRARIES}
+	LexSetClass
+	GraphClass
+	ConditionClass
+	StateClass
+	SymbSearchClass
+	TransitionSystemClass
+	BenchmarkClass
+	)
+install(TARGETS planner_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+add_dependencies(planner_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 #add_executable(manipulator_node_grasp src/manipulator_node_grasp.cpp)
 #add_executable(com_node src/com_node.cpp)
-#add_executable(planning_node src/planning_node.cpp)
+#add_executable(action_primitive_node src/action_primitive_node.cpp)
 #add_executable(andrew_node src/andrew_node.cpp)
 #
 #add_subdirectory(include)
-#target_include_directories(planning_node PUBLIC include)
-#link_directories(planning_node PUBLIC include)
+#target_include_directories(action_primitive_node PUBLIC include)
+#link_directories(action_primitive_node PUBLIC include)
 #
 #target_include_directories(andrew_node PUBLIC include)
 #link_directories(andrew_node PUBLIC include)
@@ -103,7 +119,7 @@ add_dependencies(planning_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPO
 #target_link_libraries(manipulator_node ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 #target_link_libraries(manipulator_node_grasp ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 #target_link_libraries(com_node ${catkin_LIBRARIES} ${Boost_LIBRARIES})
-#target_link_libraries(planning_node 
+#target_link_libraries(action_primitive_node 
 #	${catkin_LIBRARIES} 
 #	${Boost_LIBRARIES}
 #	EdgeClass
@@ -127,12 +143,12 @@ add_dependencies(planning_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPO
 #install(TARGETS manipulator_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 #install(TARGETS manipulator_node_grasp DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 #install(TARGETS com_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-#install(TARGETS planning_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+#install(TARGETS action_primitive_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 #install(TARGETS andrew_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 #add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 #add_dependencies(manipulator_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 #add_dependencies(manipulator_node_grasp ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 #add_dependencies(com_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-#add_dependencies(planning_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_dependencies(action_primitive_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 #add_dependencies(andrew_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 #install(DIRECTORY include/${PROJECT_NAME}/ DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
