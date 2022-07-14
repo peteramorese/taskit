@@ -1,5 +1,9 @@
+// System
+#include<boost/filesystem.hpp>
+
 // ROS
 #include "ros/ros.h"
+#include "ros/package.h"
 #include "manipulation_interface/ActionSingle.h"
 
 // Task Planner
@@ -10,7 +14,9 @@
 #include "state.h"
 #include "symbSearch.h"
 
-int main() {
+int main(int argc, char** argv) {
+	ros::init(argc, argv, "planner_node");
+	ros::NodeHandle planner_NH;
 
 
 	//////////////////////////////////////////////////////
@@ -34,9 +40,10 @@ int main() {
 
 	// Create state space:
 	SS_MANIPULATOR.setStateDimension(ee_labels, 0); // eef
-	SS_MANIPULATOR.setStateDimension(obj_labels, 1); // rock
-	SS_MANIPULATOR.setStateDimension(obj_labels, 2); // alien
-	SS_MANIPULATOR.setStateDimension(grip_labels, 3); // eef engaged
+    for (int i=0; i<obj_group.size(); ++i) {
+		SS_MANIPULATOR.setStateDimension(obj_labels, i + 1); 
+    }
+	SS_MANIPULATOR.setStateDimension(grip_labels, obj_group.size() + 1); // eef engaged
 
 	// Label state space:
 	SS_MANIPULATOR.setStateDimensionLabel(0, "eeLoc");
@@ -103,7 +110,7 @@ int main() {
 
 	conds_m[3].addCondition(Condition::POST, Condition::ARG_V, Condition::FILLER, Condition::ARG_EQUALS, Condition::LABEL, "eeLoc", Condition::NEGATE,"arg");
 	conds_m[3].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
-	conds_m[3].setActionLabel("transit");
+	conds_m[3].setActionLabel("transit_up");
 	conds_m[3].setActionCost(0);
 	//conds_m[3].print();
 
@@ -134,11 +141,17 @@ int main() {
 
 
 	// Create the transition system:
-	TS_EVAL<State> ts_eval(true, true, 0); // by default, the init node for the ts is 0
+	TS_EVAL<State> ts_eval(true, false, 0); // by default, the init node for the ts is 0
+
+	std::cout<<"af dec"<<std::endl;
 	ts_eval.setInitState(&init_state);
+	std::cout<<"af set init"<<std::endl;
 	ts_eval.setConditions(cond_ptrs_m);
+	std::cout<<"af set conds"<<std::endl;
 	ts_eval.setPropositions(AP_m_ptrs);
+	std::cout<<"af set prop"<<std::endl;
 	ts_eval.generate();
+	std::cout<<"af gen"<<std::endl;
 	std::cout<<"\n\n Printing the Transition System: \n\n"<<std::endl;
 	ts_eval.print();
 
@@ -149,7 +162,21 @@ int main() {
 
     int N_DFAs = 2;
     // TODO REMOVE GLOBAL PATH
-	std::string dfa_filename_path_prefix = "/home/peter/ros_ws/src/manipulation_interface/task_planner/spot_automaton_file_dump/dfas";
+	//std::cout<<"CURRENT PATH: "<<boost::filesystem::current_path()<<std::endl;
+	std::cout<<"ROS PACKAGE PATH: "<<ros::package::getPath("manipulation_interface")<<std::endl;
+
+	// Create DFA files:
+	std::string home_dir = getenv("HOME");
+	std::string python_executable = home_dir + "/anaconda3/envs/tpenv/bin/python";
+	std::string formula2dfa_path = ros::package::getPath("manipulation_interface") + "/task_planner/spot_automaton_file_dump";
+	std::string command = python_executable + 
+		" " + formula2dfa_path + 
+		"/formula2dfa.py --dfa_path " + formula2dfa_path + "/dfas" + " " +
+		"--formulas \"F(obj_1_L2)\" \"F(obj_2_L1)\"";
+	std::cout<<"COMMAND: "<<command<<std::endl;
+	int _ = system(command.c_str());
+
+	std::string dfa_filename_path_prefix = ros::package::getPath("manipulation_interface") + "/task_planner/spot_automaton_file_dump/dfas/";
 
 	std::vector<DFA> dfa_arr(N_DFAs);
 	std::vector<std::string> filenames(N_DFAs);
@@ -199,40 +226,61 @@ int main() {
     use_h_flag = (use_h == 'y') ? true : false;
 
 	search_obj.setFlexibilityParam(mu);
-	//benchmark.pushStartPoint("total_search");
-    //if (use_h_flag) {
-    //    std::cout<<"Using heuristic."<<std::endl;
-    //}
-	std::pair<bool, float> result = search_obj.search(use_h_flag);
 
-	////std::cout<<"search time: "<<benchmark.measureMicro("before_search")<<std::endl;
-	//if (result.first) {
-	//	benchmark.measureMilli("total_search");
-	//	benchmark.pushAttributesToFile();
-	//	benchmark.finishSessionInFile();
-	//	//std::cout<<"Found plan? "<<success<<std::endl;
-	//	if (result.second > 0.0) {
-	//		std::vector<std::string> xtra_info;
-	//		for (int i=0; i<dfa_arr.size(); ++i) {
-	//			const std::vector<std::string>* ap_ptr = dfa_arr[i].getAP();
-	//			for (int ii=0; ii<ap_ptr->size(); ++ii) {
-	//				xtra_info.push_back(ap_ptr->operator[](ii));
-	//				xtra_info.back() = xtra_info.back() + "_prio" + std::to_string(i);
-	//			}
-	//		}
-	//		if (write_file_flag) {
-	//			search_obj.writePlanToFile(plan_filename_path, xtra_info);
-	//		}
-	//	}
-	//}
+	std::pair<bool, float> result = search_obj.search(use_h_flag);
+	if (result.first) {
+		auto state_sequence = search_obj.getStateSequence();
+		auto action_sequence = search_obj.getActionSequence();
+
+		ros::ServiceClient ex_client = planner_NH.serviceClient<manipulation_interface::ActionSingle>("/action_primitive");
+		manipulation_interface::ActionSingle action_single;
+
+		action_single.request.obj_group = obj_group;
+		std::vector<std::string> init_obj_locs;
+		for (auto& obj : obj_group) {
+			init_obj_locs.push_back(init_state.getVar(obj));
+		}
+		action_single.request.init_obj_locs = init_obj_locs;
+
+		for (int i=0; i<action_sequence.size(); ++i) {
+			ROS_INFO(("Sending action:" + action_sequence[i]).c_str());
+			// Action:
+			action_single.request.action = action_sequence[i];
+
+			// Next state eef location:
+			action_single.request.to_eeLoc = state_sequence[i+1]->getVar("eeLoc");
+
+			// Next state grasped object:
+			std::string temp_obj_label;
+			if (state_sequence[i+1]->argFindGroup("ee", "object locations", temp_obj_label)) {
+				action_single.request.to_grasp_obj = temp_obj_label;
+			} else {
+				action_single.request.to_grasp_obj = "none";
+			}
+
+			// Current state object to release:
+			if (state_sequence[i]->argFindGroup("ee", "object locations", temp_obj_label)) {
+				action_single.request.release_obj = temp_obj_label;
+			} else {
+				action_single.request.release_obj = "none";
+			}
+
+			// Call the service:
+			if (ex_client.call(action_single)) {
+				ROS_INFO("Execution client call succeeded!");
+			} else {
+				ROS_ERROR("Execution client call failed!");
+				return 1;
+			}
+		}
+	}
+
+
 	for (int i=0; i<dfa_eval_ptrs.size(); ++i) {
 		delete dfa_eval_ptrs[i];
 	}
 
 	return 0;
-
-
-
 }
 
 

@@ -462,65 +462,66 @@ int main(int argc, char **argv) {
 
 	ground.id = "ground_d";
 	*/
-	moveit_msgs::CollisionObject ground;
-        float x_bound, y_bound;
-        x_bound = .1;
-        y_bound = .1;
-        ground.header.frame_id = "panda_link0";
-        ground.id = "ground";
-        //colObjIDs.push_back(ground.id);
-        ground.primitives.resize(4);
-        ground.primitives[0].type = ground.primitives[0].BOX;
-        ground.primitives[0].dimensions.resize(3);
-        ground.primitives[0].dimensions[0] = 1;
-        ground.primitives[0].dimensions[1] = 2;
-        ground.primitives[0].dimensions[2] = .05;
-        ground.primitive_poses.resize(4);
-        ground.primitive_poses[0].orientation.w = 1;
-        ground.primitive_poses[0].position.x = 0.50 + x_bound;
-        ground.primitive_poses[0].position.y = 0;
-        ground.primitive_poses[0].position.z = -.05/2;
-        ground.primitives[1].type = ground.primitives[0].BOX;
-        ground.primitives[1].dimensions.resize(3);
-        ground.primitives[1].dimensions[0] = 1;
-        ground.primitives[1].dimensions[1] = 2;
-        ground.primitives[1].dimensions[2] = .05;
-        ground.primitive_poses[1].orientation.w = 1;
-        ground.primitive_poses[1].position.x = -(.50 + x_bound);
-        ground.primitive_poses[1].position.y = 0;
-        ground.primitive_poses[1].position.z = -.05/2;
-        ground.primitives[2].type = ground.primitives[0].BOX;
-        ground.primitives[2].dimensions.resize(3);
-        ground.primitives[2].dimensions[0] = 2 * x_bound;
-        ground.primitives[2].dimensions[1] = 1 - y_bound;
-        ground.primitives[2].dimensions[2] = .05;
-        ground.primitive_poses[2].orientation.w = 1;
-        ground.primitive_poses[2].position.x = 0;
-        ground.primitive_poses[2].position.y = (1 - y_bound)/2 + y_bound;
-        ground.primitive_poses[2].position.z = -.05/2;
-        ground.primitives[3].type = ground.primitives[0].BOX;
-        ground.primitives[3].dimensions.resize(3);
-        ground.primitives[3].dimensions[0] = 2 * x_bound;
-        ground.primitives[3].dimensions[1] = 1 - y_bound;
-        ground.primitives[3].dimensions[2] = .05;
-        ground.primitive_poses[3].orientation.w = 1;
-        ground.primitive_poses[3].position.x = 0;
-        ground.primitive_poses[3].position.y =  -((1 - y_bound)/2 + y_bound);
-        ground.primitive_poses[3].position.z = -.05/2 - .00;
 
-        ground.operation = ground.ADD;
+	//moveit_msgs::CollisionObject ground;
+ //       float x_bound, y_bound;
+ //       x_bound = .1;
+ //       y_bound = .1;
+ //       ground.header.frame_id = "panda_link0";
+ //       ground.id = "ground";
+ //       //colObjIDs.push_back(ground.id);
+ //       ground.primitives.resize(4);
+ //       ground.primitives[0].type = ground.primitives[0].BOX;
+ //       ground.primitives[0].dimensions.resize(3);
+ //       ground.primitives[0].dimensions[0] = 1;
+ //       ground.primitives[0].dimensions[1] = 2;
+ //       ground.primitives[0].dimensions[2] = .05;
+ //       ground.primitive_poses.resize(4);
+ //       ground.primitive_poses[0].orientation.w = 1;
+ //       ground.primitive_poses[0].position.x = 0.50 + x_bound;
+ //       ground.primitive_poses[0].position.y = 0;
+ //       ground.primitive_poses[0].position.z = -.05/2;
+ //       ground.primitives[1].type = ground.primitives[0].BOX;
+ //       ground.primitives[1].dimensions.resize(3);
+ //       ground.primitives[1].dimensions[0] = 1;
+ //       ground.primitives[1].dimensions[1] = 2;
+ //       ground.primitives[1].dimensions[2] = .05;
+ //       ground.primitive_poses[1].orientation.w = 1;
+ //       ground.primitive_poses[1].position.x = -(.50 + x_bound);
+ //       ground.primitive_poses[1].position.y = 0;
+ //       ground.primitive_poses[1].position.z = -.05/2;
+ //       ground.primitives[2].type = ground.primitives[0].BOX;
+ //       ground.primitives[2].dimensions.resize(3);
+ //       ground.primitives[2].dimensions[0] = 2 * x_bound;
+ //       ground.primitives[2].dimensions[1] = 1 - y_bound;
+ //       ground.primitives[2].dimensions[2] = .05;
+ //       ground.primitive_poses[2].orientation.w = 1;
+ //       ground.primitive_poses[2].position.x = 0;
+ //       ground.primitive_poses[2].position.y = (1 - y_bound)/2 + y_bound;
+ //       ground.primitive_poses[2].position.z = -.05/2;
+ //       ground.primitives[3].type = ground.primitives[0].BOX;
+ //       ground.primitives[3].dimensions.resize(3);
+ //       ground.primitives[3].dimensions[0] = 2 * x_bound;
+ //       ground.primitives[3].dimensions[1] = 1 - y_bound;
+ //       ground.primitives[3].dimensions[2] = .05;
+ //       ground.primitive_poses[3].orientation.w = 1;
+ //       ground.primitive_poses[3].position.x = 0;
+ //       ground.primitive_poses[3].position.y =  -((1 - y_bound)/2 + y_bound);
+ //       ground.primitive_poses[3].position.z = -.05/2 - .00;
 
-	colObjVec.push_back(ground);
-	colObjVec_domain_lbls.push_back("domain");
+ //       ground.operation = ground.ADD;
+
+	//colObjVec.push_back(ground);
+	//colObjVec_domain_lbls.push_back("domain");
 	
 	
 
-	planning_scene_interface.applyCollisionObjects(colObjVec);
-	//planning_scene_interface.addCollisionObjects(colObjVec);
+	//planning_scene_interface.applyCollisionObjects(colObjVec);
+	
 	move_group.setEndEffectorLink("panda_link8");
 
 	PlanningQuerySrv plan_query_srv_container(&move_group, &planning_scene_interface, &grip_client, 5, !sim_only);
-	plan_query_srv_container.setWorkspace(colObjVec, colObjVec_domain_lbls);
+	//plan_query_srv_container.setWorkspace(colObjVec, colObjVec_domain_lbls);
 
 	ros::ServiceServer plan_query_service = M_NH.advertiseService("/planning_query", &PlanningQuerySrv::planQuery_serviceCB, &plan_query_srv_container);
 

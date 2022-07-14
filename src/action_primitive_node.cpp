@@ -22,14 +22,18 @@ class LocationCoordinates {
 			geometry_msgs::Pose ps;
 			ps.position = p;
 			ps.orientation = q;
+			std::cout<<"Including lbl: "<<lbl<<std::endl;
 			location_map[lbl] = ps;
 		}
 		const geometry_msgs::Pose& getLocation(const std::string& lbl) {
+			std::cout<<"Retrieving lbl: "<<lbl<<std::endl;
 			return location_map.at(lbl);
 		}
 		std::vector<geometry_msgs::Pose> getPoseArray(const std::vector<std::string>& state) {
 			std::vector<geometry_msgs::Pose> ps_arr(state.size());
 			for (int i=0; i<state.size(); ++i) {
+
+				std::cout<<"Retrieving lbl: "<<state[i]<<std::endl;
 				ps_arr[i] = location_map.at(state[i]);
 			}
 			return ps_arr;
@@ -40,27 +44,26 @@ class ExecuteSrv {
 	private:
 	 	ros::ServiceClient* plan_query_client;
 		LocationCoordinates* locs;
-		std::vector<std::string> obj_group;
 		bool setup;
 	public:
-		ExecuteSrv(LocationCoordinates* locs_, const std::vector<std::string>& obj_group_, ros::ServiceClient* plan_query_client_) : locs(locs_), obj_group(obj_group_), setup(true), plan_query_client(plan_query_client_) {}
+		ExecuteSrv(LocationCoordinates* locs_, ros::ServiceClient* plan_query_client_) : locs(locs_), setup(true), plan_query_client(plan_query_client_) {}
 		void reset() {
 			setup = true;
 		}
 		bool execute(manipulation_interface::ActionSingle::Request& req, manipulation_interface::ActionSingle::Response& res) {
 			// Execute
 			manipulation_interface::PlanningQuery query;
-			std::vector<std::string> bag_domain_labels(obj_group.size());
-			for (int i=0; i<obj_group.size(); ++i) {
+			std::vector<std::string> bag_domain_labels(req.obj_group.size());
+			for (int i=0; i<req.obj_group.size(); ++i) {
 				bag_domain_labels[i] = "domain";	
 			}
 			if (setup) {
 				query.request.setup_environment = true;
-				query.request.bag_poses = locs->getPoseArray(req.init_state);
+				query.request.bag_poses = locs->getPoseArray(req.init_obj_locs);
 			} else {
 				query.request.setup_environment = false;
 			}
-			if (req.action == "transit_up") {
+			if (req.action.find("transit_up") != std::string::npos) {
 				//// Find the location label that the eef moves to
 				//std::string temp_loc_label = state_seq[i+1]->getVar("eeLoc");
 				//std::string temp_obj_label;
@@ -78,14 +81,14 @@ class ExecuteSrv {
 				//}
 
 				query.request.manipulator_pose = locs->getLocation(req.to_eeLoc);
-				query.request.bag_labels = obj_group;
+				query.request.bag_labels = req.obj_group;
 				query.request.bag_domain_labels = bag_domain_labels;
 				query.request.pickup_object = "none";
 				query.request.grasp_type = "up";
 				query.request.drop_object = "none";
 				query.request.planning_domain = "domain";
 				query.request.safe_config = false;
-			} else if (req.action == "transit_side") {
+			} else if (req.action.find("transit_side") != std::string::npos) {
 				//// Find the location label that the eef moves to
 				//std::string temp_loc_label = state_seq[i+1]->getVar("eeLoc");
 				//std::string temp_obj_label;
@@ -102,14 +105,14 @@ class ExecuteSrv {
 				//	}
 				//}
 				query.request.manipulator_pose = locs->getLocation(req.to_eeLoc);
-				query.request.bag_labels = obj_group;
+				query.request.bag_labels = req.obj_group;
 				query.request.bag_domain_labels = bag_domain_labels;
 				query.request.pickup_object = "none";
 				query.request.grasp_type = "side";
 				query.request.drop_object = "none";
 				query.request.planning_domain = "domain";
 				query.request.safe_config = false;
-			} else if (req.action == "transport") {
+			} else if (req.action.find("transport") != std::string::npos) {
 				//std::string temp_loc_label = state_seq[i+1]->getVar("eeLoc");
 				//std::cout<<"temp loc label: "<<temp_loc_label<<std::endl;
 				query.request.manipulator_pose = locs->getLocation(req.to_eeLoc);
@@ -126,15 +129,14 @@ class ExecuteSrv {
 				//query.request.manipulator_pose.orientation = temp_orient;
 				//temp_orient = query.request.manipulator_pose.orientation;
 				//query.request.setup_environment = true;
-				query.request.bag_labels = obj_group;
+				query.request.bag_labels = req.obj_group;
 				query.request.bag_domain_labels = bag_domain_labels;
 				query.request.pickup_object = "none";
 				query.request.grasp_type = "up";
 				query.request.drop_object = "none";
 				query.request.planning_domain = "domain";
 				query.request.safe_config = false;
-
-			} else if (req.action == "grasp") {
+			} else if (req.action.find("grasp") != std::string::npos) {
 				//query.request.setup_environment = false;
 				//std::string temp_obj_label;
 				//state_seq[i+1]->argFindGroup("ee", "object locations", temp_obj_label);
@@ -143,7 +145,7 @@ class ExecuteSrv {
 				query.request.drop_object = "none";
 				query.request.planning_domain = "domain";
 				query.request.safe_config = false;
-			} else if (req.action == "release") {
+			} else if (req.action.find("release") != std::string::npos) {
 				//query.request.setup_environment = false;
 				//query.request.pickup_object = "none";
 
@@ -173,8 +175,8 @@ class ExecuteSrv {
 };
 
 int main(int argc, char **argv) {
-	ros::init(argc, argv, "planning_node");
-	ros::NodeHandle planning_NH;
+	ros::init(argc, argv, "action_primitive_node");
+	ros::NodeHandle action_primitive_NH;
 
 	//RetrieveData vicon_data(30, &com_NH);
 	LocationCoordinates locs;
@@ -197,7 +199,6 @@ int main(int argc, char **argv) {
 
 	// Edit according to planning environment. TODO: use param config
  	std::vector<std::string> loc_labels = {"L0", "L1", "L2", "L3", "L4", "L5"};
-	std::vector<std::string> obj_group = {"obj_1", "obj_2", "obj_3"};
 	geometry_msgs::Point p;
 	p.x = .4;
 	p.y = .4;
@@ -230,9 +231,11 @@ int main(int argc, char **argv) {
 	locs.addLocation(p, q_down_msg, loc_labels[5]); 
 
 
-	ros::ServiceClient plan_query_client = planning_NH.serviceClient<manipulation_interface::PlanningQuery>("/planning_query");
-	ExecuteSrv ex(&locs, obj_group, &plan_query_client);
-	ros::ServiceServer ex_srv = planning_NH.advertiseService("/action_primitive", &ExecuteSrv::execute, &ex);
+	ros::ServiceClient plan_query_client = action_primitive_NH.serviceClient<manipulation_interface::PlanningQuery>("/planning_query");
+	ExecuteSrv ex(&locs, &plan_query_client);
+	ros::ServiceServer ex_srv = action_primitive_NH.advertiseService("/action_primitive", &ExecuteSrv::execute, &ex);
+	ROS_INFO("Execution Service Server started...");
+	ros::spin();
 
 	
 

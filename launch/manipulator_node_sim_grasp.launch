@@ -80,7 +80,7 @@
     <param name="/planning_plugin" value="ompl_interface/OMPLPlanner"/>
     <rosparam command="load" file="$(find panda_moveit_config)/config/ompl_planning.yaml"/>
     <param name="sim_only" value="true"/>
-    <param name="mock_observer" value="true"/>
+    <param name="mock_observer" value="false"/>
   </node>
 
   <!-- Run Rviz -->
