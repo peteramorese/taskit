@@ -243,7 +243,7 @@ int main(int argc, char** argv) {
 		action_single.request.init_obj_locs = init_obj_locs;
 
 		for (int i=0; i<action_sequence.size(); ++i) {
-			ROS_INFO(("Sending action:" + action_sequence[i]).c_str());
+			std::cout<<"Sending action:" + action_sequence[i]<<std::endl;
 			// Action:
 			action_single.request.action = action_sequence[i];
 
@@ -253,6 +253,7 @@ int main(int argc, char** argv) {
 			// Next state grasped object:
 			std::string temp_obj_label;
 			if (state_sequence[i+1]->argFindGroup("ee", "object locations", temp_obj_label)) {
+				std::cout<<"GRASP OBJ: "<<temp_obj_label<<std::endl;
 				action_single.request.to_grasp_obj = temp_obj_label;
 			} else {
 				action_single.request.to_grasp_obj = "none";
@@ -260,6 +261,7 @@ int main(int argc, char** argv) {
 
 			// Current state object to release:
 			if (state_sequence[i]->argFindGroup("ee", "object locations", temp_obj_label)) {
+				std::cout<<"RELEASE OBJ: "<<temp_obj_label<<std::endl;
 				action_single.request.release_obj = temp_obj_label;
 			} else {
 				action_single.request.release_obj = "none";

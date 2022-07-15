@@ -63,6 +63,7 @@ class ExecuteSrv {
 			} else {
 				query.request.setup_environment = false;
 			}
+			std::cout<<"Received action: "<<req.action<<std::endl;
 			if (req.action.find("transit_up") != std::string::npos) {
 				//// Find the location label that the eef moves to
 				//std::string temp_loc_label = state_seq[i+1]->getVar("eeLoc");
@@ -152,6 +153,7 @@ class ExecuteSrv {
 				//std::string temp_obj_label;
 				//state_seq[i]->argFindGroup("ee", "object locations", temp_obj_label);
 				//std::cout<<"rel obj: "<<temp_obj_label<<std::endl;
+				query.request.pickup_object = "none";
 				query.request.drop_object = req.release_obj; 
 				query.request.planning_domain = "domain";
 				query.request.safe_config = false;

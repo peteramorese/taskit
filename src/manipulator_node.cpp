@@ -211,7 +211,7 @@ class PlanningQuerySrv {
 				response.success = true;
 				ROS_INFO_NAMED("manipulator_node","Done dropping object");
 			} else {
-				setupEnvironment(request.planning_domain);
+				//setupEnvironment(request.planning_domain);
 				std::cout<<"moving"<<std::endl;
 				std::vector<geometry_msgs::Pose> poses;
 				moveit::planning_interface::MoveGroupInterface::Plan plan;
