@@ -1,21 +1,6 @@
 <?xml version="1.0" ?>
 <launch>
 
-  <!-- Specify the robot IP, default is the Franka robot in ARIA lab
-  <arg name="robot_ip" default="172.25.20.101" />
-
-
-  <include file="$(find franka_control)/launch/franka_control.launch">
-	  <arg name="robot_ip" value="$(arg robot_ip)" />
-	  <arg name="load_gripper" value="false" />
-  </include>
-  <include file="$(find panda_moveit_config)/launch/panda_moveit.launch">
-    <arg name="load_gripper" value="true" />
-  </include>
-  -->
-
-
-
 
   <!-- By default, we do not start a database (it can be large) -->
   <arg name="db" default="false" />
@@ -64,7 +49,7 @@
 
 
   <!-- Run the main MoveIt executable without trajectory execution (we do not have controllers configured by default) -->
-  <include file="$(find manipulation_interface)/launch/move_group.launch">
+  <include file="$(find panda_moveit_config)/launch/move_group.launch">
     <arg name="allow_trajectory_execution" value="true"/>
     <arg name="fake_execution" value="true"/>
     <arg name="info" value="true"/>
@@ -72,12 +57,17 @@
     <arg name="pipeline" value="$(arg pipeline)"  />
   </include>
 
+  <!-- Load the planning environment and locations -->
+  <group ns="discrete_environment">
+    <rosparam file="$(find manipulation_interface)/environment_config/environment.yaml" />
+  </group>
 
   <node name="manipulator_node" pkg="manipulation_interface" type="manipulator_node" respawn="false" output="screen">
     <rosparam command="load" file="$(find panda_moveit_config)/config/kinematics.yaml"/>
     <param name="/planning_plugin" value="ompl_interface/OMPLPlanner"/>
     <rosparam command="load" file="$(find panda_moveit_config)/config/ompl_planning.yaml"/>
     <param name="sim_only" value="true"/>
+    <param name="mock_observer" value="false"/>
   </node>
 
   <!-- Run Rviz -->
@@ -86,11 +76,11 @@
     <arg name="debug" value="$(arg debug)"/>
   </include>
 
+  <!-- Run action primitive handler -->
+  <node name="action_primitive_node" pkg="manipulation_interface" type="action_primitive_node" respawn="false" output="screen" />
 
-  <!-- If database loading was enabled, start mongodb as well
-  <include file="$(find panda_moveit_config)/launch/default_warehouse_db.launch" if="$(arg db)">
-    <arg name="moveit_warehouse_database_path" value="$(arg db_path)"/>
-  </include>
-  -->
+  <!-- Run preference planner -->
+  <node name="planner_node" pkg="manipulation_interface" type="planner_node" respawn="false" output="screen" />
+
 
 </launch>

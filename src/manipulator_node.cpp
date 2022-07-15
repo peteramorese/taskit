@@ -523,7 +523,7 @@ int main(int argc, char **argv) {
 	PlanningQuerySrv plan_query_srv_container(&move_group, &planning_scene_interface, &grip_client, 5, !sim_only);
 	//plan_query_srv_container.setWorkspace(colObjVec, colObjVec_domain_lbls);
 
-	ros::ServiceServer plan_query_service = M_NH.advertiseService("/planning_query", &PlanningQuerySrv::planQuery_serviceCB, &plan_query_srv_container);
+	ros::ServiceServer plan_query_service = M_NH.advertiseService("/manipulation_planning_query", &PlanningQuerySrv::planQuery_serviceCB, &plan_query_srv_container);
 
 	ros::waitForShutdown();
 	return 0;

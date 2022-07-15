@@ -191,52 +191,48 @@ int main(int argc, char **argv) {
 	//q_rot_down.setRPY(0, M_PI, -M_PI/4);
 	//q_down = q_rot_down * q_init;
 	q_down = q_init;
-	geometry_msgs::Quaternion q_down_msg, q_side_msg;
-	tf2::convert(q_down, q_down_msg);
+	geometry_msgs::Quaternion q_up_msg, q_side_msg;
+	tf2::convert(q_down, q_up_msg);
 	q_rot_side.setRPY(-M_PI/2, 0, 0);
 	q_side = q_rot_side * q_init;
 	tf2::convert(q_side, q_side_msg);
 	q_down.normalize();
 	q_side.normalize();
 
-	// Edit according to planning environment. TODO: use param config
- 	std::vector<std::string> loc_labels = {"L0", "L1", "L2", "L3", "L4", "L5"};
-	geometry_msgs::Point p;
-	p.x = .4;
-	p.y = .4;
-	p.z = .1;
-	locs.addLocation(p, q_down_msg, loc_labels[0]); // L0
-
-	p.x = .4;
-	p.y = 0.0;
-	p.z = .1;
-	locs.addLocation(p, q_down_msg, loc_labels[1]); // L1
-
-	p.x = .4;
-	p.y = -.4;
-	p.z = .1;
-	locs.addLocation(p, q_down_msg, loc_labels[2]); // L2
-
-	p.x = -.4;
-	p.y = .4;
-	p.z = .1;
-	locs.addLocation(p, q_down_msg, loc_labels[3]); 
-
-	p.x = -.4;
-	p.y = 0.0;
-	p.z = .1;
-	locs.addLocation(p, q_down_msg, loc_labels[4]); 
-
-	p.x = -.4;
-	p.y = -.4;
-	p.z = .1;
-	locs.addLocation(p, q_down_msg, loc_labels[5]); 
 
 
-	ros::ServiceClient plan_query_client = action_primitive_NH.serviceClient<manipulation_interface::PlanningQuery>("/planning_query");
+    std::vector<std::string> location_names;
+    action_primitive_NH.getParam("/discrete_environment/location_names", location_names);
+
+    std::vector<std::map<std::string, float>> location_points(location_names.size());
+    std::vector<std::string> location_orientation_types;
+    action_primitive_NH.getParam("/discrete_environment/location_orientation_types", location_orientation_types);
+    for (int i=0; i<location_names.size(); ++i) {
+        action_primitive_NH.getParam("/discrete_environment/" + location_names[i] + "_point", location_points[i]);
+        std::cout<<"Loaded point for: "<<location_names[i]<<std::endl;
+        std::cout<<"  - x: "<<location_points[i].at("x")<<"\n";
+        std::cout<<"  - y: "<<location_points[i].at("y")<<"\n";
+        std::cout<<"  - z: "<<location_points[i].at("z")<<"\n";
+        // Add condition if orientation type = 'manual'
+		geometry_msgs::Point p;
+		p.x = location_points[i].at("x");
+		p.y = location_points[i].at("y");
+		p.z = location_points[i].at("z");
+		if (location_orientation_types[i] == "up") {
+			locs.addLocation(p, q_up_msg, location_names[i]); 
+		} else if (location_orientation_types[i] == "side") {
+			locs.addLocation(p, q_side_msg, location_names[i]); 
+		} else {
+			std::string msg = "Did not find orientation preset:" + location_names[i];
+			ROS_ERROR_STREAM(msg.c_str());
+		}
+    }
+
+
+	ros::ServiceClient plan_query_client = action_primitive_NH.serviceClient<manipulation_interface::PlanningQuery>("/manipulation_planning_query");
 	ExecuteSrv ex(&locs, &plan_query_client);
 	ros::ServiceServer ex_srv = action_primitive_NH.advertiseService("/action_primitive", &ExecuteSrv::execute, &ex);
-	ROS_INFO("Execution Service Server started...");
+	ROS_INFO("Execution service is online!");
 	ros::spin();
 
 	
