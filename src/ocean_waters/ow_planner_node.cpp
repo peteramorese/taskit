@@ -303,9 +303,9 @@ int main(int argc, char** argv) {
 	std::vector<SimpleCondition> AP_m;
 	std::vector<SimpleCondition*> AP_m_ptrs;
 	SimpleCondition ap_stow;
-	ap.addCondition(Condition::SIMPLE, Condition::LABEL, "eeLoc", Condition::EQUALS, Condition::VAR, "stow");
-	ap.setCondJunctType(Condition::SIMPLE, Condition::CONJUNCTION);
-	ap.setLabel("arm_stow");
+	ap_stow.addCondition(Condition::SIMPLE, Condition::LABEL, "eeLoc", Condition::EQUALS, Condition::VAR, "stow");
+	ap_stow.setCondJunctType(Condition::SIMPLE, Condition::CONJUNCTION);
+	ap_stow.setLabel("arm_stow");
 	AP_m.push_back(ap_stow);
 	for (auto& loc_label : loc_labels) {
 		for (auto &loc_var : loc_vars) {
@@ -334,7 +334,7 @@ int main(int argc, char** argv) {
 	ts_eval.print();
 
 
-	PlanSrv plan_obj(&ts_eval, obj_group, &planner_NH);
+	PlanSrv plan_obj(&ts_eval, {}, &planner_NH);
 	ros::ServiceServer plan_srv = planner_NH.advertiseService("/preference_planning_query", &PlanSrv::plan, &plan_obj);
 	ros::ServiceServer run_srv = planner_NH.advertiseService("/action_run_query", &PlanSrv::run, &plan_obj);
 	ROS_INFO("Plan and Run services are online!");
