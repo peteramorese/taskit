@@ -298,24 +298,28 @@ int main(int argc, char** argv) {
 	}
 
 
-	///* Propositions */
-	//std::cout<<"Setting Atomic Propositions... "<<std::endl;
-	//std::vector<SimpleCondition> AP_m;
-	//std::vector<SimpleCondition*> AP_m_ptrs;
-	//for (auto& loc_label : loc_labels) {
- //       for (auto& obj : obj_group) {
- //           SimpleCondition ap;
- //           ap.addCondition(Condition::SIMPLE, Condition::LABEL, obj, Condition::EQUALS, Condition::VAR, loc_label);
- //           ap.addCondition(Condition::SIMPLE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "false");
- //           ap.setCondJunctType(Condition::SIMPLE, Condition::CONJUNCTION);
- //           ap.setLabel(obj + "_" + loc_label);
- //           AP_m.push_back(ap);
- //       }
-	//}
- //   AP_m_ptrs.resize(AP_m.size());
-	//for (int i=0; i<AP_m.size(); ++i) {
-	//	AP_m_ptrs[i] = &AP_m[i];
-	//}
+	/* Propositions */
+	std::cout<<"Setting Atomic Propositions... "<<std::endl;
+	std::vector<SimpleCondition> AP_m;
+	std::vector<SimpleCondition*> AP_m_ptrs;
+	SimpleCondition ap_stow;
+	ap.addCondition(Condition::SIMPLE, Condition::LABEL, "eeLoc", Condition::EQUALS, Condition::VAR, "stow");
+	ap.setCondJunctType(Condition::SIMPLE, Condition::CONJUNCTION);
+	ap.setLabel("arm_stow");
+	AP_m.push_back(ap_stow);
+	for (auto& loc_label : loc_labels) {
+		for (auto &loc_var : loc_vars) {
+            SimpleCondition ap;
+            ap.addCondition(Condition::SIMPLE, Condition::LABEL, loc_label, Condition::EQUALS, Condition::VAR, loc_var);
+            ap.setCondJunctType(Condition::SIMPLE, Condition::CONJUNCTION);
+            ap.setLabel(loc_label + "_" + loc_var);
+            AP_m.push_back(ap);
+		}
+	}
+    AP_m_ptrs.resize(AP_m.size());
+	for (int i=0; i<AP_m.size(); ++i) {
+		AP_m_ptrs[i] = &AP_m[i];
+	}
 
 
 	// Create the transition system:
@@ -323,19 +327,17 @@ int main(int argc, char** argv) {
 
 	ts_eval.setInitState(&init_state);
 	ts_eval.setConditions(cond_ptrs_m);
-	//ts_eval.setPropositions(AP_m_ptrs);
-	std::cout<<"b4 generate"<<std::endl;
+	ts_eval.setPropositions(AP_m_ptrs);
 	ts_eval.generate();
-	std::cout<<"af generate"<<std::endl;
 	//std::cout<<"\n\n Printing the Transition System: \n\n"<<std::endl;
 	ts_eval.print();
 
 
-	//PlanSrv plan_obj(&ts_eval, obj_group, &planner_NH);
-	//ros::ServiceServer plan_srv = planner_NH.advertiseService("/preference_planning_query", &PlanSrv::plan, &plan_obj);
-	//ros::ServiceServer run_srv = planner_NH.advertiseService("/action_run_query", &PlanSrv::run, &plan_obj);
-	//ROS_INFO("Plan and Run services are online!");
-	//ros::spin();
+	PlanSrv plan_obj(&ts_eval, obj_group, &planner_NH);
+	ros::ServiceServer plan_srv = planner_NH.advertiseService("/preference_planning_query", &PlanSrv::plan, &plan_obj);
+	ros::ServiceServer run_srv = planner_NH.advertiseService("/action_run_query", &PlanSrv::run, &plan_obj);
+	ROS_INFO("Plan and Run services are online!");
+	ros::spin();
 
 	return 0;
 }
