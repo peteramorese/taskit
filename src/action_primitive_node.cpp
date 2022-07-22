@@ -11,12 +11,6 @@
 #include "geometry_msgs/Quaternion.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 
-// OW Imports
-#include "ow_lander/DigLinear.h"
-#include "ow_lander/Grind.h"
-#include "ow_lander/DeliverSample.h"
-#include "ow_lander/Stow.h"
-#include "ow_lander/Unstow.h"
 
 
 
@@ -49,19 +43,10 @@ class LocationCoordinates {
 class ExecuteSrv {
 	private:
 	 	ros::ServiceClient* plan_query_client;
-		// OW Clients
-		ros::ServiceClient* plan_dig_linear_client;
-		ros::ServiceClient* plan_grind_client;
-		ros::ServiceClient* plan_deliver_sample_client;
-		ros::ServiceClient* plan_stow_client;
-		ros::ServiceClient* plan_unstow_client;
 		LocationCoordinates* locs;
 		bool setup;
 	public:
-		ExecuteSrv(LocationCoordinates* locs_, ros::ServiceClient* plan_query_client_, ros::ServiceClient* plan_dig_linear_client_, ros::ServiceClient* plan_grind_client_, 
-			ros::ServiceClient* plan_deliver_sample_client_, ros::ServiceClient* plan_stow_client_, ros::ServiceClient* plan_unstow_client_) : 
-				locs(locs_), setup(true), plan_query_client(plan_query_client_), plan_dig_linear_client(plan_dig_linear_client_), plan_grind_client(plan_grind_client_), plan_deliver_sample_client(plan_deliver_sample_client_),
-					plan_stow_client(plan_stow_client_), plan_unstow_client(plan_unstow_client_) {}
+		ExecuteSrv(LocationCoordinates* locs_, ros::ServiceClient* plan_query_client_) : locs(locs_), setup(true), plan_query_client(plan_query_client_) {}
 		void reset() {
 			setup = true;
 		}
@@ -79,97 +64,99 @@ class ExecuteSrv {
 				query.request.setup_environment = false;
 			}
 			std::cout<<"Received action: "<<req.action<<std::endl;
+			if (req.action.find("transit_up") != std::string::npos) {
+				//// Find the location label that the eef moves to
+				//std::string temp_loc_label = state_seq[i+1]->getVar("eeLoc");
+				//std::string temp_obj_label;
+				//// Find which object has a location label equal to the eef's location
+				//state_seq[i+1]->argFindGroup(temp_loc_label, "object locations", temp_obj_label);
+				//// The pose array should be the same length as obj_group if it has
+				//// observed all objects, therefore the index of the group will suffice
+				//// for sending the true pose
+				//std::string temp_obj_label = req.to_obj;
+				//int pose_ind;
+				//for (int ii=0; ii<obj_group.size(); ++ii) {
+				//	if (obj_group[ii] == temp_obj_label) {
+				//		pose_ind = ii;
+				//	}
+				//}
 
-			// Get EE Location
-			geometry_msgs::Pose ee_loc_msg = locs->getLocation(req.to_eeLoc);
+				query.request.manipulator_pose = locs->getLocation(req.to_eeLoc);
+				query.request.bag_labels = req.obj_group;
+				query.request.bag_domain_labels = bag_domain_labels;
+				query.request.pickup_object = "none";
+				query.request.grasp_type = "up";
+				query.request.drop_object = "none";
+				query.request.planning_domain = "domain";
+				query.request.safe_config = false;
+			} else if (req.action.find("transit_side") != std::string::npos) {
+				//// Find the location label that the eef moves to
+				//std::string temp_loc_label = state_seq[i+1]->getVar("eeLoc");
+				//std::string temp_obj_label;
+				//// Find which object has a location label equal to the eef's location
+				//state_seq[i+1]->argFindGroup(temp_loc_label, "object locations", temp_obj_label);
+				//std::cout<<"going to obj: "<<temp_obj_label<<std::endl;
+				//// The pose array should be the same length as obj_group if it has
+				//// observed all objects, therefore the index of the group will suffice
+				//// for sending the true pose
+				//int pose_ind;
+				//for (int ii=0; ii<obj_group.size(); ++ii) {
+				//	if (obj_group[ii] == temp_obj_label) {
+				//		pose_ind = ii;
+				//	}
+				//}
+				query.request.manipulator_pose = locs->getLocation(req.to_eeLoc);
+				query.request.bag_labels = req.obj_group;
+				query.request.bag_domain_labels = bag_domain_labels;
+				query.request.pickup_object = "none";
+				query.request.grasp_type = "side";
+				query.request.drop_object = "none";
+				query.request.planning_domain = "domain";
+				query.request.safe_config = false;
+			} else if (req.action.find("transport") != std::string::npos) {
+				//std::string temp_loc_label = state_seq[i+1]->getVar("eeLoc");
+				//std::cout<<"temp loc label: "<<temp_loc_label<<std::endl;
+				query.request.manipulator_pose = locs->getLocation(req.to_eeLoc);
+				//std::cout<<"\n"<<std::endl;
+				//std::cout<<query.request.manipulator_pose.position.x<<std::endl;
+				//std::cout<<query.request.manipulator_pose.position.y<<std::endl;
+				//std::cout<<query.request.manipulator_pose.position.z<<std::endl;
+				//std::cout<<query.request.manipulator_pose.position.z<<std::endl;
+				//std::cout<<query.request.manipulator_pose.orientation.x<<std::endl;
+				//std::cout<<query.request.manipulator_pose.orientation.y<<std::endl;
+				//std::cout<<query.request.manipulator_pose.orientation.z<<std::endl;
+				//std::cout<<query.request.manipulator_pose.orientation.w<<std::endl;
+				//query.request.manipulator_pose.position = locs.getLocation(temp_loc_label);
+				//query.request.manipulator_pose.orientation = temp_orient;
+				//temp_orient = query.request.manipulator_pose.orientation;
+				//query.request.setup_environment = true;
+				query.request.bag_labels = req.obj_group;
+				query.request.bag_domain_labels = bag_domain_labels;
+				query.request.pickup_object = "none";
+				query.request.grasp_type = "up";
+				query.request.drop_object = "none";
+				query.request.planning_domain = "domain";
+				query.request.safe_config = false;
+			} else if (req.action.find("grasp") != std::string::npos) {
+				//query.request.setup_environment = false;
+				//std::string temp_obj_label;
+				//state_seq[i+1]->argFindGroup("ee", "object locations", temp_obj_label);
+				//std::cout<<"pick obj: "<<temp_obj_label<<std::endl;
+				query.request.pickup_object = req.to_grasp_obj;
+				query.request.drop_object = "none";
+				query.request.planning_domain = "domain";
+				query.request.safe_config = false;
+			} else if (req.action.find("release") != std::string::npos) {
+				//query.request.setup_environment = false;
+				//query.request.pickup_object = "none";
 
-			if (req.action.find("dig_linear") != std::string::npos) {
-				ow_lander::DigLinear dig_query;
-				// Hardcoded defaults
-				dig_query.request.length = 0.6;
-				dig_query.request.use_defaults = false;
-				dig_query.request.ground_position = -0.155;
-				// Requested values
-				dig_query.request.x = ee_loc_msg.position.x;
-				dig_query.request.y = ee_loc_msg.position.y;
-				dig_query.request.depth = ee_loc_msg.position.z;
-				// call service
-				plan_dig_linear_client->call(dig_query);
-				if(dig_query.response.success) {
-					ROS_INFO("DigLinear Successful");
-					res.success = true;
-					return true;
-				} else {
-					ROS_WARN("DigLinear Failed");
-					//ROS_WARN(dig_query.response.message);
-					res.success = false;
-					return true;
-				}
-			} else if (req.action.find("grind") != std::string::npos) {
-				ow_lander::Grind grind_query;
-				// Hardcoded defaults
-				grind_query.request.length = 0.6;
-				grind_query.request.use_defaults = false;
-				grind_query.request.ground_position = -0.155;
-				grind_query.request.parallel = true;
-				// Requested values
-				grind_query.request.x = ee_loc_msg.position.x;
-				grind_query.request.y = ee_loc_msg.position.y;
-				grind_query.request.depth = ee_loc_msg.position.z;
-				// call service
-				plan_grind_client->call(grind_query);
-				if(grind_query.response.success) {
-					ROS_INFO("Grind Successful");
-					res.success = true;
-					return true;
-				} else {
-					ROS_WARN("Grind Failed");
-					//ROS_WARN(grind_query.response.message);
-					res.success = false;
-					return true;
-				}
-			} else if (req.action.find("deliver_sample") != std::string::npos) {
-				ow_lander::DeliverSample deliever_query;
-				// call service
-				plan_deliver_sample_client->call(deliever_query);
-				if(deliever_query.response.success) {
-					ROS_INFO("DeliverSample Successful");
-					res.success = true;
-					return true;
-				} else {
-					ROS_WARN("DeliverSample Failed");
-					//ROS_WARN(deliever_query.response.message);
-					res.success = false;
-					return true;
-				}
-			} else if (req.action.find("stow") != std::string::npos) {
-				ow_lander::Stow stow_query;
-				// call service
-				plan_stow_client->call(stow_query);
-				if(stow_query.response.success) {
-					ROS_INFO("Stow Successful");
-					res.success = true;
-					return true;
-				} else {
-					ROS_WARN("Stow Failed");
-					//ROS_WARN(stow_query.response.message);
-					res.success = false;
-					return true;
-				}
-			} else if (req.action.find("unstow") != std::string::npos) {
-				ow_lander::Unstow unstow_query;
-				// call service
-				plan_unstow_client->call(unstow_query);
-				if(unstow_query.response.success) {
-					ROS_INFO("Unstow Successful");
-					res.success = true;
-					return true;
-				} else {
-					ROS_WARN("Unstow Failed");
-					//ROS_WARN(unstow_query.response.message);
-					res.success = false;
-					return true;
-				}
+				//std::string temp_obj_label;
+				//state_seq[i]->argFindGroup("ee", "object locations", temp_obj_label);
+				//std::cout<<"rel obj: "<<temp_obj_label<<std::endl;
+				query.request.pickup_object = "none";
+				query.request.drop_object = req.release_obj; 
+				query.request.planning_domain = "domain";
+				query.request.safe_config = false;
 			} else {
 				ROS_WARN("Unrecognized action %s", req.action.c_str());
 				return false;
@@ -243,14 +230,7 @@ int main(int argc, char **argv) {
 
 
 	ros::ServiceClient plan_query_client = action_primitive_NH.serviceClient<manipulation_interface::PlanningQuery>("/manipulation_planning_query");
-	ros::ServiceClient plan_dig_linear_client = action_primitive_NH.serviceClient<ow_lander::DigLinear>("/arm/dig_linear");
-	ros::ServiceClient plan_grind_client = action_primitive_NH.serviceClient<ow_lander::Grind>("/arm/grind");
-	ros::ServiceClient plan_deliver_client = action_primitive_NH.serviceClient<ow_lander::DeliverSample>("/arm/deliver_sample");
-	ros::ServiceClient plan_stow_client = action_primitive_NH.serviceClient<ow_lander::Stow>("/arm/stow");
-	ros::ServiceClient plan_unstow_client = action_primitive_NH.serviceClient<ow_lander::Unstow>("/arm/unstow");
-
-
-	ExecuteSrv ex(&locs, &plan_query_client, &plan_dig_linear_client, &plan_grind_client, &plan_deliver_client, &plan_stow_client, &plan_unstow_client);
+	ExecuteSrv ex(&locs, &plan_query_client);
 	ros::ServiceServer ex_srv = action_primitive_NH.advertiseService("/action_primitive", &ExecuteSrv::execute, &ex);
 	ROS_INFO("Execution service is online!");
 	ros::spin();
