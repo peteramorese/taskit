@@ -1,0 +1,23 @@
+location_names: 
+  - L0
+  - L1
+L0_point: {
+  x: 0.4,
+  y: 0.4,
+  z: 0.1,
+}
+L1_point: {
+  x: 0.4,
+  y: 0.0,
+  z: 0.1,
+}
+L2_point: {
+  x: 0.4,
+  y: -0.4,
+  z: 0.1,
+}
+init_state: # State values: solid, drilled, collected
+  - stow # ee location
+  - not_holding # Specify whether the digger is holding a sample
+  - solid
+  - solid

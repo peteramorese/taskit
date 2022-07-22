@@ -110,6 +110,32 @@ add_executable(pipeline_trigger_node src/pipeline_trigger_node.cpp)
 target_link_libraries(pipeline_trigger_node ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 install(TARGETS pipeline_trigger_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 add_dependencies(pipeline_trigger_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+
+# OceanWATERS: 
+add_executable(ow_planner_node src/ocean_waters/ow_planner_node.cpp)
+target_include_directories(ow_planner_node PUBLIC task_planner/include/headers)
+target_link_libraries(ow_planner_node 
+	${catkin_LIBRARIES} 
+	${Boost_LIBRARIES}
+	LexSetClass
+	GraphClass
+	ConditionClass
+	StateClass
+	SymbSearchClass
+	TransitionSystemClass
+	BenchmarkClass
+	)
+install(TARGETS ow_planner_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+add_dependencies(ow_planner_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+
+
+
+
+
+
+
 #add_executable(manipulator_node_grasp src/manipulator_node_grasp.cpp)
 #add_executable(com_node src/com_node.cpp)
 #add_executable(action_primitive_node src/action_primitive_node.cpp)

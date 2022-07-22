@@ -162,25 +162,17 @@ class PlanSrv {
 };
 
 int main(int argc, char** argv) {
-	ros::init(argc, argv, "planner_node");
+	ros::init(argc, argv, "ow_planner_node");
 	ros::NodeHandle planner_NH;
 
-    // Object group:
-    std::vector<std::string> obj_group;
-    planner_NH.getParam("/discrete_environment/obj_group", obj_group);
-    std::cout<<"Found "<<obj_group.size()<<" objects: ";
-    for (auto& obj : obj_group) {
-        std::cout<<obj<<" ";
-    }
-	std::cout<<"\n";
 
     // Location names:
     std::vector<std::string> loc_labels;
-    planner_NH.getParam("/discrete_environment/location_names", loc_labels);
+    planner_NH.getParam("/ow_environment/location_names", loc_labels);
 
     // Initial object locations:
-    std::vector<std::string> init_obj_locations;
-    planner_NH.getParam("/discrete_environment/init_obj_locations", init_obj_locations);
+    std::vector<std::string> init_state_str;
+    planner_NH.getParam("/ow_environment/init_state", init_state_str);
 
 	//////////////////////////////////////////////////////
 	/* Create the Transition System for the Manipualtor */
@@ -189,120 +181,141 @@ int main(int argc, char** argv) {
 	/* CREATE ENVIRONMENT FOR MANIPULATOR */
 	StateSpace SS_MANIPULATOR;
 
-    // Properties of the planning environment:
-	std::vector<std::string> set_state = {"stow"};
-	for (auto& obj_loc : init_obj_locations) {
-		set_state.push_back(obj_loc);
+
+	std::vector<std::string> loc_vars = {"solid", "drilled", "collected", "deposited"};
+	std::vector<std::string> holding_vars = {"is_holding", "not_holding"};
+	std::vector<std::string> ee_vars = {"stow", "sample_container"};
+	for (auto& loc : loc_labels) {
+		ee_vars.push_back(loc);
 	}
-	set_state.push_back("false");
-
-
-	std::vector<std::string> ee_labels = loc_labels;
-	ee_labels.push_back("stow");
-	std::vector<std::string> obj_labels = loc_labels;
-	obj_labels.push_back("ee");
-	std::vector<std::string> grip_labels = {"true","false"};
 
 	// Create state space:
-	SS_MANIPULATOR.setStateDimension(ee_labels, 0); // eef
-    for (int i=0; i<obj_group.size(); ++i) {
-		SS_MANIPULATOR.setStateDimension(obj_labels, i + 1); 
+	SS_MANIPULATOR.setStateDimension(ee_vars, 0); 
+	SS_MANIPULATOR.setStateDimension(holding_vars, 1); 
+    for (int i=0; i<loc_labels.size(); ++i) {
+		SS_MANIPULATOR.setStateDimension(loc_vars, i + 2); 
     }
-	SS_MANIPULATOR.setStateDimension(grip_labels, obj_group.size() + 1); // eef engaged
 
 	// Label state space:
 	SS_MANIPULATOR.setStateDimensionLabel(0, "eeLoc");
-    for (int i=0; i<obj_group.size(); ++i) {
-        SS_MANIPULATOR.setStateDimensionLabel(i + 1, obj_group[i]);
+	SS_MANIPULATOR.setStateDimensionLabel(1, "holding");
+    for (int i=0; i<loc_labels.size(); ++i) {
+        SS_MANIPULATOR.setStateDimensionLabel(i + 2, loc_labels[i]);
     }
-	SS_MANIPULATOR.setStateDimensionLabel(obj_group.size() + 1, "holding");
 
 	// Create object location group:
-	SS_MANIPULATOR.setLabelGroup("object locations", obj_group);
+	SS_MANIPULATOR.setLabelGroup("sample locations", loc_labels);
 
 	// Set the initial state:
 	State init_state(&SS_MANIPULATOR);	
-	init_state.setState(set_state);
+	init_state.setState(init_state_str);
 
 	/* SET CONDITIONS */
 	// Pickup domain conditions:
 	std::vector<Condition> conds_m;
 	std::vector<Condition*> cond_ptrs_m;
-	conds_m.resize(4);
-	cond_ptrs_m.resize(4);
 
-	// Grasp 
-	conds_m[0].addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "false");
-	conds_m[0].addCondition(Condition::PRE, Condition::GROUP, "object locations", Condition::ARG_FIND, Condition::LABEL, "eeLoc",Condition::TRUE, "arg");
-	conds_m[0].setCondJunctType(Condition::PRE, Condition::CONJUNCTION);
+	// Unstow 
+	Condition unstow;
+	unstow.addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "not_holding");
+	unstow.addCondition(Condition::PRE, Condition::LABEL, "eeLoc", Condition::EQUALS, Condition::VAR, "stow");
+	unstow.setCondJunctType(Condition::PRE, Condition::CONJUNCTION);
 
-	conds_m[0].addCondition(Condition::POST, Condition::ARG_L, Condition::FILLER, Condition::ARG_EQUALS, Condition::VAR, "ee",Condition::TRUE, "arg");
-	conds_m[0].addCondition(Condition::POST, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "true");
-	conds_m[0].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
-	conds_m[0].setActionLabel("grasp");
-	conds_m[0].setActionCost(0);
+	unstow.addCondition(Condition::POST, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "not_holding");
+	unstow.addCondition(Condition::POST, Condition::LABEL, "eeLoc", Condition::EQUALS, Condition::VAR, "stow", Condition::NEGATE);
+	unstow.setCondJunctType(Condition::POST, Condition::CONJUNCTION);
+	unstow.setActionLabel("unstow");
+	unstow.setActionCost(10.0f);
+	conds_m.push_back(unstow);
 
-	// Transport 
-	conds_m[1].addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "true");
-	conds_m[1].addCondition(Condition::PRE, Condition::GROUP, "object locations", Condition::ARG_FIND, Condition::LABEL, "eeLoc", Condition::NEGATE, "arg1");
-	conds_m[1].addCondition(Condition::PRE, Condition::LABEL, "eeLoc", Condition::ARG_FIND, Condition::NONE, Condition::FILLER, Condition::TRUE, "arg2");
-	conds_m[1].setCondJunctType(Condition::PRE, Condition::CONJUNCTION); // Used to store eeLoc pre-state variable
-	conds_m[1].addCondition(Condition::POST, Condition::ARG_V, Condition::FILLER, Condition::ARG_EQUALS, Condition::LABEL, "eeLoc", Condition::NEGATE, "arg2"); // Stored eeLoc pre-state variable is not the same as post-state eeLoc (eeLoc has moved)
-	conds_m[1].addCondition(Condition::POST, Condition::GROUP, "object locations", Condition::ARG_FIND, Condition::LABEL, "eeLoc", Condition::NEGATE,"na");
-	conds_m[1].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
-	conds_m[1].setActionLabel("transport");
-	conds_m[1].setActionCost(5);
-	//conds_m[1].print();
+	// Stow 
+	Condition stow;
+	stow.addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "not_holding");
+	stow.addCondition(Condition::PRE, Condition::LABEL, "eeLoc", Condition::EQUALS, Condition::VAR, "stow", Condition::NEGATE);
+	stow.setCondJunctType(Condition::PRE, Condition::CONJUNCTION);
 
-	// Release 
-	conds_m[2].addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "true");
-	conds_m[2].addCondition(Condition::PRE, Condition::GROUP, "object locations", Condition::ARG_FIND, Condition::LABEL, "eeLoc", Condition::NEGATE, "arg1");
-	conds_m[2].addCondition(Condition::PRE, Condition::GROUP, "object locations", Condition::ARG_FIND, Condition::VAR, "ee",Condition::TRUE, "arg2");
-	conds_m[2].setCondJunctType(Condition::PRE, Condition::CONJUNCTION);
+	stow.addCondition(Condition::POST, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "not_holding");
+	stow.addCondition(Condition::POST, Condition::LABEL, "eeLoc", Condition::EQUALS, Condition::VAR, "stow");
+	stow.setCondJunctType(Condition::POST, Condition::CONJUNCTION);
+	stow.setActionLabel("stow");
+	stow.setActionCost(10.0f);
+	conds_m.push_back(stow);
 
-	conds_m[2].addCondition(Condition::POST, Condition::ARG_L, Condition::FILLER, Condition::ARG_EQUALS, Condition::LABEL, "eeLoc", Condition::TRUE, "arg2");
-	conds_m[2].addCondition(Condition::POST, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "false");
-	conds_m[2].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
-	conds_m[2].setActionLabel("release");
-	conds_m[2].setActionCost(0);
-	//conds_m[2].print();
+	// Grind 
+	for (auto& loc : loc_labels) {
+		Condition grind;
+		grind.addCondition(Condition::PRE, Condition::LABEL, "eeLoc", Condition::EQUALS, Condition::VAR, "stow", Condition::NEGATE);
+		grind.addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "not_holding");
+		grind.setCondJunctType(Condition::PRE, Condition::CONJUNCTION);
+
+		grind.addCondition(Condition::POST, Condition::LABEL, "eeLoc", Condition::EQUALS, Condition::VAR, loc);
+		grind.addCondition(Condition::POST, Condition::LABEL, loc, Condition::EQUALS, Condition::VAR, "drilled");
+		grind.addCondition(Condition::POST, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "not_holding");
+		grind.setCondJunctType(Condition::POST, Condition::CONJUNCTION);
+		grind.setActionLabel("grind_" + loc);
+		grind.setActionCost(25);
+		conds_m.push_back(grind);
+	}
 
 
-	// Transit
-	conds_m[3].addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "false");
-	conds_m[3].addCondition(Condition::PRE, Condition::LABEL, "eeLoc", Condition::ARG_FIND, Condition::NONE, Condition::FILLER, Condition::TRUE, "arg");
-	conds_m[3].setCondJunctType(Condition::PRE, Condition::CONJUNCTION);
+	// Dig
+	for (auto& loc : loc_labels) {
+		Condition dig;
+		dig.addCondition(Condition::PRE, Condition::LABEL, "eeLoc", Condition::EQUALS, Condition::VAR, "stow", Condition::NEGATE);
+		dig.addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "not_holding");
+		dig.addCondition(Condition::PRE, Condition::LABEL, loc, Condition::EQUALS, Condition::VAR, "drilled");
+		dig.setCondJunctType(Condition::PRE, Condition::CONJUNCTION);
 
-	conds_m[3].addCondition(Condition::POST, Condition::ARG_V, Condition::FILLER, Condition::ARG_EQUALS, Condition::LABEL, "eeLoc", Condition::NEGATE,"arg");
-	conds_m[3].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
-	conds_m[3].setActionLabel("transit_up");
-	conds_m[3].setActionCost(0);
-	//conds_m[3].print();
+		dig.addCondition(Condition::POST, Condition::LABEL, "eeLoc", Condition::EQUALS, Condition::VAR, loc);
+		dig.addCondition(Condition::POST, Condition::LABEL, loc, Condition::EQUALS, Condition::VAR, "collected");
+		dig.addCondition(Condition::POST, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "is_holding");
+		dig.setCondJunctType(Condition::POST, Condition::CONJUNCTION);
+		dig.setActionLabel("dig_" + loc);
+		dig.setActionCost(20);
+		conds_m.push_back(dig);
+	}
 
+	// Deliver 
+	for (auto& loc : loc_labels) {
+		Condition deliver;
+		deliver.addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "is_holding");
+		deliver.addCondition(Condition::PRE, Condition::LABEL, "eeLoc", Condition::EQUALS, Condition::VAR, loc);
+		deliver.setCondJunctType(Condition::PRE, Condition::CONJUNCTION);
+
+		deliver.addCondition(Condition::POST, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "not_holding");
+		deliver.addCondition(Condition::POST, Condition::LABEL, loc, Condition::EQUALS, Condition::VAR, "deposited");
+		deliver.addCondition(Condition::POST, Condition::LABEL, "eeLoc", Condition::EQUALS, Condition::VAR, "sample_container");
+		deliver.setCondJunctType(Condition::POST, Condition::CONJUNCTION);
+		deliver.setActionLabel("deliver_" + loc);
+		deliver.setActionCost(15.0f);
+		conds_m.push_back(deliver);
+	}
+
+	cond_ptrs_m.resize(conds_m.size());
 
 	for (int i=0; i<conds_m.size(); ++i){
 		cond_ptrs_m[i] = &conds_m[i];
 	}
 
 
-	/* Propositions */
-	std::cout<<"Setting Atomic Propositions... "<<std::endl;
-	std::vector<SimpleCondition> AP_m;
-	std::vector<SimpleCondition*> AP_m_ptrs;
-	for (auto& loc_label : loc_labels) {
-        for (auto& obj : obj_group) {
-            SimpleCondition ap;
-            ap.addCondition(Condition::SIMPLE, Condition::LABEL, obj, Condition::EQUALS, Condition::VAR, loc_label);
-            ap.addCondition(Condition::SIMPLE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "false");
-            ap.setCondJunctType(Condition::SIMPLE, Condition::CONJUNCTION);
-            ap.setLabel(obj + "_" + loc_label);
-            AP_m.push_back(ap);
-        }
-	}
-    AP_m_ptrs.resize(AP_m.size());
-	for (int i=0; i<AP_m.size(); ++i) {
-		AP_m_ptrs[i] = &AP_m[i];
-	}
+	///* Propositions */
+	//std::cout<<"Setting Atomic Propositions... "<<std::endl;
+	//std::vector<SimpleCondition> AP_m;
+	//std::vector<SimpleCondition*> AP_m_ptrs;
+	//for (auto& loc_label : loc_labels) {
+ //       for (auto& obj : obj_group) {
+ //           SimpleCondition ap;
+ //           ap.addCondition(Condition::SIMPLE, Condition::LABEL, obj, Condition::EQUALS, Condition::VAR, loc_label);
+ //           ap.addCondition(Condition::SIMPLE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "false");
+ //           ap.setCondJunctType(Condition::SIMPLE, Condition::CONJUNCTION);
+ //           ap.setLabel(obj + "_" + loc_label);
+ //           AP_m.push_back(ap);
+ //       }
+	//}
+ //   AP_m_ptrs.resize(AP_m.size());
+	//for (int i=0; i<AP_m.size(); ++i) {
+	//	AP_m_ptrs[i] = &AP_m[i];
+	//}
 
 
 	// Create the transition system:
@@ -310,17 +323,19 @@ int main(int argc, char** argv) {
 
 	ts_eval.setInitState(&init_state);
 	ts_eval.setConditions(cond_ptrs_m);
-	ts_eval.setPropositions(AP_m_ptrs);
+	//ts_eval.setPropositions(AP_m_ptrs);
+	std::cout<<"b4 generate"<<std::endl;
 	ts_eval.generate();
+	std::cout<<"af generate"<<std::endl;
 	//std::cout<<"\n\n Printing the Transition System: \n\n"<<std::endl;
-	//ts_eval.print();
+	ts_eval.print();
 
 
-	PlanSrv plan_obj(&ts_eval, obj_group, &planner_NH);
-	ros::ServiceServer plan_srv = planner_NH.advertiseService("/preference_planning_query", &PlanSrv::plan, &plan_obj);
-	ros::ServiceServer run_srv = planner_NH.advertiseService("/action_run_query", &PlanSrv::run, &plan_obj);
-	ROS_INFO("Plan and Run services are online!");
-	ros::spin();
+	//PlanSrv plan_obj(&ts_eval, obj_group, &planner_NH);
+	//ros::ServiceServer plan_srv = planner_NH.advertiseService("/preference_planning_query", &PlanSrv::plan, &plan_obj);
+	//ros::ServiceServer run_srv = planner_NH.advertiseService("/action_run_query", &PlanSrv::run, &plan_obj);
+	//ROS_INFO("Plan and Run services are online!");
+	//ros::spin();
 
 	return 0;
 }
