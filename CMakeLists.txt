@@ -29,6 +29,11 @@ find_package(Franka REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(Boost REQUIRED system filesystem date_time thread)
 
+# OW_LANDER services
+find_package(ow_lander REQUIRED)
+include_directories(${ow_lander_INCLUDE_DIRS})
+
+
 add_service_files(
 	DIRECTORY srv
 	FILES
