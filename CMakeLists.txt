@@ -134,6 +134,11 @@ target_link_libraries(ow_planner_node
 install(TARGETS ow_planner_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 add_dependencies(ow_planner_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
+add_executable(ow_action_primitive_node src/ocean_waters/ow_action_primitive_node.cpp)
+target_link_libraries(ow_action_primitive_node ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+install(TARGETS ow_action_primitive_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+add_dependencies(ow_action_primitive_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
 
 
 
