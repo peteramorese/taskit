@@ -313,6 +313,7 @@ int main(int argc, char** argv) {
             ap.addCondition(Condition::SIMPLE, Condition::LABEL, loc_label, Condition::EQUALS, Condition::VAR, loc_var);
             ap.setCondJunctType(Condition::SIMPLE, Condition::CONJUNCTION);
             ap.setLabel(loc_label + "_" + loc_var);
+			std::cout<<"Creating AP: "<<loc_label + "_" + loc_var<<std::endl;
             AP_m.push_back(ap);
 		}
 	}
