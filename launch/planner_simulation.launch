@@ -24,10 +24,10 @@
 
   <!--
   Load the URDF, SRDF and other .yaml configuration files on the param server-->
-  <include file="$(find manipulation_interface)/launch/planning_context.launch">
+  <!-- <include file="$(find manipulation_interface)/launch/planning_context.launch">
     <arg name="load_robot_description" value="true"/>
     <arg name="load_gripper" value="true"/>
-  </include>
+  </include> -->
 
 
   <!-- If needed, broadcast static tf for robot root
@@ -37,50 +37,50 @@
 
 
   <!-- We do not have a robot connected, so publish fake joint states-->
-  <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
+  <!-- <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
     <param name="/use_gui" value="$(arg use_gui)"/>
     <rosparam param="/source_list">[/move_group/fake_controller_joint_states]</rosparam>
   </node>
   <node name="joint_state_desired_publisher" pkg="topic_tools" type="relay" args="joint_states joint_states_desired" />
 
-  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" output="screen" />
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" output="screen" /> -->
 
 
 
 
   <!-- Run the main MoveIt executable without trajectory execution (we do not have controllers configured by default) -->
-  <include file="$(find panda_moveit_config)/launch/move_group.launch">
+  <!-- <include file="$(find panda_moveit_config)/launch/move_group.launch">
     <arg name="allow_trajectory_execution" value="true"/>
     <arg name="fake_execution" value="true"/>
     <arg name="info" value="true"/>
     <arg name="debug" value="$(arg debug)"/>
     <arg name="pipeline" value="$(arg pipeline)"  />
-  </include>
+  </include> -->
 
   <!-- Load the planning environment and locations -->
-  <group ns="discrete_environment">
-    <rosparam file="$(find manipulation_interface)/environment_config/environment.yaml" />
+  <group ns="ow_environment">
+    <rosparam file="$(find manipulation_interface)/environment_config/ow_environment.yaml" />
   </group>
 
-  <node name="manipulator_node" pkg="manipulation_interface" type="manipulator_node" respawn="false" output="screen">
+  <!-- <node name="manipulator_node" pkg="manipulation_interface" type="manipulator_node" respawn="false" output="screen">
     <rosparam command="load" file="$(find panda_moveit_config)/config/kinematics.yaml"/>
     <param name="/planning_plugin" value="ompl_interface/OMPLPlanner"/>
     <rosparam command="load" file="$(find panda_moveit_config)/config/ompl_planning.yaml"/>
     <param name="sim_only" value="true"/>
     <param name="mock_observer" value="false"/>
-  </node>
+  </node> -->
 
   <!-- Run Rviz -->
-  <include file="$(find panda_moveit_config)/launch/moveit_rviz.launch">
+  <!-- <include file="$(find panda_moveit_config)/launch/moveit_rviz.launch">
     <arg name="rviz_tutorial" value="$(arg rviz_tutorial)"/>
     <arg name="debug" value="$(arg debug)"/>
-  </include>
+  </include> -->
 
   <!-- Run action primitive handler -->
-  <node name="action_primitive_node" pkg="manipulation_interface" type="action_primitive_node" respawn="false" output="screen" />
+  <node name="ow_action_primitive_node" pkg="manipulation_interface" type="ow_action_primitive_node" respawn="false" output="screen" />
 
   <!-- Run preference planner -->
-  <node name="planner_node" pkg="manipulation_interface" type="planner_node" respawn="false" output="screen" />
+  <node name="ow_planner_node" pkg="manipulation_interface" type="ow_planner_node" respawn="false" output="screen" />
 
 
 </launch>
