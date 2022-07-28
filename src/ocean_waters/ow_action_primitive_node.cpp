@@ -80,10 +80,11 @@ class ExecuteSrv {
 			}
 			std::cout<<"Received action: "<<req.action<<std::endl;
 
-			// Get EE Location
-			geometry_msgs::Pose ee_loc_msg = locs->getLocation(req.to_eeLoc);
+			
 
 			if (req.action.find("dig") != std::string::npos) {
+				// Get EE Location
+				geometry_msgs::Pose ee_loc_msg = locs->getLocation(req.to_eeLoc);
 				ow_lander::DigLinear dig_query;
 				// Hardcoded defaults
 				dig_query.request.length = 0.6;
@@ -106,6 +107,8 @@ class ExecuteSrv {
 					return true;
 				}
 			} else if (req.action.find("grind") != std::string::npos) {
+				// Get EE Location
+				geometry_msgs::Pose ee_loc_msg = locs->getLocation(req.to_eeLoc);
 				ow_lander::Grind grind_query;
 				// Hardcoded defaults
 				grind_query.request.length = 0.6;
@@ -142,20 +145,6 @@ class ExecuteSrv {
 					res.success = false;
 					return true;
 				}
-			} else if (req.action.find("stow") != std::string::npos) {
-				ow_lander::Stow stow_query;
-				// call service
-				plan_stow_client->call(stow_query);
-				if(stow_query.response.success) {
-					ROS_INFO("Stow Successful");
-					res.success = true;
-					return true;
-				} else {
-					ROS_WARN("Stow Failed");
-					//ROS_WARN(stow_query.response.message);
-					res.success = false;
-					return true;
-				}
 			} else if (req.action.find("unstow") != std::string::npos) {
 				ow_lander::Unstow unstow_query;
 				// call service
@@ -170,6 +159,20 @@ class ExecuteSrv {
 					res.success = false;
 					return true;
 				}
+			} else if (req.action.find("stow") != std::string::npos) {
+				ow_lander::Stow stow_query;
+				// call service
+				plan_stow_client->call(stow_query);
+				if(stow_query.response.success) {
+					ROS_INFO("Stow Successful");
+					res.success = true;
+					return true;
+				} else {
+					ROS_WARN("Stow Failed");
+					//ROS_WARN(stow_query.response.message);
+					res.success = false;
+					return true;
+				}
 			} else {
 				ROS_WARN("Unrecognized action %s", req.action.c_str());
 				return false;
@@ -177,15 +180,18 @@ class ExecuteSrv {
 			if (setup) {
 				setup = false;
 			}
-			if (plan_query_client->call(query)) {
-				ROS_INFO("Completed action primitive call");
-				res.success = false;
-				return true;
-			} else {
-				ROS_WARN("Did not find plan query service");
-				res.success = true;
-				return true;
-			}
+			// if (plan_query_client->call(query)) {
+			// 	ROS_INFO("Completed action primitive call");
+			// 	res.success = false;
+			// 	return true;
+			// } else {
+			// 	ROS_WARN("Did not find plan query service");
+			// 	res.success = true;
+			// 	return true;
+			// }
+			ROS_WARN("Why??");
+			res.success = true;
+			return true;
 		}
 };
 
@@ -215,13 +221,13 @@ int main(int argc, char **argv) {
 
 
     std::vector<std::string> location_names;
-    action_primitive_NH.getParam("/discrete_environment/location_names", location_names);
+    action_primitive_NH.getParam("/ow_environment/location_names", location_names);
 
     std::vector<std::map<std::string, float>> location_points(location_names.size());
-    std::vector<std::string> location_orientation_types;
-    action_primitive_NH.getParam("/discrete_environment/location_orientation_types", location_orientation_types);
+    //std::vector<std::string> location_orientation_types;
+    //action_primitive_NH.getParam("/ow_environment/location_orientation_types", location_orientation_types);
     for (int i=0; i<location_names.size(); ++i) {
-        action_primitive_NH.getParam("/discrete_environment/" + location_names[i] + "_point", location_points[i]);
+        action_primitive_NH.getParam("/ow_environment/" + location_names[i] + "_point", location_points[i]);
         std::cout<<"Loaded point for: "<<location_names[i]<<std::endl;
         std::cout<<"  - x: "<<location_points[i].at("x")<<"\n";
         std::cout<<"  - y: "<<location_points[i].at("y")<<"\n";
@@ -231,14 +237,14 @@ int main(int argc, char **argv) {
 		p.x = location_points[i].at("x");
 		p.y = location_points[i].at("y");
 		p.z = location_points[i].at("z");
-		if (location_orientation_types[i] == "up") {
-			locs.addLocation(p, q_up_msg, location_names[i]); 
-		} else if (location_orientation_types[i] == "side") {
-			locs.addLocation(p, q_side_msg, location_names[i]); 
-		} else {
-			std::string msg = "Did not find orientation preset:" + location_names[i];
-			ROS_ERROR_STREAM(msg.c_str());
-		}
+		// if (location_orientation_types[i] == "up") {
+		locs.addLocation(p, q_up_msg, location_names[i]); 
+		// } else if (location_orientation_types[i] == "side") {
+		// 	locs.addLocation(p, q_side_msg, location_names[i]); 
+		// } else {
+		// 	std::string msg = "Did not find orientation preset:" + location_names[i];
+		// 	ROS_ERROR_STREAM(msg.c_str());
+		// }
     }
 
 

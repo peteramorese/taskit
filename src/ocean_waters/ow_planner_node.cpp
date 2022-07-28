@@ -23,7 +23,7 @@ class PlanSrv {
 		SymbSearch search_obj;
 	 	TS_EVAL<State>* ts_ptr;
 		std::vector<DFA_EVAL*> dfa_eval_ptrs;
-		const std::vector<std::string>& obj_group;
+		std::vector<std::string>& obj_group;
 		ros::NodeHandle* current_NH;
 		std::string formulaListToStr(const std::vector<std::string>& list) {
 			std::string ret_str = "";
@@ -33,7 +33,7 @@ class PlanSrv {
 			return ret_str;
 		}
 	public:
-		PlanSrv(TS_EVAL<State>* ts_ptr_, const std::vector<std::string>& obj_group_, ros::NodeHandle* current_NH_) : ts_ptr(ts_ptr_), obj_group(obj_group_), current_NH(current_NH_) {}
+		PlanSrv(TS_EVAL<State>* ts_ptr_, std::vector<std::string>& obj_group_, ros::NodeHandle* current_NH_) : ts_ptr(ts_ptr_), obj_group(obj_group_), current_NH(current_NH_) {}
 		bool plan(manipulation_interface::PreferenceQuery::Request& req, manipulation_interface::PreferenceQuery::Response& res) {
 			clearDFAPtrs();
 
@@ -97,17 +97,20 @@ class PlanSrv {
 		bool run(manipulation_interface::RunQuery::Request& req, manipulation_interface::RunQuery::Response& res) {
 			auto state_sequence = search_obj.getStateSequence();
 			auto action_sequence = search_obj.getActionSequence();
-
+			std::cout << "TEST2!" << std::endl;
 			ros::ServiceClient ex_client = current_NH->serviceClient<manipulation_interface::ActionSingle>("/action_primitive");
+			std::cout << "TEST3!" << std::endl;
 			manipulation_interface::ActionSingle action_single;
 
 			action_single.request.obj_group = obj_group;
 			std::vector<std::string> init_obj_locs;
+			std::cout << "TEST0!" << std::endl;
 			const State* init_state_ptr = ts_ptr->getState(ts_ptr->getInitStateInd());
 			for (auto& obj : obj_group) {
 				init_obj_locs.push_back(init_state_ptr->getVar(obj));
 			}
 			action_single.request.init_obj_locs = init_obj_locs;
+			std::cout << "TEST0!" << std::endl;
 
 			for (int i=0; i<action_sequence.size(); ++i) {
 				std::cout<<"Sending action:" + action_sequence[i]<<std::endl;
@@ -333,10 +336,12 @@ int main(int argc, char** argv) {
 	//std::cout<<"\n\n Printing the Transition System: \n\n"<<std::endl;
 	ts_eval.print();
 
-
-	PlanSrv plan_obj(&ts_eval, {}, &planner_NH);
+	std::vector<std::string> tmp;
+	PlanSrv plan_obj(&ts_eval, tmp, &planner_NH);
 	ros::ServiceServer plan_srv = planner_NH.advertiseService("/preference_planning_query", &PlanSrv::plan, &plan_obj);
+	std::cout << "TEST0!" << std::endl;
 	ros::ServiceServer run_srv = planner_NH.advertiseService("/action_run_query", &PlanSrv::run, &plan_obj);
+	std::cout << "TEST1!" << std::endl;
 	ROS_INFO("Plan and Run services are online!");
 	ros::spin();
 
