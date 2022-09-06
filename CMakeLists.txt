@@ -1,7 +1,9 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.12.1)
 project(manipulation_interface)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+add_compile_options(-lstdc++fs)
 find_package(catkin REQUIRED COMPONENTS
 	geometry_msgs
 	roscpp 
@@ -90,72 +92,41 @@ target_link_libraries(action_primitive_node ${catkin_LIBRARIES} ${Boost_LIBRARIE
 install(TARGETS action_primitive_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 add_dependencies(action_primitive_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-add_executable(planner_node src/planner_node.cpp)
-target_include_directories(planner_node PUBLIC task_planner/include/headers)
-target_link_libraries(planner_node 
+#add_executable(planner_node src/planner_node.cpp)
+#target_include_directories(planner_node PUBLIC task_planner/include/headers)
+#target_link_libraries(planner_node 
+#	${catkin_LIBRARIES} 
+#	${Boost_LIBRARIES}
+#	LexSetClass
+#	GraphClass
+#	ConditionClass
+#	StateClass
+#	SymbSearchClass
+#	TransitionSystemClass
+#	BenchmarkClass
+#	)
+#install(TARGETS planner_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+#add_dependencies(planner_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+add_executable(ordered_planner_node src/ordered_planner_node.cpp)
+target_include_directories(ordered_planner_node PUBLIC task_planner/include/headers)
+target_link_libraries(ordered_planner_node 
 	${catkin_LIBRARIES} 
 	${Boost_LIBRARIES}
-	LexSetClass
-	GraphClass
-	ConditionClass
-	StateClass
-	SymbSearchClass
 	TransitionSystemClass
+	OrderedPlannerClass
 	BenchmarkClass
+	WriteToFileClass
 	)
-install(TARGETS planner_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-add_dependencies(planner_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+install(TARGETS ordered_planner_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+add_dependencies(ordered_planner_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 add_executable(pipeline_trigger_node src/pipeline_trigger_node.cpp)
 target_link_libraries(pipeline_trigger_node ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 install(TARGETS pipeline_trigger_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 add_dependencies(pipeline_trigger_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-#add_executable(manipulator_node_grasp src/manipulator_node_grasp.cpp)
-#add_executable(com_node src/com_node.cpp)
-#add_executable(action_primitive_node src/action_primitive_node.cpp)
-#add_executable(andrew_node src/andrew_node.cpp)
-#
-#add_subdirectory(include)
-#target_include_directories(action_primitive_node PUBLIC include)
-#link_directories(action_primitive_node PUBLIC include)
-#
-#target_include_directories(andrew_node PUBLIC include)
-#link_directories(andrew_node PUBLIC include)
-#
-#target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES})
-#target_link_libraries(manipulator_node ${catkin_LIBRARIES} ${Boost_LIBRARIES})
-#target_link_libraries(manipulator_node_grasp ${catkin_LIBRARIES} ${Boost_LIBRARIES})
-#target_link_libraries(com_node ${catkin_LIBRARIES} ${Boost_LIBRARIES})
-#target_link_libraries(action_primitive_node 
-#	${catkin_LIBRARIES} 
-#	${Boost_LIBRARIES}
-#	EdgeClass
-#	AstarClass
-#	StateSpaceClass
-#	StateClass
-#	ConditionClass
-#	TransitionSystemClass
-#	)
-#target_link_libraries(andrew_node 
-#	${catkin_LIBRARIES} 
-#	${Boost_LIBRARIES}
-#	EdgeClass
-#	AstarClass
-#	StateSpaceClass
-#	StateClass
-#	ConditionClass
-#	TransitionSystemClass
-#	)
-#install(TARGETS ${PROJECT_NAME}_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-#install(TARGETS manipulator_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-#install(TARGETS manipulator_node_grasp DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-#install(TARGETS com_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-#install(TARGETS action_primitive_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-#install(TARGETS andrew_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-#add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-#add_dependencies(manipulator_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-#add_dependencies(manipulator_node_grasp ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-#add_dependencies(com_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-#add_dependencies(action_primitive_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-#add_dependencies(andrew_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-#install(DIRECTORY include/${PROJECT_NAME}/ DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
+
+add_executable(plan_query_kickoff_node src/plan_query_kickoff_node.cpp)
+target_link_libraries(plan_query_kickoff_node ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+install(TARGETS plan_query_kickoff_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+add_dependencies(plan_query_kickoff_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})

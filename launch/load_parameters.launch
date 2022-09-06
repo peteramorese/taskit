@@ -1,5 +1,6 @@
 <launch>
   <group ns="discrete_environment">
     <rosparam file="$(find manipulation_interface)/environment_config/environment.yaml" />
+    <rosparam file="$(find manipulation_interface)/environment_config/task_set.yaml" />
   </group>
 </launch>

@@ -1,0 +1,11 @@
+task_set: 
+  - F()
+  - F()
+  - F()
+  - F()
+  - F()
+  - F()
+query_type: "single"
+flexibility: 0.0
+pareto_point_index: 0 #TODO
+kickoff_delay: 10.0 # Specify custom time to wait for all utilities to load (s)

@@ -58,9 +58,7 @@
   </include>
 
   <!-- Load the planning environment and locations -->
-  <group ns="discrete_environment">
-    <rosparam file="$(find manipulation_interface)/environment_config/environment.yaml" />
-  </group>
+  <include file="$(find manipulation_interface)/launch/load_parameters.launch"/>
 
   <node name="manipulator_node" pkg="manipulation_interface" type="manipulator_node" respawn="false" output="screen">
     <rosparam command="load" file="$(find panda_moveit_config)/config/kinematics.yaml"/>

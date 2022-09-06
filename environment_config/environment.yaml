@@ -5,47 +5,55 @@ location_names:
   - L3
   - L4
   - L5
-L0_point: {
-  x: 0.4,
-  y: 0.4,
+L0_point: { # Leftmost
+  x: 0.5,
+  y: 0.45,
   z: 0.1,
+  r: 0.05, # Detection radius (only needed for use with com node)
 }
-L1_point: {
-  x: 0.4,
+L1_point: { # Mid left
+  x: 0.25,
+  y: 0.45,
+  z: 0.1,
+  r: 0.05, 
+}
+L2_point: { # Middle
+  x: 0.0,
+  y: 0.45,
+  z: 0.1,
+  r: 0.05, 
+}
+L3_point: { # Mid right
+  x: -0.25,
+  y: 0.45,
+  z: 0.1,
+  r: 0.05, 
+}
+L4_point: { # Rightmost
+  x: -0.5,
+  y: 0.45,
+  z: 0.1,
+  r: 0.05, 
+}
+L5_point: { # xtra space
+  x: 0.45,
   y: 0.0,
   z: 0.1,
-}
-L2_point: {
-  x: 0.4,
-  y: -0.4,
-  z: 0.1,
-}
-L3_point: {
-  x: -0.4,
-  y: 0.4,
-  z: 0.1,
-}
-L4_point: {
-  x: -0.4,
-  y: 0.0,
-  z: 0.1,
-}
-L5_point: {
-  x: -0.4,
-  y: -0.4,
-  z: 0.1,
+  r: 0.05, 
 }
 location_orientation_types:
   - up
-  - up
+  - up 
   - up
   - up
   - up
   - up
 obj_group:
-  - obj_1
-  - obj_2
-  - obj_3
+  - blueBox_1
+  - blueBox_2
+  - pinkBox_1
+  - pinkBox_2
+  - greenBox_1
 init_obj_locations:
   - L0
   - L1
