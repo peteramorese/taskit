@@ -52,6 +52,7 @@ class ExecuteSrv {
 		}
 		bool execute(manipulation_interface::ActionSingle::Request& req, manipulation_interface::ActionSingle::Response& res) {
 			// Execute
+			std::cout<<"IN ACTION PRIMITIVE EXECUTE"<<std::endl;
 			manipulation_interface::PlanningQuery query;
 			std::vector<std::string> bag_domain_labels(req.obj_group.size());
 			for (int i=0; i<req.obj_group.size(); ++i) {
@@ -232,7 +233,7 @@ int main(int argc, char **argv) {
 	ros::ServiceClient plan_query_client = action_primitive_NH.serviceClient<manipulation_interface::PlanningQuery>("/manipulation_planning_query");
 	ExecuteSrv ex(&locs, &plan_query_client);
 	ros::ServiceServer ex_srv = action_primitive_NH.advertiseService("/action_primitive", &ExecuteSrv::execute, &ex);
-	ROS_INFO("Execution service is online!");
+	ROS_INFO("Action primitive execution service is online!");
 	ros::spin();
 
 	

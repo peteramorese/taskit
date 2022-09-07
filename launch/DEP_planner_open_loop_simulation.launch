@@ -78,7 +78,7 @@
   <node name="action_primitive_node" pkg="manipulation_interface" type="action_primitive_node" respawn="false" output="screen" />
 
   <!-- Run preference planner -->
-  <node name="planner_node" pkg="manipulation_interface" type="planner_node" respawn="false" output="screen" />
+  <node name="ordered_planner_node" pkg="manipulation_interface" type="ordered_planner_node" respawn="false" output="screen" />
 
 
 </launch>

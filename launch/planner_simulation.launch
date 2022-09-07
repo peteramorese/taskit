@@ -2,10 +2,8 @@
 <launch>
 
 
-  <!-- By default, we do not start a database (it can be large) -->
-  <arg name="db" default="false" />
-  <!-- Allow user to specify database location -->
-  <arg name="db_path" default="$(find panda_moveit_config)/default_warehouse_mongo_db" />
+  <!-- Plan in open loop or closed loop (recieving Vicon Data) -->
+  <arg name="open_loop" default="true" />
 
   <!-- By default, we are not in debug mode -->
   <arg name="debug" default="false" />
@@ -77,11 +75,22 @@
   <!-- Start the VRPN client to retieve Vicon Tracker data-->
   <include file="$(find manipulation_interface)/launch/vicon_franka_vrpn.launch"/>
 
-  <!-- Run com node for handling action primitives -->
-  <node name="com_node" pkg="manipulation_interface" type="com_node" respawn="false" output="screen" />
+  <!-- Run action primitive node handling action primitives in open loop case -->
+  <group if="$(arg open_loop)">
+    <node name="action_primitive_node" pkg="manipulation_interface" type="action_primitive_node" respawn="false" output="screen" />
+  </group>
+
+  <!-- Run com node for handling action primitives in closed loop case -->
+  <group unless="$(arg open_loop)">
+    <node name="com_node" pkg="manipulation_interface" type="com_node" respawn="false" output="screen" />
+  </group>
 
   <!-- Run preference planner -->
-  <node name="planner_node" pkg="manipulation_interface" type="planner_node" respawn="false" output="screen" />
+  <node name="ordered_planner_node" pkg="manipulation_interface" type="ordered_planner_node" respawn="false" output="screen" />
 
+  <!-- Start the pipeline -->
+  <node name="pipeline_trigger_node" pkg="manipulation_interface" type="pipeline_trigger_node" respawn="false" output="screen">
+    <param name="discrete_environment/open_loop" value="$(arg open_loop)"/>
+  </node>
 
 </launch>

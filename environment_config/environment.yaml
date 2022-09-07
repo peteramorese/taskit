@@ -3,8 +3,8 @@ location_names:
   - L1
   - L2
   - L3
-  - L4
-  - L5
+#  - L4
+#  - L5
 L0_point: { # Leftmost
   x: 0.5,
   y: 0.45,
@@ -52,8 +52,8 @@ obj_group:
   - blueBox_1
   - blueBox_2
   - pinkBox_1
-  - pinkBox_2
-  - greenBox_1
+  #- pinkBox_2
+  #- greenBox_1
 init_obj_locations:
   - L0
   - L1

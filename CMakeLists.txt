@@ -125,8 +125,3 @@ add_executable(pipeline_trigger_node src/pipeline_trigger_node.cpp)
 target_link_libraries(pipeline_trigger_node ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 install(TARGETS pipeline_trigger_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 add_dependencies(pipeline_trigger_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-add_executable(plan_query_kickoff_node src/plan_query_kickoff_node.cpp)
-target_link_libraries(plan_query_kickoff_node ${catkin_LIBRARIES} ${Boost_LIBRARIES})
-install(TARGETS plan_query_kickoff_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-add_dependencies(plan_query_kickoff_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})

@@ -50,15 +50,24 @@ class PlanSrvOP {
 			int N_DFAs = req.formulas_ordered.size();
 
 			// Create DFA files:
-			std::string home_dir = getenv("HOME");
-			std::string python_executable = home_dir + "/anaconda3/envs/tpenv/bin/python";
-			std::string formula2dfa_path = ros::package::getPath("manipulation_interface") + "/task_planner/spot_automaton_file_dump";
-			std::string command = python_executable + 
-				" " + formula2dfa_path + 
-				"/formula2dfa.py --dfa_path " + formula2dfa_path + "/dfas" + " " +
-				"--formulas " + formulaListToStr(req.formulas_ordered);
-			std::cout<<"COMMAND: "<<command<<std::endl;
-			int _ = system(command.c_str());
+			std::vector<std::string> python_envs = {"/anaconda3/envs", "/miniconda3/envs"};
+			for (const auto& py_env : python_envs) {
+				std::string home_dir = getenv("HOME");
+				std::string python_executable = home_dir + py_env +"/tpenv/bin/python";
+				std::string formula2dfa_path = ros::package::getPath("manipulation_interface") + "/task_planner/spot_automaton_file_dump";
+				std::string command = python_executable + 
+					" " + formula2dfa_path + 
+					"/formula2dfa.py --dfa-path " + formula2dfa_path + "/dfas" + " " +
+					"--formulas " + formulaListToStr(req.formulas_ordered);
+				std::cout<<"COMMAND: "<<command<<std::endl;
+				int p_ret_val = system(command.c_str());
+				std::cout<<"\n COMMAND RET VALUE: "<<p_ret_val<<std::endl;
+				if (p_ret_val == 0) {
+					// Command succeeded
+					break;
+				}
+			}
+
 
 			std::string dfa_filename_path_prefix = ros::package::getPath("manipulation_interface") + "/task_planner/spot_automaton_file_dump/dfas/";
 
@@ -106,7 +115,7 @@ class PlanSrvOP {
 					float max_val = 0.0f;
 					int max_ind = -1;
 					for (int i=0; i<set.size(); ++i) {
-						if (!skip[i] && set[i] > max_val) {
+						if (!skip[i] && (set[i] > max_val || max_val == 0.0f)) {
 							max_val = set[i];
 							max_ind = i;
 						} 
@@ -273,6 +282,10 @@ int main(int argc, char** argv) {
     std::vector<std::string> init_obj_locations;
     planner_NH.getParam("/discrete_environment/init_obj_locations", init_obj_locations);
 
+	if (init_obj_locations.size() != obj_group.size()) {
+		ROS_ERROR("Initial object locations does match number of objects");
+		return 1;
+	}
 	//////////////////////////////////////////////////////
 	/* Create the Transition System for the Manipualtor */
 	//////////////////////////////////////////////////////
@@ -314,6 +327,8 @@ int main(int argc, char** argv) {
 	// Set the initial state:
 	State init_state(&SS_MANIPULATOR);	
 	init_state.setState(set_state);
+	std::cout<<"----state space dim:"<< SS_MANIPULATOR.getDim()<<std::endl;
+	std::cout<<"----init state dim: "<< set_state.size()<<std::endl;
 
 	/* SET CONDITIONS */
 	// Pickup domain conditions:
@@ -377,7 +392,7 @@ int main(int argc, char** argv) {
 
 
 	/* Propositions */
-	std::cout<<"Setting Atomic Propositions... "<<std::endl;
+	std::cout<<"Setting Atomic Propositions: "<<std::endl;
 	std::vector<SimpleCondition> AP_m;
 	std::vector<SimpleCondition*> AP_m_ptrs;
 	for (auto& loc_label : loc_labels) {
@@ -387,6 +402,7 @@ int main(int argc, char** argv) {
             ap.addCondition(Condition::SIMPLE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "false");
             ap.setCondJunctType(Condition::SIMPLE, Condition::CONJUNCTION);
             ap.setLabel(obj + "_" + loc_label);
+			std::cout<<" - "<<obj + "_" + loc_label<<std::endl;
             AP_m.push_back(ap);
         }
 	}
@@ -403,11 +419,12 @@ int main(int argc, char** argv) {
 	ts.setConditions(cond_ptrs_m);
 	ts.setPropositions(AP_m_ptrs);
 	ts.generate();
-	//std::cout<<"\n\n Printing the Transition System: \n\n"<<std::endl;
-	//ts.print();
+	std::cout<<"\n\n Printing the Transition System: \n\n"<<std::endl;
+	ts.print();
+	std::cout<<"\n";
 
 
-	PlanSrvOP plan_obj(ts, obj_group, &planner_NH);
+	PlanSrvOP plan_obj(ts, obj_group, &planner_NH, open_loop);
 	ros::ServiceServer plan_srv = planner_NH.advertiseService("/preference_planning_query", &PlanSrvOP::planCB, &plan_obj);
 	if (open_loop) {
 		ros::ServiceServer run_srv_open_loop = planner_NH.advertiseService("/action_run_query", &PlanSrvOP::runOpenLoop, &plan_obj);
