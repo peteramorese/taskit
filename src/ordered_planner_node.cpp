@@ -7,6 +7,7 @@
 #include "manipulation_interface/ActionSingle.h"
 #include "manipulation_interface/PreferenceQuery.h"
 #include "manipulation_interface/RunQuery.h"
+#include "manipulation_interface/Strategy.h"
 
 // Task Planner
 #include "orderedPlanner.h"
@@ -15,7 +16,10 @@
 
 class PlanSrvOP {
 	private: 
+	  	bool open_loop;
 	 	bool success;
+		int cl_i; // Keeps track of the current action index for closed loop planning
+		const OrderedPlanner::Plan* plan;
 		const OrderedPlanner::Result* result_ptr;
 	 	TransitionSystem<State>& ts;
 		std::vector<DFA_EVAL*> dfa_eval_ptrs;
@@ -31,8 +35,17 @@ class PlanSrvOP {
 		
 
 	public:
-		PlanSrvOP(TransitionSystem<State>& ts_, const std::vector<std::string>& obj_group_, ros::NodeHandle* current_NH_) : ts(ts_), obj_group(obj_group_), current_NH(current_NH_), result_ptr(nullptr), success(false) {}
-		bool plan(manipulation_interface::PreferenceQuery::Request& req, manipulation_interface::PreferenceQuery::Response& res) {
+		PlanSrvOP(TransitionSystem<State>& ts_, const std::vector<std::string>& obj_group_, ros::NodeHandle* current_NH_, bool open_loop_ = true) : 
+			ts(ts_), 
+			obj_group(obj_group_), 
+			current_NH(current_NH_), 
+			open_loop(open_loop_), 
+			result_ptr(nullptr), 
+			success(false), 
+			plan(nullptr), 
+			cl_i(0) {}
+
+		bool planCB(manipulation_interface::PreferenceQuery::Request& req, manipulation_interface::PreferenceQuery::Response& res) {
 			clearDFAPtrs();
 			int N_DFAs = req.formulas_ordered.size();
 
@@ -116,17 +129,21 @@ class PlanSrvOP {
 			success = planner.search(dfa_eval_ptrs, setToMuDelay, true);
 			res.success = success;
 			result_ptr = planner.getResult();
+			plan = planner.getResult()->getPlan(); // Single query returns first plan
+			cl_i = 0; // Reset current action index
 			res.pathlength = result_ptr->getParetoFront()->front().path_length;
 			return true;
 		}
 
-		bool run(manipulation_interface::RunQuery::Request& req, manipulation_interface::RunQuery::Response& res) {
+		bool runOpenLoop(manipulation_interface::RunQuery::Request& req, manipulation_interface::RunQuery::Response& res) {
+
+			// Open loop uses 'run()' as a service client for Action Primitive Node:
+
 			if (!result_ptr) return false;
 			if (!success) {
 				ROS_WARN("Planner did not succeed. Skipping run query...");
 				return false;
 			}
-			const OrderedPlanner::Plan* plan = result_ptr->getPlan(); // Single query returns first plan
 
 			ros::ServiceClient ex_client = current_NH->serviceClient<manipulation_interface::ActionSingle>("/action_primitive");
 			manipulation_interface::ActionSingle action_single;
@@ -177,6 +194,45 @@ class PlanSrvOP {
 			res.end_time = ros::Time::now();
 			return true; // Success in the response allows for failed actions, thus failed execution
 		}
+		
+		bool runClosedLoop(manipulation_interface::Strategy::Request& req, manipulation_interface::Strategy::Response& res) {
+
+			// Closed loop uses 'run()' as a service server for Com Node:
+
+			if (!result_ptr) return false;
+			if (!success) {
+				ROS_WARN("Planner did not succeed. Skipping run query...");
+				return false;
+			}
+
+			std::cout<<"Sending action:" + plan->action_sequence[cl_i]<<std::endl;
+			// Action:
+			res.action = plan->action_sequence[cl_i];
+
+			// Next state eef location:
+			res.to_eeloc = plan->state_sequence[cl_i+1]->getVar("eeLoc");
+
+			// Next state grasped object:
+			std::string temp_obj_label;
+			if (plan->state_sequence[cl_i+1]->argFindGroup("ee", "object locations", temp_obj_label)) {
+				std::cout<<"GRASP OBJ: "<<temp_obj_label<<std::endl;
+				res.to_grasp_obj = temp_obj_label;
+			} else {
+				res.to_grasp_obj = "none";
+			}
+
+			// Current state object to release:
+			if (plan->state_sequence[cl_i]->argFindGroup("ee", "object locations", temp_obj_label)) {
+				std::cout<<"RELEASE OBJ: "<<temp_obj_label<<std::endl;
+				res.release_obj = temp_obj_label;
+			} else {
+				res.release_obj = "none";
+			}
+
+			//}
+			cl_i++;
+			return true; // Success in the response allows for failed actions, thus failed execution
+		}
 
 		void clearDFAPtrs() {
 			for (int i=0; i<dfa_eval_ptrs.size(); ++i) {
@@ -203,6 +259,11 @@ int main(int argc, char** argv) {
         std::cout<<obj<<" ";
     }
 	std::cout<<"\n";
+
+    // Run in open loop or closed loop mode:
+	bool open_loop;
+    planner_NH.param("/discrete_environment/open_loop", open_loop, true);
+
 
     // Location names:
     std::vector<std::string> loc_labels;
@@ -347,10 +408,17 @@ int main(int argc, char** argv) {
 
 
 	PlanSrvOP plan_obj(ts, obj_group, &planner_NH);
-	ros::ServiceServer plan_srv = planner_NH.advertiseService("/preference_planning_query", &PlanSrvOP::plan, &plan_obj);
-	ros::ServiceServer run_srv = planner_NH.advertiseService("/action_run_query", &PlanSrvOP::run, &plan_obj);
-	ROS_INFO("Plan and Run services are online!");
-	ros::spin();
+	ros::ServiceServer plan_srv = planner_NH.advertiseService("/preference_planning_query", &PlanSrvOP::planCB, &plan_obj);
+	if (open_loop) {
+		ros::ServiceServer run_srv_open_loop = planner_NH.advertiseService("/action_run_query", &PlanSrvOP::runOpenLoop, &plan_obj);
+		ROS_INFO("Plan and Run services are online!");
+		ros::spin();
+	} else {
+		// Make sure plan is preference_planning_query is called before com node is kicked off
+		ros::ServiceServer run_srv_closed_loop = planner_NH.advertiseService("/com_node/strategy", &PlanSrvOP::runClosedLoop, &plan_obj);
+		ROS_INFO("Plan and Run services are online!");
+		ros::spin();
+	}
 
 	return 0;
 }

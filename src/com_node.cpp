@@ -3,6 +3,7 @@
 #include "ros/ros.h"
 #include "manipulation_interface/PlanningQuery.h"
 #include "manipulation_interface/Strategy.h"
+#include "manipulation_interface/RunQuery.h"
 #include "geometry_msgs/PoseArray.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "geometry_msgs/Pose.h"
@@ -236,6 +237,154 @@ class PredicateGenerator {
 		}
 };
 
+class Kickoff {
+	private:
+		const std::vector<std::string>& obj_group;
+		PredicateGenerator& pred_gen;
+		RetrieveData& vicon_data;
+		ros::NodeHandle& com_NH;
+	public:
+		Kickoff(ros::NodeHandle& com_NH_, const std::vector<std::string>& obj_group_, PredicateGenerator& pred_gen_, RetrieveData& vicon_data_) : 
+		 	com_NH(com_NH_),
+			obj_group(obj_group_),
+			pred_gen(pred_gen_),
+			vicon_data(vicon_data_)
+			{}
+		int getObjInd(const std::string& obj) {
+			for (int i=0; i<obj_group.size(); ++i) {
+				if (obj == obj_group[i]) {
+					return i;
+				}
+			}
+			return -1;
+		}
+		bool begin(manipulation_interface::RunQuery::Request& req, manipulation_interface::RunQuery::Response& res) {
+
+			ros::ServiceClient strategy_srv_client = com_NH.serviceClient<manipulation_interface::Strategy>("/com_node/strategy");
+			manipulation_interface::Strategy strategy_srv;
+			ros::ServiceClient plan_query_client = com_NH.serviceClient<manipulation_interface::PlanningQuery>("/planning_query");
+			manipulation_interface::PlanningQuery plan_query_srv;
+
+			std::vector<std::string> bag_domain_labels(obj_group.size());
+			for (int i=0; i<obj_group.size(); ++i) { // TODO: Abstract domains in file
+				bag_domain_labels[i] = "domain";
+			}
+
+			const std::vector<geometry_msgs::Pose>* data;
+			int failed_retries = 0;
+			int max_failed_retries = 5;
+			ros::Rate rate_fail(.2);
+			while (ros::ok()) {
+				vicon_data.retrieve();
+				data = vicon_data.returnConfigArrPtr();
+
+				std::vector<std::string> ret_state;
+				bool found = pred_gen.getPredicates(data, ret_state);
+				if (found) {
+					ROS_INFO("Found predicates");
+					failed_retries = 0;
+				} else {
+					if (failed_retries < max_failed_retries) {
+						ROS_WARN("Did not find predicates, retrying in 5 seconds...");
+						rate_fail.sleep();
+						failed_retries++;
+						continue;
+					} else {
+						ROS_ERROR("Did not find predicates (out of retries)");
+						break;
+					}
+				}
+				std::cout<<"Printing "<<ret_state.size()<<" predicates:"<<std::endl;
+				for (int ii=0; ii<ret_state.size(); ii++) {
+					std::cout<<" - "<<ret_state[ii]<<std::endl;
+				}
+				strategy_srv.request.state = ret_state;
+				if (strategy_srv_client.call(strategy_srv)) {
+					int obj_ind = getObjInd(strategy_srv.response.to_grasp_obj);
+					std::string to_eeloc = strategy_srv.response.to_eeloc;
+					std::cout<<"\nAction received: "<<strategy_srv.response.action<<std::endl;
+					std::cout<<"Obj Ind received: "<<obj_ind<<std::endl;
+					std::cout<<"To location received: "<<to_eeloc<<"\n"<<std::endl;
+
+					if (strategy_srv.response.action.find("transit_up") != std::string::npos) {
+						plan_query_srv.request.manipulator_pose = (*data)[obj_ind];
+						std::cout<<"size: "<<data->size()<<std::endl;
+						for (int ii=0; ii<data->size(); ii++) {
+							std::cout<<"data stuff for box"<<ii<<": "<<(*data)[1].position.x<<std::endl;
+						}
+						plan_query_srv.request.bag_poses = *data;
+						plan_query_srv.request.setup_environment = true;
+						plan_query_srv.request.bag_labels = obj_group;
+						plan_query_srv.request.bag_domain_labels = bag_domain_labels;
+						plan_query_srv.request.pickup_object = "none";
+						plan_query_srv.request.grasp_type = "up";
+						plan_query_srv.request.drop_object = "none";
+						plan_query_srv.request.planning_domain = "domain";
+						plan_query_srv.request.safe_config = false;
+						plan_query_srv.request.go_to_raised = true;
+					} else if (strategy_srv.response.action.find("transit_side") != std::string::npos) {
+						plan_query_srv.request.manipulator_pose = (*data)[obj_ind];
+						plan_query_srv.request.bag_poses = *data;
+						plan_query_srv.request.setup_environment = true;
+						plan_query_srv.request.bag_labels = obj_group;
+						plan_query_srv.request.bag_domain_labels = bag_domain_labels;
+						plan_query_srv.request.pickup_object = "none";
+						plan_query_srv.request.grasp_type = "side";
+						plan_query_srv.request.drop_object = "none";
+						plan_query_srv.request.planning_domain = "domain";
+						plan_query_srv.request.safe_config = false;
+						plan_query_srv.request.go_to_raised = true;
+					} else if (strategy_srv.response.action.find("transport") != std::string::npos) {
+						plan_query_srv.request.manipulator_pose = pred_gen.getLocation(to_eeloc);
+						plan_query_srv.request.bag_poses = *data;
+						plan_query_srv.request.setup_environment = true;
+						plan_query_srv.request.bag_labels = obj_group;
+						plan_query_srv.request.bag_domain_labels = bag_domain_labels;
+						plan_query_srv.request.pickup_object = "none";
+						// Setting the grasp type as "mode" uses the grasp type specified
+						// in the last 'trasit' aciton, or the current grasp
+						// mode of the system
+						plan_query_srv.request.grasp_type = "mode";
+						plan_query_srv.request.drop_object = "none";
+						plan_query_srv.request.planning_domain = "domain";
+						plan_query_srv.request.safe_config = false;
+						plan_query_srv.request.go_to_raised = true;
+						plan_query_srv.request.to_loc = to_eeloc;
+
+					} else if (strategy_srv.response.action.find("grasp") != std::string::npos) {
+						//plan_query_srv.request.bag_poses = data;
+						plan_query_srv.request.setup_environment = false;
+						//plan_query_srv.request.obj_group = obj_group;
+						//plan_query_srv.request.bag_domain_labels = bag_domain_labels;
+						plan_query_srv.request.pickup_object = strategy_srv.response.to_grasp_obj;
+						plan_query_srv.request.drop_object = "none";
+						plan_query_srv.request.planning_domain = "domain";
+						plan_query_srv.request.safe_config = false;
+					} else if (strategy_srv.response.action.find("release") != std::string::npos) {
+						// plan_query_srv.request.bag_poses = *data;
+						plan_query_srv.request.setup_environment = false;
+						//plan_query_srv.request.obj_group = obj_group;
+						//plan_query_srv.request.bag_domain_labels = bag_domain_labels;
+						plan_query_srv.request.pickup_object = "none";
+						plan_query_srv.request.drop_object = strategy_srv.response.release_obj;
+						plan_query_srv.request.planning_domain = "domain";
+						plan_query_srv.request.safe_config = false;
+					} else {
+						ROS_WARN("Unrecognized action");
+					}
+					if (plan_query_client.call(plan_query_srv)) {
+						ROS_INFO("Completed action service");
+					} else {
+						ROS_WARN("Did not find plan query service");
+					}
+				} else {
+					ROS_WARN("Did not find strategy service");
+				}
+			}
+			return true;
+		}
+};
+
 
 int main(int argc, char **argv) {
 	ros::init(argc, argv, "com_node");
@@ -305,136 +454,10 @@ int main(int argc, char **argv) {
 		}
     }
 
-	ros::ServiceClient strategy_srv_client = com_NH.serviceClient<manipulation_interface::Strategy>("/com_node/strategy");
-	manipulation_interface::Strategy strategy_srv;
-	ros::ServiceClient plan_query_client = com_NH.serviceClient<manipulation_interface::PlanningQuery>("/planning_query");
-	manipulation_interface::PlanningQuery plan_query_srv;
+	Kickoff kickoff(com_NH, obj_group, pred_gen, vicon_data);
+	ros::ServiceServer ex_srv = com_NH.advertiseService("/com_node/kickoff", &Kickoff::begin, &kickoff);
+	ROS_INFO("Com node is online!");
+	ros::spin();
 
-	std::vector<std::string> bag_domain_labels(obj_group.size());
-	for (int i=0; i<obj_group.size(); ++i) { // TODO: Abstract domains in file
-		bag_domain_labels[i] = "domain";
-	}
-
-	const std::vector<geometry_msgs::Pose>* data;
-	std::string holding_state = "";
-	geometry_msgs::Quaternion temp_orient;
-	int failed_retries = 0;
-	int max_failed_retries = 5;
-	ros::Rate rate_fail(.2);
-	while (ros::ok()) {
-		vicon_data.retrieve();
-		data = vicon_data.returnConfigArrPtr();
-
-		std::vector<std::string> ret_state;
-		bool found = pred_gen.getPredicates(data, ret_state);
-		if (found) {
-			ROS_INFO("Found predicates");
-			failed_retries = 0;
-		} else {
-			if (failed_retries < max_failed_retries) {
-				ROS_WARN("Did not find predicates, retrying in 5 seconds...");
-				rate_fail.sleep();
-				failed_retries++;
-				continue;
-			} else {
-				ROS_ERROR("Did not find predicates (out of retries)");
-				break;
-			}
-		}
-		std::cout<<"Printing "<<ret_state.size()<<" predicates:"<<std::endl;
-		for (int ii=0; ii<ret_state.size(); ii++) {
-			std::cout<<" - "<<ret_state[ii]<<std::endl;
-		}
-		strategy_srv.request.world_config = ret_state;
-		strategy_srv.request.prev_state = holding_state;
-		if (strategy_srv_client.call(strategy_srv)) {
-			std::string action = strategy_srv.response.action;
-			int obj_ind = strategy_srv.response.obj;
-			std::string to_loc = strategy_srv.response.to_loc;
-			holding_state = strategy_srv.response.curr_state;
-			std::cout<<"\nAction received: "<<action<<std::endl;
-			std::cout<<"Obj Ind received: "<<obj_ind<<std::endl;
-			std::cout<<"To location received: "<<to_loc<<"\n"<<std::endl;
-
-			if (action == "transit") {
-				plan_query_srv.request.manipulator_pose = (*data)[obj_ind];
-				std::cout<<"size: "<<data->size()<<std::endl;
-				for (int ii=0; ii<data->size(); ii++) {
-					std::cout<<"data stuff for box"<<ii<<": "<<(*data)[1].position.x<<std::endl;
-				}
-				plan_query_srv.request.bag_poses = *data;
-				plan_query_srv.request.setup_environment = true;
-				plan_query_srv.request.bag_labels = obj_group;
-				plan_query_srv.request.bag_domain_labels = bag_domain_labels;
-				plan_query_srv.request.pickup_object = "none";
-				plan_query_srv.request.grasp_type = "up";
-				plan_query_srv.request.drop_object = "none";
-				plan_query_srv.request.planning_domain = "domain";
-				plan_query_srv.request.safe_config = false;
-				plan_query_srv.request.go_to_raised = true;
-			} else if (action == "transit_side") {
-				plan_query_srv.request.manipulator_pose = (*data)[obj_ind];
-				plan_query_srv.request.bag_poses = *data;
-				plan_query_srv.request.setup_environment = true;
-				plan_query_srv.request.bag_labels = obj_group;
-				plan_query_srv.request.bag_domain_labels = bag_domain_labels;
-				plan_query_srv.request.pickup_object = "none";
-				plan_query_srv.request.grasp_type = "side";
-				plan_query_srv.request.drop_object = "none";
-				plan_query_srv.request.planning_domain = "domain";
-				plan_query_srv.request.safe_config = false;
-				plan_query_srv.request.go_to_raised = true;
-			} else if (action == "transfer") {
-				plan_query_srv.request.manipulator_pose = pred_gen.getLocation(to_loc);
-				plan_query_srv.request.bag_poses = *data;
-				plan_query_srv.request.setup_environment = true;
-				plan_query_srv.request.bag_labels = obj_group;
-				plan_query_srv.request.bag_domain_labels = bag_domain_labels;
-				plan_query_srv.request.pickup_object = "none";
-				// Setting the grasp type as "mode" uses the grasp type specified
-				// in the last 'trasit' aciton, or the current grasp
-				// mode of the system
-				plan_query_srv.request.grasp_type = "mode";
-				plan_query_srv.request.drop_object = "none";
-				plan_query_srv.request.planning_domain = "domain";
-				plan_query_srv.request.safe_config = false;
-				plan_query_srv.request.go_to_raised = true;
-				plan_query_srv.request.to_loc = to_loc;
-
-			} else if (action == "grasp") {
-				//plan_query_srv.request.manipulator_pose = (*data)[obj_ind];
-				//plan_query_srv.request.bag_poses = data;
-				plan_query_srv.request.setup_environment = false;
-				//plan_query_srv.request.obj_group = obj_group;
-				//plan_query_srv.request.bag_domain_labels = bag_domain_labels;
-				std::cout<<"obj id: "<<obj_group[obj_ind]<<std::endl;
-				plan_query_srv.request.pickup_object = obj_group[obj_ind];
-				plan_query_srv.request.drop_object = "none";
-				plan_query_srv.request.planning_domain = "domain";
-				plan_query_srv.request.safe_config = false;
-			} else if (action == "release") {
-				//plan_query_srv.request.manipulator_pose = (*data)[obj_ind];
-				// plan_query_srv.request.bag_poses = *data;
-				plan_query_srv.request.setup_environment = false;
-				//plan_query_srv.request.obj_group = obj_group;
-				//plan_query_srv.request.bag_domain_labels = bag_domain_labels;
-				plan_query_srv.request.pickup_object = "none";
-				std::cout<<"obj id: "<<obj_group[obj_ind]<<std::endl;
-				plan_query_srv.request.drop_object = obj_group[obj_ind];
-				plan_query_srv.request.planning_domain = "domain";
-				plan_query_srv.request.safe_config = false;
-				plan_query_srv.request.to_loc = to_loc;
-			} else {
-				ROS_WARN("Unrecognized action");
-			}
-			if (plan_query_client.call(plan_query_srv)) {
-				ROS_INFO("Completed action service");
-			} else {
-				ROS_WARN("Did not find plan query service");
-			}
-		} else {
-			ROS_WARN("Did not find strategy service");
-		}
-	}
 	return 0;
 }

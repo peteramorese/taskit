@@ -1,7 +1,4 @@
 <launch>
-<!--
-  <arg name="server" default="localhost"/>
--->
   <node pkg="vrpn_client_ros" type="vrpn_client_node" name="vrpn_client_node" output="screen">
     <rosparam subst_value="true">
       <!--
