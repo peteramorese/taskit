@@ -524,6 +524,7 @@ int main(int argc, char **argv) {
 	//plan_query_srv_container.setWorkspace(colObjVec, colObjVec_domain_lbls);
 
 	ros::ServiceServer plan_query_service = M_NH.advertiseService("/manipulation_planning_query", &PlanningQuerySrv::planQuery_serviceCB, &plan_query_srv_container);
+	ROS_INFO("Manipulation query service online!");
 
 	ros::waitForShutdown();
 	return 0;

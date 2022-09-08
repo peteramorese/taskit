@@ -19,7 +19,7 @@ class PlanSrvOP {
 	  	bool open_loop;
 	 	bool success;
 		int cl_i; // Keeps track of the current action index for closed loop planning
-		const OrderedPlanner::Plan* plan;
+		std::shared_ptr<const OrderedPlanner::Plan> plan;
 		const OrderedPlanner::Result* result_ptr;
 	 	TransitionSystem<State>& ts;
 		std::vector<DFA_EVAL*> dfa_eval_ptrs;
@@ -43,7 +43,7 @@ class PlanSrvOP {
 			result_ptr(nullptr), 
 			success(false), 
 			plan(nullptr), 
-			cl_i(0) {}
+			cl_i(0) {std::cout<<"CONSTRUCTING..."<<std::endl;}
 
 		bool planCB(manipulation_interface::PreferenceQuery::Request& req, manipulation_interface::PreferenceQuery::Response& res) {
 			clearDFAPtrs();
@@ -138,13 +138,17 @@ class PlanSrvOP {
 			success = planner.search(dfa_eval_ptrs, setToMuDelay, true);
 			res.success = success;
 			result_ptr = planner.getResult();
+			std::cout<<"AFTER PLAN... SETTING PLAN PTR"<<std::endl;
 			plan = planner.getResult()->getPlan(); // Single query returns first plan
+			std::cout<<"AFTER PLAN PRITING ACT SQ"<<std::endl;
+			for (const auto & a : plan->action_sequence) std::cout<<" - "<< a<<std::endl;
 			cl_i = 0; // Reset current action index
 			res.pathlength = result_ptr->getParetoFront()->front().path_length;
 			return true;
 		}
 
 		bool runOpenLoop(manipulation_interface::RunQuery::Request& req, manipulation_interface::RunQuery::Response& res) {
+			std::cout<<"IN RUN OPEN LOOP"<<std::endl;
 
 			// Open loop uses 'run()' as a service client for Action Primitive Node:
 
@@ -164,9 +168,15 @@ class PlanSrvOP {
 				init_obj_locs.push_back(init_state_ptr->getVar(obj));
 			}
 			action_single.request.init_obj_locs = init_obj_locs;
+			std::cout<<"B4 action seq, act seq size: "<<plan->action_sequence.size()<<std::endl;
+
+			std::cout<<"B4 EX PRITING ACT SQ"<<std::endl;
+			for (const auto & a : plan->action_sequence) std::cout<<" - "<< a<<std::endl;
 
 			for (int i=0; i<plan->action_sequence.size(); ++i) {
+				std::cout<<"b4 in loop"<<std::endl;
 				std::cout<<"Sending action:" + plan->action_sequence[i]<<std::endl;
+				std::cout<<"af in loop"<<std::endl;
 				// Action:
 				action_single.request.action = plan->action_sequence[i];
 
