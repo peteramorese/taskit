@@ -6,13 +6,13 @@ location_names:
 #  - L4
 #  - L5
 L0_point: { # Leftmost
-  x: 0.5,
+  x: 0.4,
   y: 0.45,
   z: 0.1,
   r: 0.05, # Detection radius (only needed for use with com node)
 }
 L1_point: { # Mid left
-  x: 0.25,
+  x: 0.20,
   y: 0.45,
   z: 0.1,
   r: 0.05, 
@@ -24,13 +24,13 @@ L2_point: { # Middle
   r: 0.05, 
 }
 L3_point: { # Mid right
-  x: -0.25,
+  x: -0.20,
   y: 0.45,
   z: 0.1,
   r: 0.05, 
 }
 L4_point: { # Rightmost
-  x: -0.5,
+  x: -0.4,
   y: 0.45,
   z: 0.1,
   r: 0.05, 

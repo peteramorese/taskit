@@ -4,4 +4,4 @@ task_set:
 query_type: "single"
 flexibility: 0.0
 pareto_point_index: 0 #TODO
-kickoff_delay: 15.0 # Specify custom time to wait for all utilities to load (s)
+kickoff_delay: 5.0 # Specify custom time to wait for all utilities to load (s)

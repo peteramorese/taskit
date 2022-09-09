@@ -85,11 +85,4 @@
     <arg name="debug" value="$(arg debug)"/>
   </include>
 
-
-  <!-- If database loading was enabled, start mongodb as well
-  <include file="$(find panda_moveit_config)/launch/default_warehouse_db.launch" if="$(arg db)">
-    <arg name="moveit_warehouse_database_path" value="$(arg db_path)"/>
-  </include>
-  -->
-
 </launch>

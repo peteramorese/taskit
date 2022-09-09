@@ -61,9 +61,12 @@ class ExecuteSrv {
 			if (setup) {
 				query.request.setup_environment = true;
 				query.request.bag_poses = locs->getPoseArray(req.init_obj_locs);
+				setup = false;
 			} else {
 				query.request.setup_environment = false;
 			}
+			query.request.bag_labels = req.obj_group;
+
 			std::cout<<"Received action: "<<req.action<<std::endl;
 			if (req.action.find("transit_up") != std::string::npos) {
 				//// Find the location label that the eef moves to
@@ -83,7 +86,6 @@ class ExecuteSrv {
 				//}
 
 				query.request.manipulator_pose = locs->getLocation(req.to_eeLoc);
-				query.request.bag_labels = req.obj_group;
 				query.request.bag_domain_labels = bag_domain_labels;
 				query.request.pickup_object = "none";
 				query.request.grasp_type = "up";
@@ -107,7 +109,6 @@ class ExecuteSrv {
 				//	}
 				//}
 				query.request.manipulator_pose = locs->getLocation(req.to_eeLoc);
-				query.request.bag_labels = req.obj_group;
 				query.request.bag_domain_labels = bag_domain_labels;
 				query.request.pickup_object = "none";
 				query.request.grasp_type = "side";
@@ -131,7 +132,6 @@ class ExecuteSrv {
 				//query.request.manipulator_pose.orientation = temp_orient;
 				//temp_orient = query.request.manipulator_pose.orientation;
 				//query.request.setup_environment = true;
-				query.request.bag_labels = req.obj_group;
 				query.request.bag_domain_labels = bag_domain_labels;
 				query.request.pickup_object = "none";
 				query.request.grasp_type = "up";
@@ -162,18 +162,14 @@ class ExecuteSrv {
 				ROS_WARN("Unrecognized action %s", req.action.c_str());
 				return false;
 			}
-			if (setup) {
-				setup = false;
-			}
 			if (plan_query_client->call(query)) {
 				ROS_INFO("Completed action primitive call");
-				res.success = false;
-				return true;
+				res.success = true;
 			} else {
 				ROS_WARN("Did not find plan query service");
-				res.success = true;
-				return true;
+				res.success = false;
 			}
+			return true;
 		}
 };
 

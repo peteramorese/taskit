@@ -16,6 +16,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
+#include <moveit/trajectory_processing/iterative_time_parameterization.h>
 #include <moveit_msgs/DisplayRobotState.h>
 #include <moveit_msgs/DisplayTrajectory.h>
 #include <moveit_msgs/AttachedCollisionObject.h>
@@ -26,6 +27,7 @@
 #include "franka_gripper/GraspActionGoal.h"
 
 static const std::string NONE = "none";
+static const std::string PLANNING_GROUP = "panda_arm";
 
 class PlanningQuerySrv {
 	private:
@@ -35,22 +37,19 @@ class PlanningQuerySrv {
 		std::vector<moveit_msgs::CollisionObject> col_obj_vec;
 		std::vector<std::string> obs_domain_labels;
 		franka_gripper::GraspActionGoal grip_goal;	
-		bool use_gripper;
+		bool use_grasp, use_gripper, workspace_set;
 		std::string attached_obj;
-		//struct grasp_mode {
-		//	std::string mode;
-		//	tf2::Quaternion rotation;
-		//};
-		//std::vector<grasp_mode> grasp_modes;
-		//int current_mode;
 		std::string current_grasp_mode;
+		geometry_msgs::Pose prev_pose;
 	public:
-		PlanningQuerySrv(moveit::planning_interface::MoveGroupInterface* move_group_ptr_, moveit::planning_interface::PlanningSceneInterface* psi_ptr_, actionlib::SimpleActionClient<franka_gripper::GraspAction>* grp_act_ptr_,  int N_TRIALS_, bool use_gripper_) : 
+		PlanningQuerySrv(moveit::planning_interface::MoveGroupInterface* move_group_ptr_, moveit::planning_interface::PlanningSceneInterface* psi_ptr_, actionlib::SimpleActionClient<franka_gripper::GraspAction>* grp_act_ptr_,  int N_TRIALS_, bool use_gripper_, bool use_grasp_ = true) : 
 			move_group_ptr(move_group_ptr_),
 			planning_scene_interface_ptr(psi_ptr_),
 			grp_act_ptr(grp_act_ptr_),
 			N_TRIALS(N_TRIALS_), 
-			use_gripper(use_gripper_) {
+			use_gripper(use_gripper_),
+			use_grasp(use_grasp_),
+			workspace_set(false) {
 				attached_obj = NONE;
 				current_grasp_mode = NONE;
 				//grasp_modes.clear();
@@ -71,12 +70,18 @@ class PlanningQuerySrv {
 		const double grip_force = 50;
 		const double grip_epsilon_inner = .03;
 		const double grip_epsilon_outer = .03;
+		const double approach_dist = .3;
+		const double jump_thresh = 0.0;
+		const double eef_step = 0.1;
+		const int num_waypts = 3;
+		const double max_acceleration_scale = 0.1;
 		const int N_TRIALS;
 		void setWorkspace(std::vector<moveit_msgs::CollisionObject> col_obj_vec_ws, std::vector<std::string> col_obj_vec_dom_lbls) {
 			col_obj_vec.clear();		
 			obs_domain_labels.clear();
 			col_obj_vec = col_obj_vec_ws;
 			obs_domain_labels = col_obj_vec_dom_lbls;
+			workspace_set = true;
 		}
 		//void addMode(std::string mode_, tf2::Quaternion rotation_) {
 		//	if (mode_ != NONE) {
@@ -122,11 +127,17 @@ class PlanningQuerySrv {
 			}
 		}
 		bool planQuery_serviceCB(manipulation_interface::PlanningQuery::Request &request, manipulation_interface::PlanningQuery::Response &response) {
-			std::cout<<"\n";
-			std::cout<<"HELLO"<<std::endl;
+			std::cout<<"HELLO PLANNING SERVICE CB"<<std::endl;
 			std::cout<<"Recieved planning domain: "<<request.planning_domain<<std::endl;
 			std::cout<<"\n";
 			ROS_INFO_NAMED("manipulator_node", "Recieved Planning Query");
+			if (!workspace_set) {
+				ROS_ERROR("Need to set workspace before calling planning query!");
+				return false;
+			}
+
+			trajectory_processing::IterativeParabolicTimeParameterization IPTP;
+			robot_trajectory::RobotTrajectory r_trajectory(move_group_ptr->getRobotModel(), PLANNING_GROUP);
 
 			if (request.setup_environment) {
 				//col_obj_vec.resize(request.bag_poses.size());
@@ -137,16 +148,16 @@ class PlanningQuerySrv {
 					temp_col_obj.header.frame_id = "panda_link0";
 					temp_col_obj.id = request.bag_labels[i];
 					temp_col_obj.primitives.resize(1);
-					temp_col_obj.primitives[0].type = col_obj_vec[i].primitives[0].BOX;
+					temp_col_obj.primitives[0].type = temp_col_obj.primitives[0].BOX;
 					temp_col_obj.primitives[0].dimensions.resize(3);
 					temp_col_obj.primitives[0].dimensions[0] = bag_l;
 					temp_col_obj.primitives[0].dimensions[1] = bag_w;
 					temp_col_obj.primitives[0].dimensions[2] = bag_h;
 
 					temp_col_obj.primitive_poses.resize(1);
-					std::cout<<" i see : "<<request.bag_poses[i].position.x<<std::endl;
-					std::cout<<" i see : "<<request.bag_poses[i].position.y<<std::endl;
-					std::cout<<" i see : "<<request.bag_poses[i].position.z<<std::endl;
+					//std::cout<<" i see : "<<request.bag_poses[i].position.x<<std::endl;
+					//std::cout<<" i see : "<<request.bag_poses[i].position.y<<std::endl;
+					//std::cout<<" i see : "<<request.bag_poses[i].position.z<<std::endl;
 					temp_col_obj.primitive_poses[0].position.x = request.bag_poses[i].position.x;
 					temp_col_obj.primitive_poses[0].position.y = request.bag_poses[i].position.y;
 					temp_col_obj.primitive_poses[0].position.z = request.bag_poses[i].position.z;
@@ -163,7 +174,29 @@ class PlanningQuerySrv {
 			}
 
 			if (request.pickup_object != "none") {
-				std::cout<<"attaching obj"<<std::endl;
+				std::vector<geometry_msgs::Pose> waypts(num_waypts);
+				moveit_msgs::RobotTrajectory trajectory;
+				moveit_msgs::RobotTrajectory r_trajectory_msg;
+				if (use_grasp) {
+					ROS_INFO_NAMED("manipulator_node","Working on grasp approach...");
+
+					// MOVE FROM THE TOP TO THE MIDDLE OF AN OBJECT (APPROACH)
+
+					waypts[0] = move_group_ptr->getCurrentPose().pose;
+					//waypts[num_waypts-1] = move_group_ptr->getCurrentPose().pose;
+					for (int i=1; i<num_waypts; ++i) {
+						waypts[i] = prev_pose;
+						waypts[i].position.z = waypts[i].position.z + approach_dist/num_waypts*(num_waypts - 1 - i);
+					}
+					double fraction = move_group_ptr->computeCartesianPath(waypts, eef_step, jump_thresh, trajectory);
+					r_trajectory.setRobotTrajectoryMsg(*(move_group_ptr->getCurrentState()), trajectory);
+					IPTP.computeTimeStamps(r_trajectory, max_acceleration_scale, max_acceleration_scale); // max_acceleration_scale
+					r_trajectory.getRobotTrajectoryMsg(r_trajectory_msg);
+					move_group_ptr->setMaxVelocityScalingFactor(1);
+					move_group_ptr->execute(r_trajectory_msg);
+				}
+				
+
 				std::string obj_label = request.pickup_object;
 				move_group_ptr->attachObject(obj_label,"panda_link8");
 				// Change the domain of the attached object to be 'none' 
@@ -180,20 +213,63 @@ class PlanningQuerySrv {
 					grp_act_ptr->sendGoal(grip_goal.goal);
 					grp_act_ptr->waitForResult(ros::Duration(5.0));
 				}
-				// Set the grasp mode once the object has been picked up
-				//bool found = false;
-				//for (int i=0; i<grasp_modes.size(); ++i) {
-				//	if (grasp_modes[i].mode == current_grasp_mode) {
-				//		found = true;
-				//		mode = 
-				//	}
-				//}
+
+				if (use_grasp) {
+					ROS_INFO_NAMED("manipulator_node","Working on grasp retreat...");
+					
+					// RETURN BACK (RETREAT)
+
+					std::vector<geometry_msgs::Pose> waypts_rev(num_waypts);
+					waypts_rev[0] = move_group_ptr->getCurrentPose().pose;
+					for (int i=1; i<num_waypts; ++i) {
+						waypts_rev[i] = waypts[num_waypts-1-i];
+						//waypts_rev[i] = prev_pose;
+						//waypts_rev[i].position.z = waypts[i].position.z + approach_dist/num_waypts*(i+1);
+					}
+					double fraction = move_group_ptr->computeCartesianPath(waypts_rev, eef_step, jump_thresh, trajectory, false);
+					r_trajectory.setRobotTrajectoryMsg(*(move_group_ptr->getCurrentState()), trajectory);
+					IPTP.computeTimeStamps(r_trajectory, max_acceleration_scale, max_acceleration_scale); // max_acceleration_scale
+					r_trajectory.getRobotTrajectoryMsg(r_trajectory_msg);
+					move_group_ptr->setMaxVelocityScalingFactor(1);
+					move_group_ptr->execute(r_trajectory_msg);
+				}
 				ROS_INFO_NAMED("manipulator_node","Done grabbing object");
 				response.success = true;
 			} else if (request.drop_object != "none") {
-				std::cout<<"done droppin obj"<<std::endl;
+				std::vector<geometry_msgs::Pose> waypts(num_waypts);
+				moveit_msgs::RobotTrajectory trajectory;
+				moveit_msgs::RobotTrajectory r_trajectory_msg;
+				if (use_grasp) {
+					ROS_INFO_NAMED("manipulator_node","Working on release approach...");
+					
+					// MOVE FROM THE TOP TO THE MIDDLE OF AN OBJECT
+
+					//move_group_ptr->setMaxVelocityScalingFactor(.02);
+					waypts[0] = move_group_ptr->getCurrentPose().pose;
+					for (int i=1; i<num_waypts; ++i) {
+						waypts[i] = prev_pose;
+						waypts[i].position.z = waypts[i].position.z + approach_dist/num_waypts*(num_waypts - 1 - i);
+					}
+					double fraction = move_group_ptr->computeCartesianPath(waypts, eef_step, jump_thresh, trajectory);
+					r_trajectory.setRobotTrajectoryMsg(*(move_group_ptr->getCurrentState()), trajectory);
+					IPTP.computeTimeStamps(r_trajectory, max_acceleration_scale, max_acceleration_scale); // max_acceleration_scale
+					r_trajectory.getRobotTrajectoryMsg(r_trajectory_msg);
+					move_group_ptr->setMaxVelocityScalingFactor(1);
+					move_group_ptr->execute(r_trajectory_msg);
+				}
+
 				std::string obj_label = request.drop_object;
 				move_group_ptr->detachObject(obj_label);
+
+				if (use_grasp) {
+					auto itr = std::find(request.bag_labels.begin(), request.bag_labels.end(), request.drop_object);
+					if (itr != request.bag_labels.cend()) {
+						int idx = std::distance(request.bag_labels.begin(), itr);
+						col_obj_vec[idx+2].primitive_poses[0] = request.manipulator_pose;
+					} else {
+						std::cout << request.drop_object << " not found" << std::endl;
+					}
+    			}
 				// If we are releasing an object, the new domain becomes
 				// whatever domain the end effector is in (the request)
 				findObjAndUpdate(obj_label, request.planning_domain);
@@ -208,6 +284,27 @@ class PlanningQuerySrv {
 					grp_act_ptr->sendGoal(grip_goal.goal);
 					grp_act_ptr->waitForResult(ros::Duration(5.0));
 				}
+				
+
+				if (use_grasp) {
+					ROS_INFO_NAMED("manipulator_node","Working on release retreat...");
+
+					// RETURN BACK
+
+					std::vector<geometry_msgs::Pose> waypts_rev(num_waypts);
+					waypts_rev[0] = move_group_ptr->getCurrentPose().pose;
+					for (int i=1; i<num_waypts; ++i) {
+						waypts_rev[i] = waypts[num_waypts-1-i];
+					}
+					double fraction = move_group_ptr->computeCartesianPath(waypts_rev, eef_step, jump_thresh, trajectory);
+					r_trajectory.setRobotTrajectoryMsg(*(move_group_ptr->getCurrentState()), trajectory);
+					IPTP.computeTimeStamps(r_trajectory, max_acceleration_scale, max_acceleration_scale);
+					r_trajectory.getRobotTrajectoryMsg(r_trajectory_msg);
+					move_group_ptr->setMaxVelocityScalingFactor(1);
+					move_group_ptr->execute(r_trajectory_msg);
+					setupEnvironment(request.planning_domain);
+				}
+
 				response.success = true;
 				ROS_INFO_NAMED("manipulator_node","Done dropping object");
 			} else {
@@ -316,19 +413,29 @@ class PlanningQuerySrv {
 				//std::cout<<"moving to qz: "<< pose.orientation.z<<std::endl;
 				//std::cout<<"moving to qw: "<< pose.orientation.w<<std::endl;
 				bool success = false;
+				bool success_ex = false;
 				for (int ii=0; ii<N_TRIALS; ii++){
 					moveit::planning_interface::MoveGroupInterface::Plan plan_;
 
 					move_group_ptr->setStartStateToCurrentState();
 					for (int iii=0; iii<poses.size(); ++iii) {
-						std::cout<<" --- Working on grasp: "<<iii<<" --- "<<std::endl;
+						std::cout<<" --- Working on transit: "<<iii<<" --- "<<std::endl;
+						std::cout << poses[iii] << std::endl;
+
 						move_group_ptr->setPoseTarget(poses[iii]);
 						ros::WallDuration(1.0).sleep();
 						success = (move_group_ptr->plan(plan_)==moveit::planning_interface::MoveItErrorCode::SUCCESS);
 						if (success){
+							std::cout<<"Plan test succeeded!"<<std::endl;
+							prev_pose = poses[iii];
+							if (use_grasp) {
+								geometry_msgs::Pose raised_pose = poses[iii];
+								raised_pose.position.z = raised_pose.position.z + approach_dist;
+								move_group_ptr->setPoseTarget(raised_pose);
+								success_ex = (move_group_ptr->plan(plan_)==moveit::planning_interface::MoveItErrorCode::SUCCESS);
+							}
 							ROS_INFO_NAMED("manipulator_node","Completed planning on iteration: %d",ii);
 							move_group_ptr->execute(plan_);
-							break;
 						}
 					}
 					if (success) {
@@ -521,10 +628,11 @@ int main(int argc, char **argv) {
 	move_group.setEndEffectorLink("panda_link8");
 
 	PlanningQuerySrv plan_query_srv_container(&move_group, &planning_scene_interface, &grip_client, 5, !sim_only);
-	//plan_query_srv_container.setWorkspace(colObjVec, colObjVec_domain_lbls);
+	plan_query_srv_container.setWorkspace(colObjVec, colObjVec_domain_lbls);
 
 	ros::ServiceServer plan_query_service = M_NH.advertiseService("/manipulation_planning_query", &PlanningQuerySrv::planQuery_serviceCB, &plan_query_srv_container);
 	ROS_INFO("Manipulation query service online!");
+
 
 	ros::waitForShutdown();
 	return 0;
