@@ -4,6 +4,7 @@
 
   <!-- Plan in open loop or closed loop (recieving Vicon Data) -->
   <arg name="open_loop" default="true" />
+  <arg name="use_safe_grasp" default="true" />
 
   <!-- By default, we are not in debug mode -->
   <arg name="debug" default="false" />
@@ -63,6 +64,7 @@
     <param name="/planning_plugin" value="ompl_interface/OMPLPlanner"/>
     <rosparam command="load" file="$(find panda_moveit_config)/config/ompl_planning.yaml"/>
     <param name="sim_only" value="true"/>
+    <param name="use_grasp" value="$(arg use_safe_grasp)"/>
     <param name="mock_observer" value="false"/>
   </node>
 

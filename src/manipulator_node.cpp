@@ -30,35 +30,7 @@ static const std::string NONE = "none";
 static const std::string PLANNING_GROUP = "panda_arm";
 
 class PlanningQuerySrv {
-	private:
-		moveit::planning_interface::MoveGroupInterface* move_group_ptr;
-		moveit::planning_interface::PlanningSceneInterface* planning_scene_interface_ptr;
-		actionlib::SimpleActionClient<franka_gripper::GraspAction>* grp_act_ptr;
-		std::vector<moveit_msgs::CollisionObject> col_obj_vec;
-		std::vector<std::string> obs_domain_labels;
-		franka_gripper::GraspActionGoal grip_goal;	
-		bool use_grasp, use_gripper, workspace_set;
-		std::string attached_obj;
-		std::string current_grasp_mode;
-		geometry_msgs::Pose prev_pose;
 	public:
-		PlanningQuerySrv(moveit::planning_interface::MoveGroupInterface* move_group_ptr_, moveit::planning_interface::PlanningSceneInterface* psi_ptr_, actionlib::SimpleActionClient<franka_gripper::GraspAction>* grp_act_ptr_,  int N_TRIALS_, bool use_gripper_, bool use_grasp_ = true) : 
-			move_group_ptr(move_group_ptr_),
-			planning_scene_interface_ptr(psi_ptr_),
-			grp_act_ptr(grp_act_ptr_),
-			N_TRIALS(N_TRIALS_), 
-			use_gripper(use_gripper_),
-			use_grasp(use_grasp_),
-			workspace_set(false) {
-				attached_obj = NONE;
-				current_grasp_mode = NONE;
-				//grasp_modes.clear();
-				if (use_gripper) {
-					ROS_INFO_NAMED("manipulator_node","Waiting for franka_gripper action to show...");
-					grp_act_ptr->waitForServer();
-					ROS_INFO_NAMED("manipulator_node","Found franka_gripper action.");
-				}
-			}
 		// DEFINE CONSTANTS FOR PROBLEM
 		const double bag_l = .045;//.045;
 		const double bag_w = .07;
@@ -70,12 +42,190 @@ class PlanningQuerySrv {
 		const double grip_force = 50;
 		const double grip_epsilon_inner = .03;
 		const double grip_epsilon_outer = .03;
-		const double approach_dist = .3;
+		const double approach_dist = 0.01;//.3;
 		const double jump_thresh = 0.0;
 		const double eef_step = 0.1;
 		const int num_waypts = 3;
 		const double max_acceleration_scale = 0.1;
+	private:
 		const int N_TRIALS;
+		moveit::planning_interface::MoveGroupInterface* move_group_ptr;
+		moveit::planning_interface::PlanningSceneInterface* planning_scene_interface_ptr;
+		trajectory_processing::IterativeParabolicTimeParameterization IPTP;
+		actionlib::SimpleActionClient<franka_gripper::GraspAction>* grp_act_ptr;
+		std::vector<moveit_msgs::CollisionObject> col_obj_vec;
+		std::vector<std::string> obs_domain_labels;
+		franka_gripper::GraspActionGoal grip_goal;	
+		bool use_grasp, use_gripper, workspace_set;
+		std::string attached_obj;
+		std::string current_grasp_mode;
+		geometry_msgs::Pose prev_pose;
+		geometry_msgs::Point displacement_above;
+
+		geometry_msgs::Point getTranslatedPoint(const geometry_msgs::Pose& eef_pose, bool approach, double multiplier = 1.0, const geometry_msgs::Point* displacement = nullptr) {
+			geometry_msgs::Point ret_p = eef_pose.position;
+			if (displacement) {
+				if (approach) {
+					ret_p.x -= multiplier*displacement->x;
+					ret_p.y -= multiplier*displacement->y;
+					ret_p.z -= multiplier*displacement->z;
+				} else {
+					ret_p.x += multiplier*displacement->x;
+					ret_p.y += multiplier*displacement->y;
+					ret_p.z += multiplier*displacement->z;
+				}
+			} else {
+				tf2::Quaternion q_orig, q_in, q_f;
+				tf2::convert(eef_pose.orientation, q_in);
+
+				q_orig[0] = 0;
+				q_orig[1] = 0;
+				q_orig[2] = bag_h/2 + eef_offset + approach_dist;
+				q_orig[3] = 0;
+				// Rotate the q
+				q_f = q_in * q_orig * q_in.inverse(); 
+				ret_p.x += q_f[0];
+				ret_p.y += q_f[1];
+				ret_p.z += q_f[2];
+			}
+			return ret_p;
+		}
+		void getWayPoints(const geometry_msgs::Pose& eef_pose, std::vector<geometry_msgs::Pose>& ret_waypts, bool approach, const geometry_msgs::Point* displacement = nullptr) {
+			ret_waypts.resize(num_waypts);
+			for (int i=0; i<num_waypts+1; ++i) {
+				double multiplier = approach_dist/static_cast<double>(num_waypts) * static_cast<double>(i);
+				ret_waypts[i].position = getTranslatedPoint(eef_pose, approach, multiplier, displacement);
+				ret_waypts[i].orientation = eef_pose.orientation;
+			}
+		}
+		void runGrasp(bool approach, const geometry_msgs::Point* displacement = nullptr) {
+			std::vector<geometry_msgs::Pose> waypts(num_waypts);
+			moveit_msgs::RobotTrajectory trajectory;
+			moveit_msgs::RobotTrajectory r_trajectory_msg;
+			robot_trajectory::RobotTrajectory r_trajectory(move_group_ptr->getRobotModel(), PLANNING_GROUP);
+			
+			getWayPoints(move_group_ptr->getCurrentPose().pose, waypts, approach, displacement);
+			double fraction = move_group_ptr->computeCartesianPath(waypts, eef_step, jump_thresh, trajectory);
+			r_trajectory.setRobotTrajectoryMsg(*(move_group_ptr->getCurrentState()), trajectory);
+			IPTP.computeTimeStamps(r_trajectory, max_acceleration_scale, max_acceleration_scale); // max_acceleration_scale
+			r_trajectory.getRobotTrajectoryMsg(r_trajectory_msg);
+			move_group_ptr->setMaxVelocityScalingFactor(1);
+			move_group_ptr->execute(r_trajectory_msg);
+		}
+		void runGrip(bool grab) {
+			grip_goal.goal.width = (grab) ? grip_width_closed : grip_width_open;
+			grip_goal.goal.speed = grip_speed;
+			grip_goal.goal.force = grip_force;
+			grip_goal.goal.epsilon.inner = grip_epsilon_inner;
+			grip_goal.goal.epsilon.outer = grip_epsilon_outer;
+			grp_act_ptr->sendGoal(grip_goal.goal);
+			grp_act_ptr->waitForResult(ros::Duration(5.0));
+		}
+	public:
+		PlanningQuerySrv(moveit::planning_interface::MoveGroupInterface* move_group_ptr_, moveit::planning_interface::PlanningSceneInterface* psi_ptr_, actionlib::SimpleActionClient<franka_gripper::GraspAction>* grp_act_ptr_,  int N_TRIALS_, bool use_gripper_, bool use_grasp_ = true) : 
+			move_group_ptr(move_group_ptr_),
+			planning_scene_interface_ptr(psi_ptr_),
+			grp_act_ptr(grp_act_ptr_),
+			N_TRIALS(N_TRIALS_), 
+			use_gripper(use_gripper_),
+			use_grasp(use_grasp_),
+			workspace_set(false) {
+				
+			// Setup:
+			attached_obj = NONE;
+			current_grasp_mode = NONE;
+			displacement_above.x = 0.0;	
+			displacement_above.y = 0.0;	
+			displacement_above.z = approach_dist;	
+			if (use_gripper) {
+				ROS_INFO_NAMED("manipulator_node","Waiting for franka_gripper action to show...");
+				grp_act_ptr->waitForServer();
+				ROS_INFO_NAMED("manipulator_node","Found franka_gripper action.");
+			}
+		}
+
+		bool getGraspTypePoses(std::string grasp_type, std::vector<geometry_msgs::Point>& positions, std::vector<tf2::Quaternion>& orientations) {
+			// Compute the quaternions for each grasp type:
+			tf2::Quaternion q_in, q_set;
+			// This quaternion sets the panda gripper to face down towards the 
+			// object grabbing along its length
+			q_set.setRPY(0, M_PI, -M_PI/4 + M_PI/2);
+			tf2::convert(move_group_ptr->getCurrentPose().pose.orientation, q_in);
+
+			if (grasp_type == "up") {
+				tf2::Quaternion q_orig;
+				std::vector<tf2::Quaternion> q_f; 
+				std::vector<tf2::Quaternion> q_rot;
+				int N_grasps = 1;
+				q_f.resize(N_grasps);
+				q_rot.resize(N_grasps);
+
+				q_orig[0] = 0;
+				q_orig[1] = 0;
+				q_orig[2] = bag_h/2 + eef_offset;
+				q_orig[3] = 0;
+				// Rotate the q
+				q_f[0] = q_in * q_orig * q_in.inverse(); 
+				q_rot[0] = q_in * q_set;
+				orientations = q_rot;
+				std::vector<geometry_msgs::Point> pts(N_grasps);
+				pts[0].x = q_f[0][0];
+				pts[0].y = q_f[0][1];
+				pts[0].z = q_f[0][2];
+				positions = pts;
+				return true;
+
+			} else if (grasp_type == "side") {
+				tf2::Quaternion q_orig;
+				std::vector<tf2::Quaternion> q_f; 
+				std::vector<tf2::Quaternion> q_rot;
+				int N_grasps = 2;
+				q_f.resize(N_grasps);
+				q_rot.resize(N_grasps);
+				std::vector<geometry_msgs::Point> pts(N_grasps);
+
+				//q_orig[0] = 0;
+				//q_orig[1] = bag_w/2 + eef_offset;
+				//q_orig[2] = 0;
+				//q_orig[3] = 0;
+				q_orig[0] = 0;
+				q_orig[1] = -(bag_w/2 + eef_offset);
+				q_orig[2] = 0;
+				q_orig[3] = 0;
+				// 90 degrees
+				tf2::Quaternion q_set_2;
+				{
+					tf2::Quaternion q_set_temp;
+					q_set_temp.setRPY(M_PI/2, 0, 0);
+					q_set_2 = q_set_temp * q_set;
+				}
+				q_f[0] = q_in * q_orig * q_in.inverse(); 
+				q_rot[0] = q_in * q_set_2;
+				pts[0].x = q_f[0][0];
+				pts[0].y = q_f[0][1];
+				pts[0].z = q_f[0][2];
+
+
+				// -90 degrees
+				{
+					tf2::Quaternion q_set_temp;
+					q_set_temp.setRPY(-M_PI/2, 0, 0);
+					q_set_2 = q_set_temp * q_set;
+				}
+				q_orig[1] = -q_orig[1]; //flip the axis
+				q_f[1] = q_in * q_orig * q_in.inverse(); 
+				q_rot[1] = q_in * q_set_2;
+				orientations = q_rot;
+				pts[1].x = q_f[1][0];
+				pts[1].y = q_f[1][1];
+				pts[1].z = q_f[1][2];
+				positions = pts;
+				return true;
+			} else {
+				return false;
+			}
+
+		}
 		void setWorkspace(std::vector<moveit_msgs::CollisionObject> col_obj_vec_ws, std::vector<std::string> col_obj_vec_dom_lbls) {
 			col_obj_vec.clear();		
 			obs_domain_labels.clear();
@@ -136,8 +286,6 @@ class PlanningQuerySrv {
 				return false;
 			}
 
-			trajectory_processing::IterativeParabolicTimeParameterization IPTP;
-			robot_trajectory::RobotTrajectory r_trajectory(move_group_ptr->getRobotModel(), PLANNING_GROUP);
 
 			if (request.setup_environment) {
 				//col_obj_vec.resize(request.bag_poses.size());
@@ -170,146 +318,72 @@ class PlanningQuerySrv {
 					std::cout<<"Adding object: "<<temp_col_obj.id<<" to domain: "<<request.bag_domain_labels[i]<<std::endl;
 					//col_obj_vec[i].operation = col_obj_vec[i].ADD;
 				}
-				setupEnvironment(request.planning_domain);
+				//setupEnvironment(request.planning_domain);
 			}
-
 			if (request.pickup_object != "none") {
-				std::vector<geometry_msgs::Pose> waypts(num_waypts);
-				moveit_msgs::RobotTrajectory trajectory;
-				moveit_msgs::RobotTrajectory r_trajectory_msg;
+				
 				if (use_grasp) {
 					ROS_INFO_NAMED("manipulator_node","Working on grasp approach...");
-
-					// MOVE FROM THE TOP TO THE MIDDLE OF AN OBJECT (APPROACH)
-
-					waypts[0] = move_group_ptr->getCurrentPose().pose;
-					//waypts[num_waypts-1] = move_group_ptr->getCurrentPose().pose;
-					for (int i=1; i<num_waypts; ++i) {
-						waypts[i] = prev_pose;
-						waypts[i].position.z = waypts[i].position.z + approach_dist/num_waypts*(num_waypts - 1 - i);
-					}
-					double fraction = move_group_ptr->computeCartesianPath(waypts, eef_step, jump_thresh, trajectory);
-					r_trajectory.setRobotTrajectoryMsg(*(move_group_ptr->getCurrentState()), trajectory);
-					IPTP.computeTimeStamps(r_trajectory, max_acceleration_scale, max_acceleration_scale); // max_acceleration_scale
-					r_trajectory.getRobotTrajectoryMsg(r_trajectory_msg);
-					move_group_ptr->setMaxVelocityScalingFactor(1);
-					move_group_ptr->execute(r_trajectory_msg);
+					runGrasp(true); // <- uses eef pose displacement
 				}
-				
 
 				std::string obj_label = request.pickup_object;
 				move_group_ptr->attachObject(obj_label,"panda_link8");
+				
+				// Close gripper if gripper is being used:
+				if (use_gripper) runGrip(true);
+
 				// Change the domain of the attached object to be 'none' 
 				// so that it does not get removed
 				findObjAndUpdate(obj_label, "none");
 				attached_obj = obj_label;
 				ROS_INFO_NAMED("manipulator_node","Grabbing object...");
-				if (use_gripper) {
-					grip_goal.goal.width = grip_width_closed; // Use closed width
-					grip_goal.goal.speed = grip_speed;
-					grip_goal.goal.force = grip_force;
-					grip_goal.goal.epsilon.inner = grip_epsilon_inner;
-					grip_goal.goal.epsilon.outer = grip_epsilon_outer;
-					grp_act_ptr->sendGoal(grip_goal.goal);
-					grp_act_ptr->waitForResult(ros::Duration(5.0));
-				}
 
 				if (use_grasp) {
 					ROS_INFO_NAMED("manipulator_node","Working on grasp retreat...");
-					
-					// RETURN BACK (RETREAT)
-
-					std::vector<geometry_msgs::Pose> waypts_rev(num_waypts);
-					waypts_rev[0] = move_group_ptr->getCurrentPose().pose;
-					for (int i=1; i<num_waypts; ++i) {
-						waypts_rev[i] = waypts[num_waypts-1-i];
-						//waypts_rev[i] = prev_pose;
-						//waypts_rev[i].position.z = waypts[i].position.z + approach_dist/num_waypts*(i+1);
-					}
-					double fraction = move_group_ptr->computeCartesianPath(waypts_rev, eef_step, jump_thresh, trajectory, false);
-					r_trajectory.setRobotTrajectoryMsg(*(move_group_ptr->getCurrentState()), trajectory);
-					IPTP.computeTimeStamps(r_trajectory, max_acceleration_scale, max_acceleration_scale); // max_acceleration_scale
-					r_trajectory.getRobotTrajectoryMsg(r_trajectory_msg);
-					move_group_ptr->setMaxVelocityScalingFactor(1);
-					move_group_ptr->execute(r_trajectory_msg);
+					runGrasp(false, &displacement_above); // <- displaces up
 				}
 				ROS_INFO_NAMED("manipulator_node","Done grabbing object");
 				response.success = true;
 			} else if (request.drop_object != "none") {
-				std::vector<geometry_msgs::Pose> waypts(num_waypts);
-				moveit_msgs::RobotTrajectory trajectory;
-				moveit_msgs::RobotTrajectory r_trajectory_msg;
+
 				if (use_grasp) {
 					ROS_INFO_NAMED("manipulator_node","Working on release approach...");
-					
-					// MOVE FROM THE TOP TO THE MIDDLE OF AN OBJECT
-
-					//move_group_ptr->setMaxVelocityScalingFactor(.02);
-					waypts[0] = move_group_ptr->getCurrentPose().pose;
-					for (int i=1; i<num_waypts; ++i) {
-						waypts[i] = prev_pose;
-						waypts[i].position.z = waypts[i].position.z + approach_dist/num_waypts*(num_waypts - 1 - i);
-					}
-					double fraction = move_group_ptr->computeCartesianPath(waypts, eef_step, jump_thresh, trajectory);
-					r_trajectory.setRobotTrajectoryMsg(*(move_group_ptr->getCurrentState()), trajectory);
-					IPTP.computeTimeStamps(r_trajectory, max_acceleration_scale, max_acceleration_scale); // max_acceleration_scale
-					r_trajectory.getRobotTrajectoryMsg(r_trajectory_msg);
-					move_group_ptr->setMaxVelocityScalingFactor(1);
-					move_group_ptr->execute(r_trajectory_msg);
+					runGrasp(true, &displacement_above); // <- displaces down since approach is true
 				}
 
 				std::string obj_label = request.drop_object;
 				move_group_ptr->detachObject(obj_label);
 
-				if (use_grasp) {
-					auto itr = std::find(request.bag_labels.begin(), request.bag_labels.end(), request.drop_object);
-					if (itr != request.bag_labels.cend()) {
-						int idx = std::distance(request.bag_labels.begin(), itr);
-						col_obj_vec[idx+2].primitive_poses[0] = request.manipulator_pose;
-					} else {
-						std::cout << request.drop_object << " not found" << std::endl;
+				bool found = false;
+				for (int i = 0; i<request.bag_labels.size(); ++i) {
+					if (request.bag_labels[i] == request.drop_object) {
+						col_obj_vec[i].primitive_poses[0] = request.manipulator_pose;
+						found = true;
+						break;
 					}
-    			}
+				}
+				if (!found) {
+					ROS_ERROR("Did not find object to drop!");
+					return false;
+				}
 				// If we are releasing an object, the new domain becomes
 				// whatever domain the end effector is in (the request)
 				findObjAndUpdate(obj_label, request.planning_domain);
 				attached_obj = "none";
 				ROS_INFO_NAMED("manipulator_node","Dropping object...");
-				if (use_gripper) {
-					grip_goal.goal.width = grip_width_open; // Use open width
-					grip_goal.goal.speed = grip_speed;
-					grip_goal.goal.force = grip_force;
-					grip_goal.goal.epsilon.inner = grip_epsilon_inner;
-					grip_goal.goal.epsilon.outer = grip_epsilon_outer;
-					grp_act_ptr->sendGoal(grip_goal.goal);
-					grp_act_ptr->waitForResult(ros::Duration(5.0));
-				}
-				
+				if (use_gripper) runGrip(false);
 
 				if (use_grasp) {
 					ROS_INFO_NAMED("manipulator_node","Working on release retreat...");
-
-					// RETURN BACK
-
-					std::vector<geometry_msgs::Pose> waypts_rev(num_waypts);
-					waypts_rev[0] = move_group_ptr->getCurrentPose().pose;
-					for (int i=1; i<num_waypts; ++i) {
-						waypts_rev[i] = waypts[num_waypts-1-i];
-					}
-					double fraction = move_group_ptr->computeCartesianPath(waypts_rev, eef_step, jump_thresh, trajectory);
-					r_trajectory.setRobotTrajectoryMsg(*(move_group_ptr->getCurrentState()), trajectory);
-					IPTP.computeTimeStamps(r_trajectory, max_acceleration_scale, max_acceleration_scale);
-					r_trajectory.getRobotTrajectoryMsg(r_trajectory_msg);
-					move_group_ptr->setMaxVelocityScalingFactor(1);
-					move_group_ptr->execute(r_trajectory_msg);
-					setupEnvironment(request.planning_domain);
+					runGrasp(false); // <- uses eef pose displacement
 				}
 
 				response.success = true;
 				ROS_INFO_NAMED("manipulator_node","Done dropping object");
 			} else {
 				//setupEnvironment(request.planning_domain);
-				std::cout<<"moving"<<std::endl;
+				std::cout<<"MOVING"<<std::endl;
 				std::vector<geometry_msgs::Pose> poses;
 				moveit::planning_interface::MoveGroupInterface::Plan plan;
 
@@ -319,15 +393,7 @@ class PlanningQuerySrv {
 					std::vector<double> joint_val_target = {0.0, -.785398, 0.0, -2.35619, 1.5708, .785398};
 					move_group_ptr->setJointValueTarget(joint_val_target);
 				} else {
-					tf2::Quaternion q_orig, q_in, q_set;
-					std::vector<tf2::Quaternion> q_f; 
-					std::vector<tf2::Quaternion> q_rot;
-					// This quaternion sets the panda gripper to face down towards the 
-					// object grabbing along its length
-					q_set.setRPY(0, M_PI, -M_PI/4 + M_PI/2);
-					tf2::convert(request.manipulator_pose.orientation, q_in);
 					std::string grasp_type = request.grasp_type;
-					std::cout<<" Grasp Type: "<<grasp_type<<std::endl;
 					if (grasp_type == "mode") {
 						std::cout<<"Using current grasp mode."<<std::endl;
 						grasp_type = current_grasp_mode;
@@ -336,69 +402,79 @@ class PlanningQuerySrv {
 						// keep track of the specified grasp type to set the mode
 						current_grasp_mode = grasp_type;
 					}
-					if (grasp_type == "up") {
-						int N_grasps = 1;
-						q_f.resize(N_grasps);
-						q_rot.resize(N_grasps);
-						poses.resize(N_grasps);
+					//if (grasp_type == "up") {
+					//	int N_grasps = 1;
+					//	q_f.resize(N_grasps);
+					//	q_rot.resize(N_grasps);
+					//	poses.resize(N_grasps);
 
-						q_orig[0] = 0;
-						q_orig[1] = 0;
-						q_orig[2] = bag_h/2 + eef_offset;
-						q_orig[3] = 0;
-						// Rotate the q
-						q_f[0] = q_in * q_orig * q_in.inverse(); 
-						q_rot[0] = q_in * q_set;
+					//	q_orig[0] = 0;
+					//	q_orig[1] = 0;
+					//	q_orig[2] = bag_h/2 + eef_offset;
+					//	q_orig[3] = 0;
+					//	// Rotate the q
+					//	q_f[0] = q_in * q_orig * q_in.inverse(); 
+					//	q_rot[0] = q_in * q_set;
 
-					} else if (grasp_type == "side") {
-						int N_grasps = 2;
-						q_f.resize(N_grasps);
-						q_rot.resize(N_grasps);
-						poses.resize(N_grasps);
+					//} else if (grasp_type == "side") {
+					//	int N_grasps = 2;
+					//	q_f.resize(N_grasps);
+					//	q_rot.resize(N_grasps);
+					//	poses.resize(N_grasps);
 
-						//q_orig[0] = 0;
-						//q_orig[1] = bag_w/2 + eef_offset;
-						//q_orig[2] = 0;
-						//q_orig[3] = 0;
-						q_orig[0] = 0;
-						q_orig[1] = -(bag_w/2 + eef_offset);
-						q_orig[2] = 0;
-						q_orig[3] = 0;
-						// 90 degrees
-						tf2::Quaternion q_set_2;
-						{
-							tf2::Quaternion q_set_temp;
-							q_set_temp.setRPY(M_PI/2, 0, 0);
-							q_set_2 = q_set_temp * q_set;
-						}
-						q_f[0] = q_in * q_orig * q_in.inverse(); 
-						q_rot[0] = q_in * q_set_2;
+					//	//q_orig[0] = 0;
+					//	//q_orig[1] = bag_w/2 + eef_offset;
+					//	//q_orig[2] = 0;
+					//	//q_orig[3] = 0;
+					//	q_orig[0] = 0;
+					//	q_orig[1] = -(bag_w/2 + eef_offset);
+					//	q_orig[2] = 0;
+					//	q_orig[3] = 0;
+					//	// 90 degrees
+					//	tf2::Quaternion q_set_2;
+					//	{
+					//		tf2::Quaternion q_set_temp;
+					//		q_set_temp.setRPY(M_PI/2, 0, 0);
+					//		q_set_2 = q_set_temp * q_set;
+					//	}
+					//	q_f[0] = q_in * q_orig * q_in.inverse(); 
+					//	q_rot[0] = q_in * q_set_2;
 
-						// -90 degrees
-						{
-							tf2::Quaternion q_set_temp;
-							q_set_temp.setRPY(-M_PI/2, 0, 0);
-							q_set_2 = q_set_temp * q_set;
-						}
-						q_orig[1] = -q_orig[1]; //flip the axis
-						q_f[1] = q_in * q_orig * q_in.inverse(); 
-						q_rot[1] = q_in * q_set_2;
+					//	// -90 degrees
+					//	{
+					//		tf2::Quaternion q_set_temp;
+					//		q_set_temp.setRPY(-M_PI/2, 0, 0);
+					//		q_set_2 = q_set_temp * q_set;
+					//	}
+					//	q_orig[1] = -q_orig[1]; //flip the axis
+					//	q_f[1] = q_in * q_orig * q_in.inverse(); 
+					//	q_rot[1] = q_in * q_set_2;
 
-					} else if (grasp_type == NONE) {
-						ROS_ERROR_NAMED("manipulator_node","Sent transfer action before sending transit action. Cannot resolve grasp type");
-					} else {
+					//} else if (grasp_type == NONE) {
+					//	ROS_ERROR_NAMED("manipulator_node","Sent transfer action before sending transit action. Cannot resolve grasp type");
+					//} else {
+					//	ROS_ERROR_NAMED("manipulator_node","Unrecognized grasp type");
+					//}
+
+					std::vector<geometry_msgs::Point> positions; 
+					std::vector<tf2::Quaternion> orientations;
+					if (getGraspTypePoses(grasp_type, positions, orientations)) {
 						ROS_ERROR_NAMED("manipulator_node","Unrecognized grasp type");
 					}
 
-					for (int ii=0; ii<poses.size(); ++ii) {
-						poses[ii].position.x = request.manipulator_pose.position.x + q_f[ii][0];
-						poses[ii].position.y = request.manipulator_pose.position.y + q_f[ii][1];
-						poses[ii].position.z = request.manipulator_pose.position.z + q_f[ii][2];
-						q_rot[ii].normalize();
-						poses[ii].orientation.x = q_rot[ii][0];
-						poses[ii].orientation.y = q_rot[ii][1];  
-						poses[ii].orientation.z = q_rot[ii][2];
-						poses[ii].orientation.w = q_rot[ii][3];
+					poses.resize(positions.size());
+					for (int ii=0; ii<positions.size(); ++ii) {
+						const geometry_msgs::Point& disp = positions[ii];
+						tf2::Quaternion& q_or = orientations[ii];
+
+						poses[ii].position.x = request.manipulator_pose.position.x + disp.x;
+						poses[ii].position.y = request.manipulator_pose.position.y + disp.y;
+						poses[ii].position.z = request.manipulator_pose.position.z + disp.z;
+						q_or.normalize();
+						poses[ii].orientation.x = q_or[0];
+						poses[ii].orientation.y = q_or[1];  
+						poses[ii].orientation.z = q_or[2];
+						poses[ii].orientation.w = q_or[3];
 					}
 					//move_group_ptr->setPoseTarget(pose);
 				}
@@ -415,27 +491,33 @@ class PlanningQuerySrv {
 				bool success = false;
 				bool success_ex = false;
 				for (int ii=0; ii<N_TRIALS; ii++){
-					moveit::planning_interface::MoveGroupInterface::Plan plan_;
+					moveit::planning_interface::MoveGroupInterface::Plan direct_plan;
 
 					move_group_ptr->setStartStateToCurrentState();
-					for (int iii=0; iii<poses.size(); ++iii) {
-						std::cout<<" --- Working on transit: "<<iii<<" --- "<<std::endl;
-						std::cout << poses[iii] << std::endl;
+					for (const auto& goal_pose : poses) {
+						std::cout<<" --- Working on transit --- "<<std::endl;
 
-						move_group_ptr->setPoseTarget(poses[iii]);
+						move_group_ptr->setPoseTarget(goal_pose);
 						ros::WallDuration(1.0).sleep();
-						success = (move_group_ptr->plan(plan_)==moveit::planning_interface::MoveItErrorCode::SUCCESS);
+						success = (move_group_ptr->plan(direct_plan)==moveit::planning_interface::MoveItErrorCode::SUCCESS);
 						if (success){
-							std::cout<<"Plan test succeeded!"<<std::endl;
-							prev_pose = poses[iii];
+							ROS_INFO("Plan test succeed!");
 							if (use_grasp) {
-								geometry_msgs::Pose raised_pose = poses[iii];
-								raised_pose.position.z = raised_pose.position.z + approach_dist;
-								move_group_ptr->setPoseTarget(raised_pose);
-								success_ex = (move_group_ptr->plan(plan_)==moveit::planning_interface::MoveItErrorCode::SUCCESS);
+								geometry_msgs::Pose displaced_pose = goal_pose;
+								if (planning_scene_interface_ptr->getAttachedObjects().size() == 0) {
+									// Transit to pose oriented displacement:
+									displaced_pose.position = getTranslatedPoint(goal_pose, false);
+								} else {
+									// Transport to position displaced up:
+									displaced_pose.position = getTranslatedPoint(goal_pose, false, 1.0, &displacement_above);
+								}
+								move_group_ptr->setPoseTarget(displaced_pose);
+							} else {
+								move_group_ptr->setPoseTarget(goal_pose);
 							}
+							success_ex = (move_group_ptr->plan(direct_plan)==moveit::planning_interface::MoveItErrorCode::SUCCESS);
 							ROS_INFO_NAMED("manipulator_node","Completed planning on iteration: %d",ii);
-							move_group_ptr->execute(plan_);
+							move_group_ptr->execute(direct_plan);
 						}
 					}
 					if (success) {
