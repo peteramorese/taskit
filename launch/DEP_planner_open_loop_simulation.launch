@@ -80,5 +80,8 @@
   <!-- Run preference planner -->
   <node name="ordered_planner_node" pkg="manipulation_interface" type="ordered_planner_node" respawn="false" output="screen" />
 
+  <!-- Run pipeline trigger -->
+  <node name="ordered_planner_node" pkg="manipulation_interface" type="ordered_planner_node" respawn="false" output="screen" />
+
 
 </launch>

@@ -70,12 +70,12 @@ L5_point: { # xtra space
   r: 0.05, 
 }
 location_orientation_types:
-  - up
-  - up 
-  - side
-  - up
-  - up
-  - up
+  - up_y
+  - up_y 
+  - side_y
+  - up_y
+  - up_x
+  - up_x
 obj_group:
   - blueBox_1
   - blueBox_2

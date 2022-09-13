@@ -1,0 +1,17 @@
+obstacle_names:
+  - "ground"
+
+obstacle_types:
+  - "box"
+
+ground: {
+  x: 0.0,
+  y: 0.0,
+  z: -0.05,
+  l: 1.5,
+  w: 1.5,
+  h: 0.1,
+}
+
+obstacle_orientation_types:
+  - up_x

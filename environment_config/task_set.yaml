@@ -1,7 +1,7 @@
 task_set: 
   - (pinkBox_1_L2 -> (blueBox_1_L0 & blueBox_2_L1)) U pinkBox_1_L0
-  - (pinkBox_1_L2 -> (blueBox_1_L0 & blueBox_2_L1)) U blueBox_1_L0 
+  #- (pinkBox_1_L2 -> (blueBox_1_L0 & blueBox_2_L1)) U blueBox_1_L0 
 query_type: "single"
 flexibility: 0.0
 pareto_point_index: 0 #TODO
-kickoff_delay: 5.0 # Specify custom time to wait for all utilities to load (s)
+kickoff_delay: 1.0 # Specify custom time to wait for all utilities to load (s)

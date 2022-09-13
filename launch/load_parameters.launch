@@ -3,4 +3,7 @@
     <rosparam file="$(find manipulation_interface)/environment_config/environment.yaml" />
     <rosparam file="$(find manipulation_interface)/environment_config/task_set.yaml" />
   </group>
+  <group ns="workspace">
+    <rosparam file="$(find manipulation_interface)/environment_config/workspace.yaml" />
+  </group>
 </launch>

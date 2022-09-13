@@ -587,7 +587,6 @@ int main(int argc, char **argv) {
 	M_NH.getParam("mock_observer", mock_observer);
 
 
-	std::cout<<"\n\n\n\n sim only: "<<sim_only<<std::endl;
 
 	/////////////////////////////////////////////////////////////////////////
 	actionlib::SimpleActionClient<franka_gripper::GraspAction> grip_client("/franka_gripper/grasp", true);
@@ -656,96 +655,139 @@ int main(int argc, char **argv) {
 
 	std::vector<moveit_msgs::CollisionObject> colObjVec;
 	std::vector<std::string> colObjVec_domain_lbls;
-	//colObjVec.resize(Nobj);
-	//colObjVec_domain_lbls.resize(Nobj);
 	int ind = 0;
-	/*
-	   for (int i=0; i<Nobj; i++) {
-	   colObjVec[i].header.frame_id = "base_link";
-	   }
-	   */
 
+	std::vector<std::string> obstacle_names;
+	M_NH.getParam("/workspace/obstacle_names",obstacle_names);
 
-	/* Define Table, Collision Environment, End Effector */ 
+	std::vector<std::string> obstacle_types;
+	M_NH.getParam("/workspace/obstacle_types",obstacle_types);
+
+	std::vector<std::string> obstacle_domains;
+	M_NH.param("/workspace/obstacle_domains",obstacle_domains, {});
+
+	if (obstacle_names.size() != obstacle_types.size()) {
+		ROS_ERROR("Number of obstacle names must match number of obstacle types");
+		return 1;
+	}
+
+	//QUATERNIONS:
+
+	// Quaternions:
+	tf2::Quaternion q_init, q_rot, q_res;
+	q_init[0] = 0;
+	q_init[1] = 0;
+	q_init[2] = 1;
+	q_init[3] = 0;
+	geometry_msgs::Quaternion q_up_x, q_up_y, q_side_x, q_side_y;
+	// Up x
+	tf2::convert(q_init, q_up_x);
 	
-	// ground:
-	/*
-	ground.header.frame_id = "world";
-	ground.id = "ground_p";
-	ground.primitives.resize(1);
-	ground.primitives[0].type = colObjVec[0].primitives[0].BOX;
-	ground.primitives[0].dimensions.resize(3);
-	ground.primitives[0].dimensions[0] = 2;
-	ground.primitives[0].dimensions[1] = 2.4;
-	ground.primitives[0].dimensions[2] = .1;
+	// Up y
+	q_rot.setRPY(0, 0, M_PI/2);
+	q_res = q_rot * q_init;
+	tf2::convert(q_res, q_up_y);
 
-	ground.primitive_poses.resize(1);
-	ground.primitive_poses[0].position.x = 0;
-	ground.primitive_poses[0].position.y = 0;
-	ground.primitive_poses[0].position.z = -.05; // should be -.5
-	ground.primitive_poses[0].orientation.x = 0;
-	ground.primitive_poses[0].orientation.y = 0;
-	ground.primitive_poses[0].orientation.z = 0;
-	ground.primitive_poses[0].orientation.w = 1;
-	ground.operation = ground.ADD;
-	colObjVec.push_back(ground);
-	colObjVec_domain_lbls.push_back("pickup domain");
+	// Side x
+	q_rot.setRPY(0, -M_PI/2, 0);
+	q_res = q_rot * q_init;
+	tf2::convert(q_res, q_side_x);
 
-	ground.id = "ground_d";
-	*/
+	// Side y
+	q_rot.setRPY(-M_PI/2, M_PI/2, 0);
+	q_res = q_rot * q_init;
+	tf2::convert(q_res, q_side_y);
 
-	//moveit_msgs::CollisionObject ground;
- //       float x_bound, y_bound;
- //       x_bound = .1;
- //       y_bound = .1;
- //       ground.header.frame_id = "panda_link0";
- //       ground.id = "ground";
- //       //colObjIDs.push_back(ground.id);
- //       ground.primitives.resize(4);
- //       ground.primitives[0].type = ground.primitives[0].BOX;
- //       ground.primitives[0].dimensions.resize(3);
- //       ground.primitives[0].dimensions[0] = 1;
- //       ground.primitives[0].dimensions[1] = 2;
- //       ground.primitives[0].dimensions[2] = .05;
- //       ground.primitive_poses.resize(4);
- //       ground.primitive_poses[0].orientation.w = 1;
- //       ground.primitive_poses[0].position.x = 0.50 + x_bound;
- //       ground.primitive_poses[0].position.y = 0;
- //       ground.primitive_poses[0].position.z = -.05/2;
- //       ground.primitives[1].type = ground.primitives[0].BOX;
- //       ground.primitives[1].dimensions.resize(3);
- //       ground.primitives[1].dimensions[0] = 1;
- //       ground.primitives[1].dimensions[1] = 2;
- //       ground.primitives[1].dimensions[2] = .05;
- //       ground.primitive_poses[1].orientation.w = 1;
- //       ground.primitive_poses[1].position.x = -(.50 + x_bound);
- //       ground.primitive_poses[1].position.y = 0;
- //       ground.primitive_poses[1].position.z = -.05/2;
- //       ground.primitives[2].type = ground.primitives[0].BOX;
- //       ground.primitives[2].dimensions.resize(3);
- //       ground.primitives[2].dimensions[0] = 2 * x_bound;
- //       ground.primitives[2].dimensions[1] = 1 - y_bound;
- //       ground.primitives[2].dimensions[2] = .05;
- //       ground.primitive_poses[2].orientation.w = 1;
- //       ground.primitive_poses[2].position.x = 0;
- //       ground.primitive_poses[2].position.y = (1 - y_bound)/2 + y_bound;
- //       ground.primitive_poses[2].position.z = -.05/2;
- //       ground.primitives[3].type = ground.primitives[0].BOX;
- //       ground.primitives[3].dimensions.resize(3);
- //       ground.primitives[3].dimensions[0] = 2 * x_bound;
- //       ground.primitives[3].dimensions[1] = 1 - y_bound;
- //       ground.primitives[3].dimensions[2] = .05;
- //       ground.primitive_poses[3].orientation.w = 1;
- //       ground.primitive_poses[3].position.x = 0;
- //       ground.primitive_poses[3].position.y =  -((1 - y_bound)/2 + y_bound);
- //       ground.primitive_poses[3].position.z = -.05/2 - .00;
 
- //       ground.operation = ground.ADD;
+	std::vector<std::map<std::string, float>> obstacle_points(obstacle_names.size());
+	std::vector<std::string> obstacle_orientation_types;
+	M_NH.getParam("/workspace/obstacle_orientation_types", obstacle_orientation_types);
+	for (int i=0; i<obstacle_names.size(); ++i) {
+        M_NH.getParam("/workspace/" + obstacle_names[i], obstacle_points[i]);
+        std::cout<<"Loaded obstacle for: "<<obstacle_names[i]<<std::endl;
+        std::cout<<"  - x: "<<obstacle_points[i].at("x")<<"\n";
+        std::cout<<"  - y: "<<obstacle_points[i].at("y")<<"\n";
+        std::cout<<"  - z: "<<obstacle_points[i].at("z")<<"\n";
+		float x = obstacle_points[i].at("x");
+		float y = obstacle_points[i].at("y");
+		float z = obstacle_points[i].at("z");
 
-	//colObjVec.push_back(ground);
-	//colObjVec_domain_lbls.push_back("domain");
-	
-	
+		moveit_msgs::CollisionObject obs;
+        obs.header.frame_id = "panda_link0";
+		obs.id = obstacle_names[i];
+		bool single_primitive = true;
+
+		if (obstacle_types[i] == "box") {
+			obs.primitives.resize(1);
+			obs.primitives[0].type = obs.primitives[0].BOX;
+			obs.primitives[0].dimensions.resize(3);
+			obs.primitives[0].dimensions[0] = obstacle_points[i].at("l");
+			obs.primitives[0].dimensions[1] = obstacle_points[i].at("w");
+			obs.primitives[0].dimensions[2] = obstacle_points[i].at("h");
+
+		} else if (obstacle_types[i] == "sphere") {
+			obs.primitives.resize(1);
+			obs.primitives[0].type = obs.primitives[0].SPHERE;
+			obs.primitives[0].dimensions.resize(1);
+			obs.primitives[0].dimensions[0] = obstacle_points[i].at("r");
+		} else if (obstacle_types[i] == "cylinder") {
+			obs.primitives.resize(1);
+			obs.primitives[0].type = obs.primitives[0].CYLINDER;
+			obs.primitives[0].dimensions.resize(2);
+			obs.primitives[0].dimensions[0] = obstacle_points[i].at("h");
+			obs.primitives[0].dimensions[1] = obstacle_points[i].at("r");
+		} else if (obstacle_types[i] == "bin") {
+			single_primitive = false;
+			// TODO
+		} else {
+			std::string msg = "Did not find obstacle primitive type:" + obstacle_types[i];
+			ROS_ERROR_STREAM(msg.c_str());
+			return 1;
+		}
+
+		if (single_primitive) {
+			obs.primitive_poses.resize(1);
+			obs.primitive_poses[0].position.x = x;
+			obs.primitive_poses[0].position.y = y;
+			obs.primitive_poses[0].position.z = z; 
+
+			// Add condition if orientation type = 'manual'
+			if (obstacle_orientation_types[i] == "up_x") {
+				obs.primitive_poses[0].orientation.x = q_up_x.x;
+				obs.primitive_poses[0].orientation.y = q_up_x.y;
+				obs.primitive_poses[0].orientation.z = q_up_x.z;
+				obs.primitive_poses[0].orientation.w = q_up_x.w;
+			} else if (obstacle_orientation_types[i] == "up_y") {
+				obs.primitive_poses[0].orientation.x = q_up_y.x;
+				obs.primitive_poses[0].orientation.y = q_up_y.y;
+				obs.primitive_poses[0].orientation.z = q_up_y.z;
+				obs.primitive_poses[0].orientation.w = q_up_y.w;
+			} else if (obstacle_orientation_types[i] == "side_x") {
+				obs.primitive_poses[0].orientation.x = q_side_x.x;
+				obs.primitive_poses[0].orientation.y = q_side_x.y;
+				obs.primitive_poses[0].orientation.z = q_side_x.z;
+				obs.primitive_poses[0].orientation.w = q_side_x.w;
+			} else if (obstacle_orientation_types[i] == "side_y") {
+				obs.primitive_poses[0].orientation.x = q_side_y.x;
+				obs.primitive_poses[0].orientation.y = q_side_y.y;
+				obs.primitive_poses[0].orientation.z = q_side_y.z;
+				obs.primitive_poses[0].orientation.w = q_side_y.w;
+			} else {
+				std::string msg = "Did not find orientation preset:" + obstacle_orientation_types[i];
+				ROS_ERROR_STREAM(msg.c_str());
+				return 1;
+			}
+			obs.operation = obs.ADD;
+
+		}
+		colObjVec.push_back(obs);
+		if (i >= obstacle_domains.size()) {
+			colObjVec_domain_lbls.push_back("domain");
+		} else {
+			colObjVec_domain_lbls.push_back(obstacle_domains[i]);
+		}
+
+	}
 
 	//planning_scene_interface.applyCollisionObjects(colObjVec);
 	

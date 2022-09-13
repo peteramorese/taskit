@@ -398,33 +398,34 @@ int main(int argc, char **argv) {
 		obj_topics[i] = "/vrpn_client_node/" + obj_group[i] + "/pose";
 	}
 	
-	//= {
-	//	"/vrpn_client_node/greenBox_1/pose",
-	//	"/vrpn_client_node/pinkBox_1/pose",
-	//	"/vrpn_client_node/blueBox_1/pose",
-	//	"/vrpn_client_node/pinkBox_2/pose",
-	//};
 
 	RetrieveData vicon_data(&com_NH, 30, obj_topics);
 	PredicateGenerator pred_gen; 
 
-	// Quaternion for downwards release:
-	tf2::Quaternion q_init, q_up, q_side, q_rot_down, q_rot_side;
+	// Quaternions:
+	tf2::Quaternion q_init, q_rot, q_res;
 	q_init[0] = 0;
 	q_init[1] = 0;
 	q_init[2] = 1;
 	q_init[3] = 0;
-	//q_rot_down.setRPY(0, M_PI, -M_PI/4);
-	//q_up = q_rot_down * q_init;
-	q_up = q_init;
-	geometry_msgs::Quaternion q_up_msg, q_side_msg;
-	tf2::convert(q_up, q_up_msg);
-	q_rot_side.setRPY(-M_PI, -M_PI/2, 0);
-	q_side = q_rot_side * q_init;
-	tf2::convert(q_side, q_side_msg);
-	q_up.normalize();
-	q_side.normalize();
+	geometry_msgs::Quaternion q_up_x, q_up_y, q_side_x, q_side_y;
+	// Up x
+	tf2::convert(q_init, q_up_x);
+	
+	// Up y
+	q_rot.setRPY(0, 0, M_PI/2);
+	q_res = q_rot * q_init;
+	tf2::convert(q_res, q_up_y);
 
+	// Side x
+	q_rot.setRPY(0, -M_PI/2, 0);
+	q_res = q_rot * q_init;
+	tf2::convert(q_res, q_side_x);
+
+	// Side y
+	q_rot.setRPY(-M_PI/2, M_PI/2, 0);
+	q_res = q_rot * q_init;
+	tf2::convert(q_res, q_side_y);
 
     std::vector<std::string> location_names;
     com_NH.getParam("/discrete_environment/location_names", location_names);
@@ -444,10 +445,14 @@ int main(int argc, char **argv) {
 		p.x = location_points[i].at("x");
 		p.y = location_points[i].at("y");
 		p.z = location_points[i].at("z");
-		if (location_orientation_types[i] == "up") {
-			pred_gen.addLocation(p, q_up_msg, location_names[i], location_points[i].at("r")); 
-		} else if (location_orientation_types[i] == "side") {
-			pred_gen.addLocation(p, q_side_msg, location_names[i], location_points[i].at("r")); 
+		if (location_orientation_types[i] == "up_x") {
+			pred_gen.addLocation(p, q_up_x, location_names[i], location_points[i].at("r")); 
+		} else if (location_orientation_types[i] == "up_y") {
+			pred_gen.addLocation(p, q_up_y, location_names[i], location_points[i].at("r")); 
+		} else if (location_orientation_types[i] == "side_x") {
+			pred_gen.addLocation(p, q_side_x, location_names[i], location_points[i].at("r")); 
+		} else if (location_orientation_types[i] == "side_y") {
+			pred_gen.addLocation(p, q_side_y, location_names[i], location_points[i].at("r")); 
 		} else {
 			std::string msg = "Did not find orientation preset:" + location_names[i];
 			ROS_ERROR_STREAM(msg.c_str());
