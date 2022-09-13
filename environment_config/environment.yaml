@@ -5,30 +5,58 @@ location_names:
   - L3
 #  - L4
 #  - L5
+
 L0_point: { # Left base
-  x: 0.08,
-  y: 0.45,
+  x: -0.37,
+  y: 0.40,
   z: 0.08,
   r: 0.05, # Detection radius (only needed for use with com node)
 }
 L1_point: { # Right base
-  x: -0.08,
-  y: 0.45,
+  x: -0.53,
+  y: 0.40,
   z: 0.08,
   r: 0.05, 
 }
 L2_point: { # Top
-  x: 0.00,
-  y: 0.45,
+  x: -0.45,
+  y: 0.40,
   z: 0.19,
   r: 0.05, 
 }
 L3_point: { # xtra space
-  x: 0.45,
-  y: 0.0,
+  x: 0.30,
+  y: -0.50,
   z: 0.08,
   r: 0.05, 
 }
+
+#L0_point: { # Right
+#  x: -0.16,
+#  y: 0.40,
+#  z: 0.08,
+#  r: 0.05, 
+#}
+#L1_point: { # Middle
+#  x: 0.0,
+#  y: 0.40,
+#  z: 0.08,
+#  r: 0.05, 
+#}
+#L2_point: { # Top
+#  x: 0.16,
+#  y: 0.40,
+#  z: 0.08,
+#  r: 0.05, 
+#}
+#L3_point: { # xtra space
+#  x: 0.30,
+#  y: -0.30,
+#  z: 0.08,
+#  r: 0.05, 
+#}
+
+
 L4_point: { # Rightmost
   x: -0.4,
   y: 0.45,

@@ -176,18 +176,20 @@ class PlanningQuerySrv {
 			std::cout<<"		w:"<<p.orientation.w<<"\n";
 		}
 
-		bool getGraspTypePoses(const std::string& grasp_type, std::vector<geometry_msgs::Point>& positions, std::vector<tf2::Quaternion>& orientations) {
+		bool getGraspTypePoses(const std::string& grasp_type, const geometry_msgs::Pose& manipulator_pose, std::vector<geometry_msgs::Point>& positions, std::vector<tf2::Quaternion>& orientations) {
 			// Compute the quaternions for each grasp type:
 			tf2::Quaternion q_in, q_set;
 			// This quaternion sets the panda gripper to face down towards the 
 			// object grabbing along its length
 			//q_set.setRPY(0, M_PI, -M_PI/4 + M_PI/2);
-			q_set.setRPY(0, 0, -M_PI/2);
+			//q_set.setRPY(0, 0, -M_PI/2);
+			q_set.setRPY(0, 0, -M_PI/4);
 			//tf2::convert(move_group_ptr->getCurrentPose().pose.orientation, q_in);
-			q_in.setRPY(0, M_PI, M_PI/4 + M_PI/2);
-			//tf2::convert(move_group_ptr->getCurrentPose().pose.orientation, q_in);
+			//q_in.setRPY(0, M_PI, M_PI/4 + M_PI/2);
+			tf2::convert(manipulator_pose.orientation, q_in);
 
 			if (grasp_type == "up") {
+				q_set.setRPY(0, M_PI, M_PI/4);
 				tf2::Quaternion q_orig;
 				std::vector<tf2::Quaternion> q_f; 
 				std::vector<tf2::Quaternion> q_rot;
@@ -197,7 +199,7 @@ class PlanningQuerySrv {
 
 				q_orig[0] = 0;
 				q_orig[1] = 0;
-				q_orig[2] = -(bag_h/2 + eef_offset);
+				q_orig[2] = (bag_h/2 + eef_offset);
 				q_orig[3] = 0;
 				// Rotate the q
 				q_f[0] = q_in * q_orig * q_in.inverse(); 
@@ -225,7 +227,7 @@ class PlanningQuerySrv {
 				//q_orig[2] = 0;
 				//q_orig[3] = 0;
 				q_orig[0] = 0;
-				q_orig[1] = -(bag_w/2 + eef_offset);
+				q_orig[1] = (bag_w/2 + eef_offset);
 				q_orig[2] = 0;
 				q_orig[3] = 0;
 				// 90 degrees
@@ -354,7 +356,7 @@ class PlanningQuerySrv {
 					std::cout<<"Adding object: "<<temp_col_obj.id<<" to domain: "<<request.bag_domain_labels[i]<<std::endl;
 					//col_obj_vec[i].operation = col_obj_vec[i].ADD;
 				}
-				//setupEnvironment(request.planning_domain);
+				setupEnvironment(request.planning_domain);
 			}
 			if (request.pickup_object != "none") {
 				
@@ -430,7 +432,7 @@ class PlanningQuerySrv {
 					move_group_ptr->setJointValueTarget(joint_val_target);
 				} else {
 					std::string grasp_type = request.grasp_type;
-					if (grasp_type == "mode") {
+					if (grasp_type == "current") {
 						std::cout<<"Using current grasp mode."<<std::endl;
 						grasp_type = current_grasp_mode;
 					} else {
@@ -494,7 +496,7 @@ class PlanningQuerySrv {
 
 					std::vector<geometry_msgs::Point> positions; 
 					std::vector<tf2::Quaternion> orientations;
-					if (!getGraspTypePoses(grasp_type, positions, orientations)) {
+					if (!getGraspTypePoses(grasp_type, request.manipulator_pose, positions, orientations)) {
 						ROS_ERROR_NAMED("manipulator_node","Unrecognized grasp type");
 						std::cout<<"Grasp type: "<<grasp_type<<std::endl;
 						return false;
@@ -558,6 +560,7 @@ class PlanningQuerySrv {
 							success_ex = (move_group_ptr->plan(direct_plan)==moveit::planning_interface::MoveItErrorCode::SUCCESS);
 							ROS_INFO_NAMED("manipulator_node","Completed planning on iteration: %d",ii);
 							move_group_ptr->execute(direct_plan);
+							break;
 						}
 					}
 					if (success) {

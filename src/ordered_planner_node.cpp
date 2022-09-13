@@ -495,7 +495,7 @@ int main(int argc, char** argv) {
 
         conds_m[4].addCondition(Condition::POST, Condition::ARG_V, Condition::FILLER, Condition::ARG_EQUALS, Condition::LABEL, "eeLoc", Condition::NEGATE,"arg");
         conds_m[4].addCondition(Condition::POST, Condition::LABEL, "grip_type", Condition::EQUALS, Condition::VAR, "side");
-        conds_m[4].addCondition(Condition::POST, Condition::LABEL, "eeLoc", Condition::IN_DOM, Condition::DOM, "side locations", Condition::TRUE, "na");
+        //conds_m[4].addCondition(Condition::POST, Condition::LABEL, "eeLoc", Condition::IN_DOM, Condition::DOM, "side locations", Condition::TRUE, "na");
         conds_m[4].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
         conds_m[4].setActionLabel("transit_side");
 

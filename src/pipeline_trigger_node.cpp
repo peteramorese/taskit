@@ -51,7 +51,7 @@ int main(int argc, char** argv) {
 
 	bool server_found = false;
 	int retries = 0; int max_retires = 20;
-	double sleep_duration = 10; // seconds
+	double sleep_duration = 5; // seconds
 	while (!server_found && ros::ok()) {
 		server_found = plan_client.call(pref_query);
 		ros::Duration(sleep_duration).sleep();

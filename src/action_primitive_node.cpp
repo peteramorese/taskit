@@ -134,7 +134,7 @@ class ExecuteSrv {
 				//query.request.setup_environment = true;
 				query.request.bag_domain_labels = bag_domain_labels;
 				query.request.pickup_object = "none";
-				query.request.grasp_type = "up";
+				query.request.grasp_type = "current";
 				query.request.drop_object = "none";
 				query.request.planning_domain = "domain";
 				query.request.safe_config = false;
