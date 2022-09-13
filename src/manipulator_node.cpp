@@ -42,7 +42,7 @@ class PlanningQuerySrv {
 		const double grip_force = 50;
 		const double grip_epsilon_inner = .03;
 		const double grip_epsilon_outer = .03;
-		const double approach_dist = 0.01;//.3;
+		const double approach_dist = 0.1;//.3;
 		const double jump_thresh = 0.0;
 		const double eef_step = 0.1;
 		const int num_waypts = 3;
@@ -75,42 +75,61 @@ class PlanningQuerySrv {
 					ret_p.z += multiplier*displacement->z;
 				}
 			} else {
-				tf2::Quaternion q_orig, q_in, q_f;
+				tf2::Quaternion q_orig, q_in, q_f, q_set;
 				tf2::convert(eef_pose.orientation, q_in);
 
 				q_orig[0] = 0;
 				q_orig[1] = 0;
-				q_orig[2] = bag_h/2 + eef_offset + approach_dist;
+				q_orig[2] = -(bag_h/2 + eef_offset + approach_dist);
 				q_orig[3] = 0;
 				// Rotate the q
 				q_f = q_in * q_orig * q_in.inverse(); 
-				ret_p.x += q_f[0];
-				ret_p.y += q_f[1];
-				ret_p.z += q_f[2];
+				//q_f = q_f * q_set;
+				std::cout<<"q_f[0]: "<<q_f[0]<<" q_f[1]: "<<q_f[1]<<" q_f[2]: "<<q_f[2]<<std::endl;
+				if (approach) {
+					ret_p.x -= multiplier*q_f[0];
+					ret_p.y -= multiplier*q_f[1];
+					ret_p.z -= multiplier*q_f[2];
+				} else {
+					ret_p.x += multiplier*q_f[0];
+					ret_p.y += multiplier*q_f[1];
+					ret_p.z += multiplier*q_f[2];
+				}
 			}
 			return ret_p;
 		}
 		void getWayPoints(const geometry_msgs::Pose& eef_pose, std::vector<geometry_msgs::Pose>& ret_waypts, bool approach, const geometry_msgs::Point* displacement = nullptr) {
 			ret_waypts.resize(num_waypts);
-			for (int i=0; i<num_waypts+1; ++i) {
-				double multiplier = approach_dist/static_cast<double>(num_waypts) * static_cast<double>(i);
+			for (int i=0; i<num_waypts; ++i) {
+				double multiplier = static_cast<double>(i)/static_cast<double>(num_waypts-1);
 				ret_waypts[i].position = getTranslatedPoint(eef_pose, approach, multiplier, displacement);
 				ret_waypts[i].orientation = eef_pose.orientation;
+				//printPose(ret_waypts[i]);
 			}
 		}
 		void runGrasp(bool approach, const geometry_msgs::Point* displacement = nullptr) {
-			std::vector<geometry_msgs::Pose> waypts(num_waypts);
+			std::cout<<"in run grasp"<<std::endl;
+			std::vector<geometry_msgs::Pose> waypts;
 			moveit_msgs::RobotTrajectory trajectory;
 			moveit_msgs::RobotTrajectory r_trajectory_msg;
 			robot_trajectory::RobotTrajectory r_trajectory(move_group_ptr->getRobotModel(), PLANNING_GROUP);
 			
+			std::cout<<"b4 get way pts"<<std::endl;
 			getWayPoints(move_group_ptr->getCurrentPose().pose, waypts, approach, displacement);
+			std::cout<<"af get way pts"<<std::endl;
+			std::cout<<"--------PRINTING WAYPTS:"<<std::endl;
+			for (const auto& waypt : waypts) {
+				printPose(waypt);
+			}
 			double fraction = move_group_ptr->computeCartesianPath(waypts, eef_step, jump_thresh, trajectory);
+			std::cout<<"af comp path "<<std::endl;
+
 			r_trajectory.setRobotTrajectoryMsg(*(move_group_ptr->getCurrentState()), trajectory);
 			IPTP.computeTimeStamps(r_trajectory, max_acceleration_scale, max_acceleration_scale); // max_acceleration_scale
 			r_trajectory.getRobotTrajectoryMsg(r_trajectory_msg);
 			move_group_ptr->setMaxVelocityScalingFactor(1);
 			move_group_ptr->execute(r_trajectory_msg);
+			std::cout<<"				FINISH W RUN GRASSP"<<std::endl;
 		}
 		void runGrip(bool grab) {
 			grip_goal.goal.width = (grab) ? grip_width_closed : grip_width_open;
@@ -144,13 +163,29 @@ class PlanningQuerySrv {
 			}
 		}
 
-		bool getGraspTypePoses(std::string grasp_type, std::vector<geometry_msgs::Point>& positions, std::vector<tf2::Quaternion>& orientations) {
+		void printPose(const geometry_msgs::Pose& p) {
+			std::cout<<"Printing pose: \n";
+			std::cout<<"	position:\n";
+			std::cout<<"		x:"<<p.position.x<<"\n";
+			std::cout<<"		y:"<<p.position.y<<"\n";
+			std::cout<<"		z:"<<p.position.z<<"\n";
+			std::cout<<"	orientation:\n";
+			std::cout<<"		wx:"<<p.orientation.x<<"\n";
+			std::cout<<"		wx:"<<p.orientation.y<<"\n";
+			std::cout<<"		wx:"<<p.orientation.z<<"\n";
+			std::cout<<"		w:"<<p.orientation.w<<"\n";
+		}
+
+		bool getGraspTypePoses(const std::string& grasp_type, std::vector<geometry_msgs::Point>& positions, std::vector<tf2::Quaternion>& orientations) {
 			// Compute the quaternions for each grasp type:
 			tf2::Quaternion q_in, q_set;
 			// This quaternion sets the panda gripper to face down towards the 
 			// object grabbing along its length
-			q_set.setRPY(0, M_PI, -M_PI/4 + M_PI/2);
-			tf2::convert(move_group_ptr->getCurrentPose().pose.orientation, q_in);
+			//q_set.setRPY(0, M_PI, -M_PI/4 + M_PI/2);
+			q_set.setRPY(0, 0, -M_PI/2);
+			//tf2::convert(move_group_ptr->getCurrentPose().pose.orientation, q_in);
+			q_in.setRPY(0, M_PI, M_PI/4 + M_PI/2);
+			//tf2::convert(move_group_ptr->getCurrentPose().pose.orientation, q_in);
 
 			if (grasp_type == "up") {
 				tf2::Quaternion q_orig;
@@ -162,7 +197,7 @@ class PlanningQuerySrv {
 
 				q_orig[0] = 0;
 				q_orig[1] = 0;
-				q_orig[2] = bag_h/2 + eef_offset;
+				q_orig[2] = -(bag_h/2 + eef_offset);
 				q_orig[3] = 0;
 				// Rotate the q
 				q_f[0] = q_in * q_orig * q_in.inverse(); 
@@ -318,7 +353,7 @@ class PlanningQuerySrv {
 					std::cout<<"Adding object: "<<temp_col_obj.id<<" to domain: "<<request.bag_domain_labels[i]<<std::endl;
 					//col_obj_vec[i].operation = col_obj_vec[i].ADD;
 				}
-				//setupEnvironment(request.planning_domain);
+				setupEnvironment(request.planning_domain);
 			}
 			if (request.pickup_object != "none") {
 				
@@ -458,8 +493,10 @@ class PlanningQuerySrv {
 
 					std::vector<geometry_msgs::Point> positions; 
 					std::vector<tf2::Quaternion> orientations;
-					if (getGraspTypePoses(grasp_type, positions, orientations)) {
+					if (!getGraspTypePoses(grasp_type, positions, orientations)) {
 						ROS_ERROR_NAMED("manipulator_node","Unrecognized grasp type");
+						std::cout<<"Grasp type: "<<grasp_type<<std::endl;
+						return false;
 					}
 
 					poses.resize(positions.size());
@@ -494,9 +531,11 @@ class PlanningQuerySrv {
 					moveit::planning_interface::MoveGroupInterface::Plan direct_plan;
 
 					move_group_ptr->setStartStateToCurrentState();
-					for (const auto& goal_pose : poses) {
+					for (auto& goal_pose : poses) {
 						std::cout<<" --- Working on transit --- "<<std::endl;
 
+						//goal_pose.position.z += .2;
+						printPose(goal_pose);
 						move_group_ptr->setPoseTarget(goal_pose);
 						ros::WallDuration(1.0).sleep();
 						success = (move_group_ptr->plan(direct_plan)==moveit::planning_interface::MoveItErrorCode::SUCCESS);
@@ -530,7 +569,6 @@ class PlanningQuerySrv {
 			}
 			return true;
 		}
-
 };
 
 int main(int argc, char **argv) {
@@ -709,7 +747,7 @@ int main(int argc, char **argv) {
 	
 	move_group.setEndEffectorLink("panda_link8");
 
-	PlanningQuerySrv plan_query_srv_container(&move_group, &planning_scene_interface, &grip_client, 5, !sim_only);
+	PlanningQuerySrv plan_query_srv_container(&move_group, &planning_scene_interface, &grip_client, 5, !sim_only, true);
 	plan_query_srv_container.setWorkspace(colObjVec, colObjVec_domain_lbls);
 
 	ros::ServiceServer plan_query_service = M_NH.advertiseService("/manipulation_planning_query", &PlanningQuerySrv::planQuery_serviceCB, &plan_query_srv_container);
