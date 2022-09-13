@@ -41,11 +41,27 @@ int main(int argc, char** argv) {
 	ROS_INFO("Kicking off the planning pipeline...");
 	ROS_INFO("Planning...");
 	ros::Duration(kickoff_delay).sleep();
-	if (plan_client.call(pref_query)) {
-		ROS_INFO("Plan request succeeded!");
-	} else {
-		ROS_ERROR("Plan request failed!");
-		return 1;
+	
+	//if (plan_client.call(pref_query)) {
+	//	ROS_INFO("Plan request succeeded!");
+	//} else {
+	//	ROS_ERROR("Plan request failed!");
+	//	return 1;
+	//}
+
+	bool server_found = false;
+	int retries = 0; int max_retires = 20;
+	double sleep_duration = 10; // seconds
+	while (!server_found && ros::ok()) {
+		server_found = plan_client.call(pref_query);
+		ros::Duration(sleep_duration).sleep();
+		retries++;
+		if (retries >= max_retires) {
+			ROS_ERROR("Plan request timeout!");
+			return 1;
+		} else {
+			ROS_INFO("Planning service not found, retrying");
+		}
 	}
 
 	if (open_loop) {
@@ -57,12 +73,12 @@ int main(int argc, char** argv) {
 		// 'start_time' marks the start time for determining execution duration (TODO)
 		run_query.request.start_time = ros::Time::now(); 
 
-		bool server_found = false;
-		int retries = 0; int max_retires = 10;
-		ros::Rate r(1);
+		server_found = false;
+		retries = 0; 
+		max_retires = 10;
 		while (!server_found && ros::ok()) {
 			server_found = run_client.call(run_query);
-			r.sleep();
+			ros::Duration(sleep_duration).sleep();
 			retries++;
 			if (retries >= max_retires) {
 				ROS_ERROR("Could not find RunQuery service server");

@@ -190,7 +190,7 @@ int main(int argc, char **argv) {
 	q_down = q_init;
 	geometry_msgs::Quaternion q_up_msg, q_side_msg;
 	tf2::convert(q_down, q_up_msg);
-	q_rot_side.setRPY(-M_PI/2, 0, 0);
+	q_rot_side.setRPY(0, -M_PI/2, 0);
 	q_side = q_rot_side * q_init;
 	tf2::convert(q_side, q_side_msg);
 	q_down.normalize();

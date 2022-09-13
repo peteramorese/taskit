@@ -1,6 +1,6 @@
 task_set: 
-  - F(pinkBox_1_L0)
-  - F(blueBox_1_L0)
+  - (pinkBox_1_L2 -> (blueBox_1_L0 & blueBox_2_L1)) U pinkBox_1_L0
+  - (pinkBox_1_L2 -> (blueBox_1_L0 & blueBox_2_L1)) U blueBox_1_L0 
 query_type: "single"
 flexibility: 0.0
 pareto_point_index: 0 #TODO

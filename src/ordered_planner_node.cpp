@@ -283,6 +283,9 @@ int main(int argc, char** argv) {
 	bool open_loop;
     planner_NH.param("/discrete_environment/open_loop", open_loop, true);
 
+    // Run in open loop or closed loop mode:
+	bool use_side_grasps;
+    planner_NH.param("/discrete_environment/use_side_grasps", use_side_grasps, true);
 
     // Location names:
     std::vector<std::string> loc_labels;
@@ -292,8 +295,32 @@ int main(int argc, char** argv) {
     std::vector<std::string> init_obj_locations;
     planner_NH.getParam("/discrete_environment/init_obj_locations", init_obj_locations);
 
+    // Location orientation types:
+    std::vector<std::string> location_orientation_types;
+    planner_NH.getParam("/discrete_environment/location_orientation_types", location_orientation_types);
+
 	if (init_obj_locations.size() != obj_group.size()) {
 		ROS_ERROR("Initial object locations does match number of objects");
+		return 1;
+	}
+
+	if (loc_labels.size() > location_orientation_types.size()) {
+		ROS_ERROR("Number of locations is greater than number of location orientation types");
+		return 1;
+	}
+
+	std::vector<std::string> side_loc_labels;
+	for (int i=0; i<loc_labels.size(); ++i) {
+		if (location_orientation_types[i] == "side" ||
+			location_orientation_types[i] == "side_x" ||	
+			location_orientation_types[i] == "side_y" 
+			) {
+				std::cout<<"FOUND SIDE LOC: "<<loc_labels[i]<<std::endl;
+				side_loc_labels.push_back(loc_labels[i]);
+			}
+	}
+	if (side_loc_labels.size() > 0 && !use_side_grasps) {
+		ROS_ERROR("Specified NOT using side grasps, but number of side grasp locations is non-zero");
 		return 1;
 	}
 	//////////////////////////////////////////////////////
@@ -309,6 +336,9 @@ int main(int argc, char** argv) {
 		set_state.push_back(obj_loc);
 	}
 	set_state.push_back("false");
+	if (use_side_grasps) {
+		set_state.push_back("none");
+	}
 
 
 	std::vector<std::string> ee_labels = loc_labels;
@@ -323,6 +353,11 @@ int main(int argc, char** argv) {
 		SS_MANIPULATOR.setStateDimension(obj_labels, i + 1); 
     }
 	SS_MANIPULATOR.setStateDimension(grip_labels, obj_group.size() + 1); // eef engaged
+	// Side grasp needs to keep track of the grasp:
+	if (use_side_grasps) {
+		std::vector<std::string> grip_type_labels = {"none","up","side"};
+		SS_MANIPULATOR.setStateDimension(grip_type_labels, obj_group.size() + 2); // grip type
+	}
 
 	// Label state space:
 	SS_MANIPULATOR.setStateDimensionLabel(0, "eeLoc");
@@ -330,6 +365,12 @@ int main(int argc, char** argv) {
         SS_MANIPULATOR.setStateDimensionLabel(i + 1, obj_group[i]);
     }
 	SS_MANIPULATOR.setStateDimensionLabel(obj_group.size() + 1, "holding");
+	if (use_side_grasps) {
+		SS_MANIPULATOR.setStateDimensionLabel(obj_group.size() + 2, "grip_type");
+
+		// Construct domain for side grasps:
+		SS_MANIPULATOR.setDomain("side locations", side_loc_labels);
+	}
 
 	// Create object location group:
 	SS_MANIPULATOR.setLabelGroup("object locations", obj_group);
@@ -344,56 +385,133 @@ int main(int argc, char** argv) {
 	// Pickup domain conditions:
 	std::vector<Condition> conds_m;
 	std::vector<Condition*> cond_ptrs_m;
-	conds_m.resize(4);
-	cond_ptrs_m.resize(4);
 
-	// Grasp 
-	conds_m[0].addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "false");
-	conds_m[0].addCondition(Condition::PRE, Condition::GROUP, "object locations", Condition::ARG_FIND, Condition::LABEL, "eeLoc",Condition::TRUE, "arg");
-	conds_m[0].setCondJunctType(Condition::PRE, Condition::CONJUNCTION);
+	if (!use_side_grasps) {
+		conds_m.resize(4);
+		cond_ptrs_m.resize(4);
 
-	conds_m[0].addCondition(Condition::POST, Condition::ARG_L, Condition::FILLER, Condition::ARG_EQUALS, Condition::VAR, "ee",Condition::TRUE, "arg");
-	conds_m[0].addCondition(Condition::POST, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "true");
-	conds_m[0].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
-	conds_m[0].setActionLabel("grasp");
-	conds_m[0].setActionCost(0);
+		// Grasp 
+		conds_m[0].addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "false");
+		conds_m[0].addCondition(Condition::PRE, Condition::GROUP, "object locations", Condition::ARG_FIND, Condition::LABEL, "eeLoc",Condition::TRUE, "arg");
+		conds_m[0].setCondJunctType(Condition::PRE, Condition::CONJUNCTION);
 
-	// Transport 
-	conds_m[1].addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "true");
-	conds_m[1].addCondition(Condition::PRE, Condition::GROUP, "object locations", Condition::ARG_FIND, Condition::LABEL, "eeLoc", Condition::NEGATE, "arg1");
-	conds_m[1].addCondition(Condition::PRE, Condition::LABEL, "eeLoc", Condition::ARG_FIND, Condition::NONE, Condition::FILLER, Condition::TRUE, "arg2");
-	conds_m[1].setCondJunctType(Condition::PRE, Condition::CONJUNCTION); // Used to store eeLoc pre-state variable
-	conds_m[1].addCondition(Condition::POST, Condition::ARG_V, Condition::FILLER, Condition::ARG_EQUALS, Condition::LABEL, "eeLoc", Condition::NEGATE, "arg2"); // Stored eeLoc pre-state variable is not the same as post-state eeLoc (eeLoc has moved)
-	conds_m[1].addCondition(Condition::POST, Condition::GROUP, "object locations", Condition::ARG_FIND, Condition::LABEL, "eeLoc", Condition::NEGATE,"na");
-	conds_m[1].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
-	conds_m[1].setActionLabel("transport");
-	conds_m[1].setActionCost(5);
-	//conds_m[1].print();
+		conds_m[0].addCondition(Condition::POST, Condition::ARG_L, Condition::FILLER, Condition::ARG_EQUALS, Condition::VAR, "ee",Condition::TRUE, "arg");
+		conds_m[0].addCondition(Condition::POST, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "true");
+		conds_m[0].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
+		conds_m[0].setActionLabel("grasp");
+		conds_m[0].setActionCost(0);
 
-	// Release 
-	conds_m[2].addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "true");
-	conds_m[2].addCondition(Condition::PRE, Condition::GROUP, "object locations", Condition::ARG_FIND, Condition::LABEL, "eeLoc", Condition::NEGATE, "arg1");
-	conds_m[2].addCondition(Condition::PRE, Condition::GROUP, "object locations", Condition::ARG_FIND, Condition::VAR, "ee",Condition::TRUE, "arg2");
-	conds_m[2].setCondJunctType(Condition::PRE, Condition::CONJUNCTION);
+		// Transport 
+		conds_m[1].addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "true");
+		conds_m[1].addCondition(Condition::PRE, Condition::GROUP, "object locations", Condition::ARG_FIND, Condition::LABEL, "eeLoc", Condition::NEGATE, "arg1");
+		conds_m[1].addCondition(Condition::PRE, Condition::LABEL, "eeLoc", Condition::ARG_FIND, Condition::NONE, Condition::FILLER, Condition::TRUE, "arg2");
+		conds_m[1].setCondJunctType(Condition::PRE, Condition::CONJUNCTION); // Used to store eeLoc pre-state variable
+		conds_m[1].addCondition(Condition::POST, Condition::ARG_V, Condition::FILLER, Condition::ARG_EQUALS, Condition::LABEL, "eeLoc", Condition::NEGATE, "arg2"); // Stored eeLoc pre-state variable is not the same as post-state eeLoc (eeLoc has moved)
+		conds_m[1].addCondition(Condition::POST, Condition::GROUP, "object locations", Condition::ARG_FIND, Condition::LABEL, "eeLoc", Condition::NEGATE,"na");
+		conds_m[1].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
+		conds_m[1].setActionLabel("transport");
+		conds_m[1].setActionCost(5);
 
-	conds_m[2].addCondition(Condition::POST, Condition::ARG_L, Condition::FILLER, Condition::ARG_EQUALS, Condition::LABEL, "eeLoc", Condition::TRUE, "arg2");
-	conds_m[2].addCondition(Condition::POST, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "false");
-	conds_m[2].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
-	conds_m[2].setActionLabel("release");
-	conds_m[2].setActionCost(0);
-	//conds_m[2].print();
+		// Release 
+		conds_m[2].addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "true");
+		conds_m[2].addCondition(Condition::PRE, Condition::GROUP, "object locations", Condition::ARG_FIND, Condition::LABEL, "eeLoc", Condition::NEGATE, "arg1");
+		conds_m[2].addCondition(Condition::PRE, Condition::GROUP, "object locations", Condition::ARG_FIND, Condition::VAR, "ee",Condition::TRUE, "arg2");
+		conds_m[2].setCondJunctType(Condition::PRE, Condition::CONJUNCTION);
+
+		conds_m[2].addCondition(Condition::POST, Condition::ARG_L, Condition::FILLER, Condition::ARG_EQUALS, Condition::LABEL, "eeLoc", Condition::TRUE, "arg2");
+		conds_m[2].addCondition(Condition::POST, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "false");
+		conds_m[2].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
+		conds_m[2].setActionLabel("release");
+		conds_m[2].setActionCost(0);
 
 
-	// Transit
-	conds_m[3].addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "false");
-	conds_m[3].addCondition(Condition::PRE, Condition::LABEL, "eeLoc", Condition::ARG_FIND, Condition::NONE, Condition::FILLER, Condition::TRUE, "arg");
-	conds_m[3].setCondJunctType(Condition::PRE, Condition::CONJUNCTION);
+		// Transit
+		conds_m[3].addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "false");
+		conds_m[3].addCondition(Condition::PRE, Condition::LABEL, "eeLoc", Condition::ARG_FIND, Condition::NONE, Condition::FILLER, Condition::TRUE, "arg");
+		conds_m[3].setCondJunctType(Condition::PRE, Condition::CONJUNCTION);
 
-	conds_m[3].addCondition(Condition::POST, Condition::ARG_V, Condition::FILLER, Condition::ARG_EQUALS, Condition::LABEL, "eeLoc", Condition::NEGATE,"arg");
-	conds_m[3].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
-	conds_m[3].setActionLabel("transit_up");
-	conds_m[3].setActionCost(0);
-	//conds_m[3].print();
+		conds_m[3].addCondition(Condition::POST, Condition::ARG_V, Condition::FILLER, Condition::ARG_EQUALS, Condition::LABEL, "eeLoc", Condition::NEGATE,"arg");
+		conds_m[3].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
+		conds_m[3].setActionLabel("transit_up");
+		conds_m[3].setActionCost(0);
+
+	} else {
+        conds_m.resize(6);
+        cond_ptrs_m.resize(6);
+
+        // Grasp regular
+        conds_m[0].addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "false");
+        conds_m[0].addCondition(Condition::PRE, Condition::LABEL, "grip_type", Condition::EQUALS, Condition::VAR, "none", Condition::NEGATE, "griptype_not_none");
+        conds_m[0].addCondition(Condition::PRE, Condition::GROUP, "object locations", Condition::ARG_FIND, Condition::LABEL, "eeLoc",Condition::TRUE, "arg");
+        conds_m[0].setCondJunctType(Condition::PRE, Condition::CONJUNCTION);
+
+        conds_m[0].addCondition(Condition::POST, Condition::ARG_L, Condition::FILLER, Condition::ARG_EQUALS, Condition::VAR, "ee",Condition::TRUE, "arg");
+        conds_m[0].addCondition(Condition::POST, Condition::LABEL, "grip_type", Condition::EQUALS, Condition::VAR, "none", Condition::NEGATE, "gt_not_none");
+        conds_m[0].addCondition(Condition::POST, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "true");
+        conds_m[0].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
+        conds_m[0].setActionLabel("grasp");
+	
+		// Transport Up
+        conds_m[1].addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "true");
+        conds_m[1].addCondition(Condition::PRE, Condition::LABEL, "grip_type", Condition::EQUALS, Condition::VAR, "up");
+        conds_m[1].addCondition(Condition::PRE, Condition::GROUP, "object locations", Condition::ARG_FIND, Condition::LABEL, "eeLoc", Condition::NEGATE, "arg1");
+        conds_m[1].addCondition(Condition::PRE, Condition::LABEL, "eeLoc", Condition::ARG_FIND, Condition::NONE, Condition::FILLER, Condition::TRUE, "arg2");
+        conds_m[1].setCondJunctType(Condition::PRE, Condition::CONJUNCTION); // Used to store eeLoc pre-state variable
+        conds_m[1].addCondition(Condition::POST, Condition::ARG_V, Condition::FILLER, Condition::ARG_EQUALS, Condition::LABEL, "eeLoc", Condition::NEGATE, "arg2"); // Stored eeLoc pre-state variable is not the same as post-state eeLoc (eeLoc has moved)
+        conds_m[1].addCondition(Condition::POST, Condition::LABEL, "eeLoc", Condition::IN_DOM, Condition::DOM, "side locations", Condition::NEGATE, "na"); // Not in side locations
+        conds_m[1].addCondition(Condition::POST, Condition::LABEL, "grip_type", Condition::EQUALS, Condition::VAR, "none");
+        conds_m[1].addCondition(Condition::POST, Condition::GROUP, "object locations", Condition::ARG_FIND, Condition::LABEL, "eeLoc", Condition::NEGATE,"na");
+        conds_m[1].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
+        conds_m[1].setActionLabel("transport");
+
+        // Release 
+        conds_m[2].addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "true");
+        conds_m[2].addCondition(Condition::PRE, Condition::GROUP, "object locations", Condition::ARG_FIND, Condition::LABEL, "eeLoc", Condition::NEGATE, "arg1");
+        conds_m[2].addCondition(Condition::PRE, Condition::GROUP, "object locations", Condition::ARG_FIND, Condition::VAR, "ee",Condition::TRUE, "arg2");
+        conds_m[2].setCondJunctType(Condition::PRE, Condition::CONJUNCTION);
+
+        conds_m[2].addCondition(Condition::POST, Condition::ARG_L, Condition::FILLER, Condition::ARG_EQUALS, Condition::LABEL, "eeLoc", Condition::TRUE, "arg2");
+        conds_m[2].addCondition(Condition::POST, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "false");
+        conds_m[2].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
+        conds_m[2].setActionLabel("release");
+
+        // Transit Up
+        conds_m[3].addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "false");
+        conds_m[3].addCondition(Condition::PRE, Condition::LABEL, "grip_type", Condition::EQUALS, Condition::VAR, "none");
+        conds_m[3].addCondition(Condition::PRE, Condition::LABEL, "eeLoc", Condition::ARG_FIND, Condition::NONE, Condition::FILLER, Condition::TRUE, "arg");
+        conds_m[3].setCondJunctType(Condition::PRE, Condition::CONJUNCTION);
+
+        conds_m[3].addCondition(Condition::POST, Condition::ARG_V, Condition::FILLER, Condition::ARG_EQUALS, Condition::LABEL, "eeLoc", Condition::NEGATE,"arg");
+        conds_m[3].addCondition(Condition::POST, Condition::LABEL, "grip_type", Condition::EQUALS, Condition::VAR, "up");
+        conds_m[3].addCondition(Condition::POST, Condition::LABEL, "eeLoc", Condition::IN_DOM, Condition::DOM, "side locations", Condition::NEGATE, "arg_2");
+        conds_m[3].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
+        conds_m[3].setActionLabel("transit_up");
+
+		// Transit Side
+        conds_m[4].addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "false");
+        conds_m[4].addCondition(Condition::PRE, Condition::LABEL, "grip_type", Condition::EQUALS, Condition::VAR, "none");
+        conds_m[4].addCondition(Condition::PRE, Condition::LABEL, "eeLoc", Condition::ARG_FIND, Condition::NONE, Condition::FILLER, Condition::TRUE, "arg");
+        conds_m[4].setCondJunctType(Condition::PRE, Condition::CONJUNCTION);
+
+        conds_m[4].addCondition(Condition::POST, Condition::ARG_V, Condition::FILLER, Condition::ARG_EQUALS, Condition::LABEL, "eeLoc", Condition::NEGATE,"arg");
+        conds_m[4].addCondition(Condition::POST, Condition::LABEL, "grip_type", Condition::EQUALS, Condition::VAR, "side");
+        conds_m[4].addCondition(Condition::POST, Condition::LABEL, "eeLoc", Condition::IN_DOM, Condition::DOM, "side locations", Condition::TRUE, "na");
+        conds_m[4].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
+        conds_m[4].setActionLabel("transit_side");
+
+		// Transport Side
+        conds_m[5].addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "true");
+        conds_m[5].addCondition(Condition::PRE, Condition::LABEL, "grip_type", Condition::EQUALS, Condition::VAR, "side");
+        conds_m[5].addCondition(Condition::PRE, Condition::GROUP, "object locations", Condition::ARG_FIND, Condition::LABEL, "eeLoc", Condition::NEGATE, "arg1");
+        conds_m[5].addCondition(Condition::PRE, Condition::LABEL, "eeLoc", Condition::ARG_FIND, Condition::NONE, Condition::FILLER, Condition::TRUE, "arg2");
+        conds_m[5].setCondJunctType(Condition::PRE, Condition::CONJUNCTION); // Used to store eeLoc pre-state variable
+        conds_m[5].addCondition(Condition::POST, Condition::ARG_V, Condition::FILLER, Condition::ARG_EQUALS, Condition::LABEL, "eeLoc", Condition::NEGATE, "arg2"); // Stored eeLoc pre-state variable is not the same as post-state eeLoc (eeLoc has moved)
+        conds_m[5].addCondition(Condition::POST, Condition::LABEL, "eeLoc", Condition::IN_DOM, Condition::DOM, "side locations", Condition::TRUE, "na");
+        conds_m[5].addCondition(Condition::POST, Condition::LABEL, "grip_type", Condition::EQUALS, Condition::VAR, "none");
+        conds_m[5].addCondition(Condition::POST, Condition::GROUP, "object locations", Condition::ARG_FIND, Condition::LABEL, "eeLoc", Condition::NEGATE,"na");
+        conds_m[5].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
+        conds_m[5].setActionLabel("transport");
+	}
 
 
 	for (int i=0; i<conds_m.size(); ++i){

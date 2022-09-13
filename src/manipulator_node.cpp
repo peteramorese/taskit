@@ -211,6 +211,7 @@ class PlanningQuerySrv {
 				return true;
 
 			} else if (grasp_type == "side") {
+				std::cout<<"LOOKING IN SIDE"<<std::endl;
 				tf2::Quaternion q_orig;
 				std::vector<tf2::Quaternion> q_f; 
 				std::vector<tf2::Quaternion> q_rot;
@@ -353,7 +354,7 @@ class PlanningQuerySrv {
 					std::cout<<"Adding object: "<<temp_col_obj.id<<" to domain: "<<request.bag_domain_labels[i]<<std::endl;
 					//col_obj_vec[i].operation = col_obj_vec[i].ADD;
 				}
-				setupEnvironment(request.planning_domain);
+				//setupEnvironment(request.planning_domain);
 			}
 			if (request.pickup_object != "none") {
 				
