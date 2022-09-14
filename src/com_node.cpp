@@ -220,17 +220,20 @@ class PredicateGenerator {
 			}
 		}
 
-		bool getPredicates(const std::vector<geometry_msgs::Pose>* obj_locs, std::vector<std::string>& ret_state) {
+		bool getPredicates(const std::vector<geometry_msgs::Pose>* obj_locs, std::vector<std::string>& ret_state, int ignore_obj_ind = -1) {
 			ret_state.clear();
 			ret_state.resize(obj_locs->size());
-			std::cout<<"ret_state in get pred: "<<ret_state.size()<<std::endl;
 			for (int i=0; i<obj_locs->size(); ++i) {
-				std::string temp_label;
-				if (getNearestLocLabel((*obj_locs)[i].position, temp_label)){
-					ret_state[i] = temp_label;
+				if (i != ignore_obj_ind) {
+					std::string temp_label;
+					if (getNearestLocLabel((*obj_locs)[i].position, temp_label)){
+						ret_state[i] = temp_label;
+					} else {
+						ROS_WARN("Cannot get predicates");
+						return false;
+					}
 				} else {
-					ROS_WARN("Cannot get predicates");
-					return false;
+					ret_state[i] = "ee";
 				}
 			}
 			return true;
@@ -262,7 +265,7 @@ class Kickoff {
 
 			ros::ServiceClient strategy_srv_client = com_NH.serviceClient<manipulation_interface::Strategy>("/com_node/strategy");
 			manipulation_interface::Strategy strategy_srv;
-			ros::ServiceClient plan_query_client = com_NH.serviceClient<manipulation_interface::PlanningQuery>("/planning_query");
+			ros::ServiceClient plan_query_client = com_NH.serviceClient<manipulation_interface::PlanningQuery>("/manipulation_planning_query");
 			manipulation_interface::PlanningQuery plan_query_srv;
 
 			std::vector<std::string> bag_domain_labels(obj_group.size());
@@ -274,12 +277,22 @@ class Kickoff {
 			int failed_retries = 0;
 			int max_failed_retries = 5;
 			ros::Rate rate_fail(.2);
+			std::string held_obj = "none";
 			while (ros::ok()) {
 				vicon_data.retrieve();
 				data = vicon_data.returnConfigArrPtr();
 
+				int ignore_obj_ind = -1;
+				if (held_obj != "none") {
+					for (int i=0; i<obj_group.size(); ++i) {
+						if (obj_group[i] == held_obj) {
+							ignore_obj_ind = i;
+							break;
+						}
+					}
+				}
 				std::vector<std::string> ret_state;
-				bool found = pred_gen.getPredicates(data, ret_state);
+				bool found = pred_gen.getPredicates(data, ret_state, ignore_obj_ind);
 				if (found) {
 					ROS_INFO("Found predicates");
 					failed_retries = 0;
@@ -303,10 +316,12 @@ class Kickoff {
 					int obj_ind = getObjInd(strategy_srv.response.to_grasp_obj);
 					std::string to_eeloc = strategy_srv.response.to_eeloc;
 					std::cout<<"\nAction received: "<<strategy_srv.response.action<<std::endl;
+					std::cout<<"to_grasp_obj received: "<<strategy_srv.response.to_grasp_obj<<std::endl;
 					std::cout<<"Obj Ind received: "<<obj_ind<<std::endl;
 					std::cout<<"To location received: "<<to_eeloc<<"\n"<<std::endl;
 
 					if (strategy_srv.response.action.find("transit_up") != std::string::npos) {
+						std::cout<<"IN TRANSIT UP!!!"<<std::endl;
 						plan_query_srv.request.manipulator_pose = (*data)[obj_ind];
 						std::cout<<"size: "<<data->size()<<std::endl;
 						for (int ii=0; ii<data->size(); ii++) {
@@ -344,7 +359,7 @@ class Kickoff {
 						// Setting the grasp type as "mode" uses the grasp type specified
 						// in the last 'trasit' aciton, or the current grasp
 						// mode of the system
-						plan_query_srv.request.grasp_type = "mode";
+						plan_query_srv.request.grasp_type = "current";
 						plan_query_srv.request.drop_object = "none";
 						plan_query_srv.request.planning_domain = "domain";
 						plan_query_srv.request.safe_config = false;
@@ -373,9 +388,10 @@ class Kickoff {
 						ROS_WARN("Unrecognized action");
 					}
 					if (plan_query_client.call(plan_query_srv)) {
+						held_obj = plan_query_srv.response.held_obj;
 						ROS_INFO("Completed action service");
 					} else {
-						ROS_WARN("Did not find plan query service");
+						ROS_ERROR("Did not find plan query service");
 					}
 				} else {
 					ROS_WARN("Did not find strategy service");

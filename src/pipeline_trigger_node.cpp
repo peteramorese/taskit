@@ -9,7 +9,7 @@
 #include "manipulation_interface/RunQuery.h"
 
 int main(int argc, char** argv) {
-	ros::init(argc, argv, "plan_query_kickoff_node");
+	ros::init(argc, argv, "pipeline_trigger_node");
 	ros::NodeHandle kickoff_NH;
 
 	// Kickoff delay for startup:
@@ -18,7 +18,7 @@ int main(int argc, char** argv) {
 	
 	// Open loop or closed loop option:
 	bool open_loop;
-	kickoff_NH.param("/discrete_environment/open_loop", open_loop, true);
+	kickoff_NH.param("/pipeline_trigger_node/open_loop", open_loop, true);
 
 	std::vector<std::string> task_set;
 	kickoff_NH.getParam("/discrete_environment/task_set", task_set);

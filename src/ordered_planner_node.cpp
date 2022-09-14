@@ -138,7 +138,6 @@ class PlanSrvOP {
 			success = planner.search(dfa_eval_ptrs, setToMuDelay, true);
 			res.success = success;
 			result_ptr = planner.getResult();
-			std::cout<<"AFTER PLAN... SETTING PLAN PTR"<<std::endl;
 			plan = planner.getResult()->getPlan(); // Single query returns first plan
 			std::cout<<"AFTER PLAN PRITING ACT SQ"<<std::endl;
 			for (const auto & a : plan->action_sequence) std::cout<<" - "<< a<<std::endl;
@@ -168,10 +167,6 @@ class PlanSrvOP {
 				init_obj_locs.push_back(init_state_ptr->getVar(obj));
 			}
 			action_single.request.init_obj_locs = init_obj_locs;
-			std::cout<<"B4 action seq, act seq size: "<<plan->action_sequence.size()<<std::endl;
-
-			std::cout<<"B4 EX PRITING ACT SQ"<<std::endl;
-			for (const auto & a : plan->action_sequence) std::cout<<" - "<< a<<std::endl;
 
 			for (int i=0; i<plan->action_sequence.size(); ++i) {
 				std::cout<<"b4 in loop"<<std::endl;
@@ -236,6 +231,8 @@ class PlanSrvOP {
 			if (plan->state_sequence[cl_i+1]->argFindGroup("ee", "object locations", temp_obj_label)) {
 				std::cout<<"GRASP OBJ: "<<temp_obj_label<<std::endl;
 				res.to_grasp_obj = temp_obj_label;
+			} else if (plan->state_sequence[cl_i+1]->argFindGroup(res.to_eeloc, "object locations", temp_obj_label)) {
+				res.to_grasp_obj = temp_obj_label;
 			} else {
 				res.to_grasp_obj = "none";
 			}
@@ -281,11 +278,12 @@ int main(int argc, char** argv) {
 
     // Run in open loop or closed loop mode:
 	bool open_loop;
-    planner_NH.param("/discrete_environment/open_loop", open_loop, true);
-
-    // Run in open loop or closed loop mode:
-	bool use_side_grasps;
-    planner_NH.param("/discrete_environment/use_side_grasps", use_side_grasps, true);
+    planner_NH.param("/ordered_planner_node/open_loop", open_loop, true);
+	if (open_loop) {
+		ROS_INFO("Execution in open loop");
+	} else {
+		ROS_INFO("Execution in closed loop");
+	}
 
     // Location names:
     std::vector<std::string> loc_labels;
@@ -311,17 +309,20 @@ int main(int argc, char** argv) {
 
 	std::vector<std::string> side_loc_labels;
 	for (int i=0; i<loc_labels.size(); ++i) {
-		if (location_orientation_types[i] == "side" ||
-			location_orientation_types[i] == "side_x" ||	
+		if (location_orientation_types[i] == "side_x" ||	
 			location_orientation_types[i] == "side_y" 
 			) {
-				std::cout<<"FOUND SIDE LOC: "<<loc_labels[i]<<std::endl;
 				side_loc_labels.push_back(loc_labels[i]);
 			}
 	}
-	if (side_loc_labels.size() > 0 && !use_side_grasps) {
-		ROS_ERROR("Specified NOT using side grasps, but number of side grasp locations is non-zero");
-		return 1;
+	
+	bool use_side_grasps;
+	if (side_loc_labels.size() > 0) {
+		ROS_INFO("Building model that includes SIDE GRASPS");
+		use_side_grasps = true;
+	} else {
+		ROS_INFO("Building model that does not include SIDE GRASPS");
+		use_side_grasps = false;
 	}
 	//////////////////////////////////////////////////////
 	/* Create the Transition System for the Manipualtor */
@@ -378,11 +379,8 @@ int main(int argc, char** argv) {
 	// Set the initial state:
 	State init_state(&SS_MANIPULATOR);	
 	init_state.setState(set_state);
-	std::cout<<"----state space dim:"<< SS_MANIPULATOR.getDim()<<std::endl;
-	std::cout<<"----init state dim: "<< set_state.size()<<std::endl;
 
 	/* SET CONDITIONS */
-	// Pickup domain conditions:
 	std::vector<Condition> conds_m;
 	std::vector<Condition*> cond_ptrs_m;
 
@@ -399,7 +397,7 @@ int main(int argc, char** argv) {
 		conds_m[0].addCondition(Condition::POST, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "true");
 		conds_m[0].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
 		conds_m[0].setActionLabel("grasp");
-		conds_m[0].setActionCost(0);
+		conds_m[0].setActionCost(1);
 
 		// Transport 
 		conds_m[1].addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "true");
@@ -422,7 +420,7 @@ int main(int argc, char** argv) {
 		conds_m[2].addCondition(Condition::POST, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "false");
 		conds_m[2].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
 		conds_m[2].setActionLabel("release");
-		conds_m[2].setActionCost(0);
+		conds_m[2].setActionCost(1);
 
 
 		// Transit
@@ -433,7 +431,7 @@ int main(int argc, char** argv) {
 		conds_m[3].addCondition(Condition::POST, Condition::ARG_V, Condition::FILLER, Condition::ARG_EQUALS, Condition::LABEL, "eeLoc", Condition::NEGATE,"arg");
 		conds_m[3].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
 		conds_m[3].setActionLabel("transit_up");
-		conds_m[3].setActionCost(0);
+		conds_m[3].setActionCost(3);
 
 	} else {
         conds_m.resize(6);
@@ -450,6 +448,7 @@ int main(int argc, char** argv) {
         conds_m[0].addCondition(Condition::POST, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "true");
         conds_m[0].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
         conds_m[0].setActionLabel("grasp");
+		conds_m[0].setActionCost(1);
 	
 		// Transport Up
         conds_m[1].addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "true");
@@ -463,6 +462,7 @@ int main(int argc, char** argv) {
         conds_m[1].addCondition(Condition::POST, Condition::GROUP, "object locations", Condition::ARG_FIND, Condition::LABEL, "eeLoc", Condition::NEGATE,"na");
         conds_m[1].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
         conds_m[1].setActionLabel("transport");
+		conds_m[1].setActionCost(5);
 
         // Release 
         conds_m[2].addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "true");
@@ -474,6 +474,7 @@ int main(int argc, char** argv) {
         conds_m[2].addCondition(Condition::POST, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "false");
         conds_m[2].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
         conds_m[2].setActionLabel("release");
+		conds_m[2].setActionCost(1);
 
         // Transit Up
         conds_m[3].addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "false");
@@ -486,6 +487,7 @@ int main(int argc, char** argv) {
         conds_m[3].addCondition(Condition::POST, Condition::LABEL, "eeLoc", Condition::IN_DOM, Condition::DOM, "side locations", Condition::NEGATE, "arg_2");
         conds_m[3].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
         conds_m[3].setActionLabel("transit_up");
+		conds_m[3].setActionCost(3);
 
 		// Transit Side
         conds_m[4].addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "false");
@@ -498,6 +500,7 @@ int main(int argc, char** argv) {
         //conds_m[4].addCondition(Condition::POST, Condition::LABEL, "eeLoc", Condition::IN_DOM, Condition::DOM, "side locations", Condition::TRUE, "na");
         conds_m[4].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
         conds_m[4].setActionLabel("transit_side");
+		conds_m[4].setActionCost(3);
 
 		// Transport Side
         conds_m[5].addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "true");
@@ -511,13 +514,13 @@ int main(int argc, char** argv) {
         conds_m[5].addCondition(Condition::POST, Condition::GROUP, "object locations", Condition::ARG_FIND, Condition::LABEL, "eeLoc", Condition::NEGATE,"na");
         conds_m[5].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
         conds_m[5].setActionLabel("transport");
+		conds_m[5].setActionCost(5);
 	}
 
 
 	for (int i=0; i<conds_m.size(); ++i){
 		cond_ptrs_m[i] = &conds_m[i];
 	}
-
 
 	/* Propositions */
 	std::cout<<"Setting Atomic Propositions: "<<std::endl;
@@ -539,7 +542,6 @@ int main(int argc, char** argv) {
 		AP_m_ptrs[i] = &AP_m[i];
 	}
 
-
 	// Create the transition system:
 	TransitionSystem<State> ts(true, false); 
 
@@ -551,17 +553,16 @@ int main(int argc, char** argv) {
 	ts.print();
 	std::cout<<"\n";
 
-
 	PlanSrvOP plan_obj(ts, obj_group, &planner_NH, open_loop);
 	ros::ServiceServer plan_srv = planner_NH.advertiseService("/preference_planning_query", &PlanSrvOP::planCB, &plan_obj);
 	if (open_loop) {
 		ros::ServiceServer run_srv_open_loop = planner_NH.advertiseService("/action_run_query", &PlanSrvOP::runOpenLoop, &plan_obj);
-		ROS_INFO("Plan and Run services are online!");
+		ROS_INFO("Plan and Run services are online (open loop)!");
 		ros::spin();
 	} else {
 		// Make sure plan is preference_planning_query is called before com node is kicked off
 		ros::ServiceServer run_srv_closed_loop = planner_NH.advertiseService("/com_node/strategy", &PlanSrvOP::runClosedLoop, &plan_obj);
-		ROS_INFO("Plan and Run services are online!");
+		ROS_INFO("Plan and Run services are online (closed loop)!");
 		ros::spin();
 	}
 
