@@ -34,8 +34,8 @@ class PlanningQuerySrv {
 		// DEFINE CONSTANTS FOR PROBLEM
 		const double bag_l = .045;//.045;
 		const double bag_w = .07;
-		const double bag_h = .157;
-		const double eef_offset = .075;
+		const double bag_h = .153;
+		const double eef_offset = .08;
 		const double grip_width_closed = .044;
 		const double grip_width_open = .1;
 		const double grip_speed = .1;
@@ -138,7 +138,8 @@ class PlanningQuerySrv {
 			grp_act_ptr(grp_act_ptr_),
 			N_TRIALS(N_TRIALS_), 
 			use_gripper(use_gripper_),
-			use_grasp(use_grasp_),
+			//use_grasp(use_grasp_),
+			use_grasp(true),
 			safe_place(safe_place_),
 			workspace_set(false) {
 				
@@ -508,7 +509,8 @@ class PlanningQuerySrv {
 							}
 							success_ex = (move_group_ptr->plan(direct_plan)==moveit::planning_interface::MoveItErrorCode::SUCCESS);
 							ROS_INFO_NAMED("manipulator_node","Completed planning on iteration: %d",ii);
-							move_group_ptr->execute(direct_plan);
+							if (success_ex) move_group_ptr->execute(direct_plan);
+							
 							break;
 						}
 					}

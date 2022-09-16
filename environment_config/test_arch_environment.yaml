@@ -1,9 +1,9 @@
 location_names: 
   - BL
   - BR
+  - T
   - san
-  - drop
-  - drop2
+
 BL_point: { # Left base
   x: -0.38,
   y: 0.25,
@@ -14,6 +14,12 @@ BR_point: { # Right base
   x: -0.53,
   y: 0.25,
   z: 0.08,
+  r: 0.05, 
+}
+T_point: { # Top
+  x: -0.46,
+  y: 0.25,
+  z: 0.19,
   r: 0.05, 
 }
 #X1_point: { # xtra space
@@ -28,37 +34,34 @@ san_point: { # sanitation bin
   z: 0.08,
   r: 0.05, 
 }
-drop_point: { # drop off
-  x: 0.40,
-  y: 0.16,
-  z: 0.25,
-  r: 0.25, 
-}
-drop2_point: { # drop off
-  x: 0.40,
-  y: 0.25,
-  z: 0.25,
-  r: 0.25, 
-}
-#drop3_point: { # drop
+#drop_point: { # drop off
 #  x: 0.40,
-#  y: 0.35,
+#  y: 0.16,
 #  z: 0.25,
-#  r: 0.25, 
+#  r: 0.05, 
+#}
+#drop2_point: { # drop off
+#  x: 0.40,
+#  y: 0.26,
+#  z: 0.25,
+#  r: 0.05, 
 #}
 
 location_orientation_types:
   - up_x
   - up_x 
-  - up_x
-  - up_x
-  - up_x
-  - up_x
-  - up_x
+  - side_x
+  - up_y
+#  - up_x
+#  - up_x
+#  - up_x
 obj_group:
+  - blueBox_1
+  #- blueBox_2
   - greenBox_1
   - pinkBox_1
   #- pinkBox_2
 init_obj_locations:
-  - san
+  - BL
   - BR
+  - T

@@ -12,11 +12,23 @@
   <!-- Specify the robot IP, default is the Franka robot in ARIA lab -->
   <arg name="robot_ip" default="franka-aria.colorado.edu" />
 
+  <arg name="env_file" default="environment" />
+  <arg name="task_file" default="task_set" />
+  <arg name="ws_file" default="workspace" />
+
   <include file="$(find franka_control)/launch/franka_control.launch">
 	  <arg name="robot_ip" value="$(arg robot_ip)" />
 	  <arg name="load_gripper" value="true" />
   </include>
 
+
+
+  <!-- Load the planning environment and locations -->
+  <include file="$(find manipulation_interface)/launch/load_parameters.launch">
+    <arg name="env_file" value="$(arg env_file)"/>
+    <arg name="task_file" value="$(arg task_file)"/>
+    <arg name="ws_file" value="$(arg ws_file)"/>
+  </include>
   <!--
   By default, hide joint_state_publisher's GUI
 
@@ -62,8 +74,6 @@
     <arg name="pipeline" value="$(arg pipeline)"  />
   </include>
 
-  <!-- Load the planning environment and locations -->
-  <include file="$(find manipulation_interface)/launch/load_parameters.launch"/>
 
   <node name="manipulator_node" pkg="manipulation_interface" type="manipulator_node" respawn="false" output="screen">
     <rosparam command="load" file="$(find panda_moveit_config)/config/kinematics.yaml"/>

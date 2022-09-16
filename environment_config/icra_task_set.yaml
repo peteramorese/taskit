@@ -1,7 +1,11 @@
 task_set: 
-  - F(pinkBox_1_L2 & F(blueBox_1_L1))
-  #- F(greenBox_1_L0 & F(blueBox_1_L0))
+  #- ((pinkBox_1_T) -> (blueBox_1_BL & greenBox_1_BR)) U (blueBox_1_san & F(blueBox_1_drop))
+  #- ((pinkBox_1_T) -> (blueBox_1_BL & greenBox_1_BR)) U (pinkBox_1_san & F(pinkBox_1_drop2))
+  #- ((pinkBox_1_T) -> (blueBox_1_BL & greenBox_1_BR)) U (greenBox_1_X1)
+  #- F(blueBox_1_san & F(blueBox_1_drop))
+  - F(pinkBox_1_san & F(pinkBox_1_drop))
+  - F(greenBox_1_san & F(greenBox_1_drop2))
 query_type: "single"
-flexibility: 0.0
+flexibility: 1000.0
 pareto_point_index: 0 #TODO
 kickoff_delay: 5.0 # Specify custom time to wait for all utilities to load (s)

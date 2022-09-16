@@ -1,6 +1,6 @@
 task_set: 
   - F(pinkBox_1_L2 & F(blueBox_1_L1))
-  - F(greenBox_1_L0 & F(blueBox_1_L0))
+  #- F(greenBox_1_L0 & F(blueBox_1_L0))
 query_type: "single"
 flexibility: 0.0
 pareto_point_index: 0 #TODO

@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
 	//}
 
 	bool server_found = false;
-	int retries = 0; int max_retires = 20;
+	int retries = 0; int max_retires = 400;
 	double sleep_duration = 5; // seconds
 	while (!server_found && ros::ok()) {
 		server_found = plan_client.call(pref_query);
@@ -63,8 +63,12 @@ int main(int argc, char** argv) {
 			ROS_INFO("Planning service not found, retrying");
 		}
 	}
+	int pause;
+	std::cout<<"Paused. Press to begin execution:"<<std::endl;
+	std::cin.get();
 
 	if (open_loop) {
+
 
 		ROS_INFO("Executing...");
 		ros::ServiceClient run_client = kickoff_NH.serviceClient<manipulation_interface::RunQuery>("/action_run_query");

@@ -135,7 +135,7 @@ class PlanSrvOP {
 
 			// Run the planner:
 			OrderedPlanner planner(ts);
-			success = planner.search(dfa_eval_ptrs, setToMuDelay, true);
+			success = planner.search(dfa_eval_ptrs, setToMuDelay, true, true, req.flexibility);
 			res.success = success;
 			result_ptr = planner.getResult();
 			plan = planner.getResult()->getPlan(); // Single query returns first plan
