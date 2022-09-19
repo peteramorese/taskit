@@ -2,6 +2,6 @@ task_set:
   - F(pinkBox_1_L2 & F(blueBox_1_L1))
   #- F(greenBox_1_L0 & F(blueBox_1_L0))
 query_type: "single"
-flexibility: 0.0
+flexibility: 1000.0 # cannot be 0 for single query
 pareto_point_index: 0 #TODO
 kickoff_delay: 5.0 # Specify custom time to wait for all utilities to load (s)

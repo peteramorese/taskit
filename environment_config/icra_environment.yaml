@@ -1,11 +1,13 @@
 location_names: 
   - BL
   - BR
+  - T
+  - X
   - san
   - drop
   - drop2
 BL_point: { # Left base
-  x: -0.38,
+  x: -0.37,
   y: 0.25,
   z: 0.08,
   r: 0.05, # Detection radius (only needed for use with com node)
@@ -16,12 +18,18 @@ BR_point: { # Right base
   z: 0.08,
   r: 0.05, 
 }
-#X1_point: { # xtra space
-#  x: -0.30,
-#  y: -0.50,
-#  z: 0.08,
-#  r: 0.05, 
-#}
+T_point: { # Top
+  x: -0.45,
+  y: 0.25,
+  z: 0.19,
+  r: 0.05, 
+}
+X_point: { # xtra space
+  x: -0.30,
+  y: -0.50,
+  z: 0.08,
+  r: 0.05, 
+}
 san_point: { # sanitation bin
   x: 0.0,
   y: 0.36,
@@ -50,15 +58,16 @@ drop2_point: { # drop off
 location_orientation_types:
   - up_x
   - up_x 
-  - up_x
+  - side_x
   - up_x
   - up_x
   - up_x
   - up_x
 obj_group:
+  - blueBox_1
   - greenBox_1
   - pinkBox_1
-  #- pinkBox_2
 init_obj_locations:
-  - san
+  - BL
   - BR
+  - T

@@ -93,52 +93,71 @@ class PlanSrvOP {
 			}
 
 			// Flexibility Function:
-			auto setToMuDelay = [](const std::vector<float>& set) {
-				std::vector<bool> skip(set.size(), false);
-				bool sorted = false;
-				int mu = 0;
-				// Determine max prio val:
-				int max_prio = set.size() - 1;
-				std::unordered_map<float, bool> seen;
-				float set_sum = 0.0f; // Check if the set is non-zero (all quantities have to be positive)
+			//auto setToMuDelay = [](const std::vector<float>& set) {
+			//	std::vector<bool> skip(set.size(), false);
+			//	bool sorted = false;
+			//	int mu = 0;
+			//	// Determine max prio val:
+			//	int max_prio = set.size() - 1;
+			//	std::unordered_map<float, bool> seen;
+			//	float set_sum = 0.0f; // Check if the set is non-zero (all quantities have to be positive)
+			//	for (int i=0; i<set.size(); ++i) {
+			//		if (seen[set[i]]) {
+			//			max_prio--;
+			//			skip[i] = true;
+			//		}
+			//		seen[set[i]] = true;
+			//		set_sum += set[i];
+			//	}
+			//	if (set_sum == 0.0f) return 0.0f;
+			//	//std::cout<<"max prio: "<<max_prio<<std::endl;
+			//	for (int prio = max_prio; prio >= 0; --prio) {
+			//		float max_val = 0.0f;
+			//		int max_ind = -1;
+			//		for (int i=0; i<set.size(); ++i) {
+			//			if (!skip[i] && (set[i] > max_val || max_val == 0.0f)) {
+			//				max_val = set[i];
+			//				max_ind = i;
+			//			} 
+			//		}
+			//		//std::cout<<"Max ind: "<<max_ind<<" curr prio: "<<prio<<std::endl;
+			//		if (max_ind == -1) {
+			//			std::cout<<"ERROR -1!!!"<<std::endl;
+			//			for (auto item : set) std::cout<<"set item: "<<item<<std::endl;
+			//		}
+			//		skip.at(max_ind) = true;
+			//		int delay = prio - max_ind;
+			//		//if (delay > 0) std::cout<<"Adding: "<<delay<<" delay..."<<std::endl;
+			//		if (delay > 0) mu += delay;
+			//	}
+			//	return static_cast<float>(mu); 
+			//};
+			auto sumDelay = [](const std::vector<float>& set) {
+				std::vector<float> sorted_set = set;
+				std::sort(sorted_set.begin(), sorted_set.end());
+				float sum_delay = 0.0f;
 				for (int i=0; i<set.size(); ++i) {
-					if (seen[set[i]]) {
-						max_prio--;
-						skip[i] = true;
-					}
-					seen[set[i]] = true;
-					set_sum += set[i];
+					float diff = set[i] - sorted_set[i];
+					sum_delay += (diff > 0.0f) ? diff : 0.0f;
 				}
-				if (set_sum == 0.0f) return 0.0f;
-				//std::cout<<"max prio: "<<max_prio<<std::endl;
-				for (int prio = max_prio; prio >= 0; --prio) {
-					float max_val = 0.0f;
-					int max_ind = -1;
-					for (int i=0; i<set.size(); ++i) {
-						if (!skip[i] && (set[i] > max_val || max_val == 0.0f)) {
-							max_val = set[i];
-							max_ind = i;
-						} 
-					}
-					//std::cout<<"Max ind: "<<max_ind<<" curr prio: "<<prio<<std::endl;
-					if (max_ind == -1) {
-						std::cout<<"ERROR -1!!!"<<std::endl;
-						for (auto item : set) std::cout<<"set item: "<<item<<std::endl;
-					}
-					skip.at(max_ind) = true;
-					int delay = prio - max_ind;
-					//if (delay > 0) std::cout<<"Adding: "<<delay<<" delay..."<<std::endl;
-					if (delay > 0) mu += delay;
-				}
-				return static_cast<float>(mu); 
+				return sum_delay;
 			};
-
+			
 			// Run the planner:
-			OrderedPlanner planner(ts);
-			success = planner.search(dfa_eval_ptrs, setToMuDelay, true, true, req.flexibility);
+			std::string bm_filepath = "/home/arias/testbm.txt";
+			OrderedPlanner planner(ts, true, &bm_filepath);
+			bool single_query = req.query_type == "single";
+			success = planner.search(dfa_eval_ptrs, sumDelay, true, single_query, req.flexibility);
 			res.success = success;
+			if (!success) {
+				return true;
+			}
 			result_ptr = planner.getResult();
-			plan = planner.getResult()->getPlan(); // Single query returns first plan
+			unsigned get_plan_ind = 0;
+			if (!single_query) {
+				get_plan_ind = req.pareto_point_index;
+			}
+			plan = planner.getResult()->getPlan(get_plan_ind); // Single query returns first plan
 			std::cout<<"AFTER PLAN PRITING ACT SQ"<<std::endl;
 			for (const auto & a : plan->action_sequence) std::cout<<" - "<< a<<std::endl;
 			cl_i = 0; // Reset current action index
@@ -262,6 +281,7 @@ class PlanSrvOP {
 		}
 
 };
+
 
 int main(int argc, char** argv) {
 	ros::init(argc, argv, "ordered_planner_node");
@@ -440,19 +460,20 @@ int main(int argc, char** argv) {
         // Grasp regular
         conds_m[0].addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "false");
         conds_m[0].addCondition(Condition::PRE, Condition::LABEL, "grip_type", Condition::EQUALS, Condition::VAR, "none", Condition::NEGATE, "griptype_not_none");
+        //conds_m[0].addCondition(Condition::PRE, Condition::LABEL, "grip_type", Condition::ARG_FIND, Condition::NONE, Condition::FILLER, Condition::TRUE, "arg1");
         conds_m[0].addCondition(Condition::PRE, Condition::GROUP, "object locations", Condition::ARG_FIND, Condition::LABEL, "eeLoc",Condition::TRUE, "arg");
         conds_m[0].setCondJunctType(Condition::PRE, Condition::CONJUNCTION);
 
         conds_m[0].addCondition(Condition::POST, Condition::ARG_L, Condition::FILLER, Condition::ARG_EQUALS, Condition::VAR, "ee",Condition::TRUE, "arg");
-        conds_m[0].addCondition(Condition::POST, Condition::LABEL, "grip_type", Condition::EQUALS, Condition::VAR, "none", Condition::NEGATE, "gt_not_none");
+        //conds_m[0].addCondition(Condition::POST, Condition::ARG_L, Condition::FILLER, Condition::ARG_EQUALS, Condition::LABEL, "grip_type", Condition::TRUE, "arg1");
+        //conds_m[0].addCondition(Condition::POST, Condition::LABEL, "grip_type", Condition::EQUALS, Condition::VAR, "none", Condition::NEGATE, "gt_not_none");
         conds_m[0].addCondition(Condition::POST, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "true");
         conds_m[0].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
         conds_m[0].setActionLabel("grasp");
-		conds_m[0].setActionCost(1);
 	
 		// Transport Up
         conds_m[1].addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "true");
-        conds_m[1].addCondition(Condition::PRE, Condition::LABEL, "grip_type", Condition::EQUALS, Condition::VAR, "up");
+        //conds_m[1].addCondition(Condition::PRE, Condition::LABEL, "grip_type", Condition::EQUALS, Condition::VAR, "up");
         conds_m[1].addCondition(Condition::PRE, Condition::GROUP, "object locations", Condition::ARG_FIND, Condition::LABEL, "eeLoc", Condition::NEGATE, "arg1");
         conds_m[1].addCondition(Condition::PRE, Condition::LABEL, "eeLoc", Condition::ARG_FIND, Condition::NONE, Condition::FILLER, Condition::TRUE, "arg2");
         conds_m[1].setCondJunctType(Condition::PRE, Condition::CONJUNCTION); // Used to store eeLoc pre-state variable
@@ -462,7 +483,6 @@ int main(int argc, char** argv) {
         conds_m[1].addCondition(Condition::POST, Condition::GROUP, "object locations", Condition::ARG_FIND, Condition::LABEL, "eeLoc", Condition::NEGATE,"na");
         conds_m[1].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
         conds_m[1].setActionLabel("transport");
-		conds_m[1].setActionCost(5);
 
         // Release 
         conds_m[2].addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "true");
@@ -474,11 +494,10 @@ int main(int argc, char** argv) {
         conds_m[2].addCondition(Condition::POST, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "false");
         conds_m[2].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
         conds_m[2].setActionLabel("release");
-		conds_m[2].setActionCost(1);
 
         // Transit Up
         conds_m[3].addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "false");
-        conds_m[3].addCondition(Condition::PRE, Condition::LABEL, "grip_type", Condition::EQUALS, Condition::VAR, "none");
+        //conds_m[3].addCondition(Condition::PRE, Condition::LABEL, "grip_type", Condition::EQUALS, Condition::VAR, "none");
         conds_m[3].addCondition(Condition::PRE, Condition::LABEL, "eeLoc", Condition::ARG_FIND, Condition::NONE, Condition::FILLER, Condition::TRUE, "arg");
         conds_m[3].setCondJunctType(Condition::PRE, Condition::CONJUNCTION);
 
@@ -487,20 +506,18 @@ int main(int argc, char** argv) {
         conds_m[3].addCondition(Condition::POST, Condition::LABEL, "eeLoc", Condition::IN_DOM, Condition::DOM, "side locations", Condition::NEGATE, "arg_2");
         conds_m[3].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
         conds_m[3].setActionLabel("transit_up");
-		conds_m[3].setActionCost(3);
 
 		// Transit Side
         conds_m[4].addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "false");
-        conds_m[4].addCondition(Condition::PRE, Condition::LABEL, "grip_type", Condition::EQUALS, Condition::VAR, "none");
+        //conds_m[4].addCondition(Condition::PRE, Condition::LABEL, "grip_type", Condition::EQUALS, Condition::VAR, "none");
         conds_m[4].addCondition(Condition::PRE, Condition::LABEL, "eeLoc", Condition::ARG_FIND, Condition::NONE, Condition::FILLER, Condition::TRUE, "arg");
         conds_m[4].setCondJunctType(Condition::PRE, Condition::CONJUNCTION);
 
         conds_m[4].addCondition(Condition::POST, Condition::ARG_V, Condition::FILLER, Condition::ARG_EQUALS, Condition::LABEL, "eeLoc", Condition::NEGATE,"arg");
         conds_m[4].addCondition(Condition::POST, Condition::LABEL, "grip_type", Condition::EQUALS, Condition::VAR, "side");
-        //conds_m[4].addCondition(Condition::POST, Condition::LABEL, "eeLoc", Condition::IN_DOM, Condition::DOM, "side locations", Condition::TRUE, "na");
+        conds_m[4].addCondition(Condition::POST, Condition::LABEL, "eeLoc", Condition::IN_DOM, Condition::DOM, "side locations", Condition::TRUE, "na");
         conds_m[4].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
         conds_m[4].setActionLabel("transit_side");
-		conds_m[4].setActionCost(3);
 
 		// Transport Side
         conds_m[5].addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "true");
@@ -509,11 +526,17 @@ int main(int argc, char** argv) {
         conds_m[5].addCondition(Condition::PRE, Condition::LABEL, "eeLoc", Condition::ARG_FIND, Condition::NONE, Condition::FILLER, Condition::TRUE, "arg2");
         conds_m[5].setCondJunctType(Condition::PRE, Condition::CONJUNCTION); // Used to store eeLoc pre-state variable
         conds_m[5].addCondition(Condition::POST, Condition::ARG_V, Condition::FILLER, Condition::ARG_EQUALS, Condition::LABEL, "eeLoc", Condition::NEGATE, "arg2"); // Stored eeLoc pre-state variable is not the same as post-state eeLoc (eeLoc has moved)
-        conds_m[5].addCondition(Condition::POST, Condition::LABEL, "eeLoc", Condition::IN_DOM, Condition::DOM, "side locations", Condition::TRUE, "na");
+        //conds_m[5].addCondition(Condition::POST, Condition::LABEL, "eeLoc", Condition::IN_DOM, Condition::DOM, "side locations", Condition::TRUE, "na");
         conds_m[5].addCondition(Condition::POST, Condition::LABEL, "grip_type", Condition::EQUALS, Condition::VAR, "none");
         conds_m[5].addCondition(Condition::POST, Condition::GROUP, "object locations", Condition::ARG_FIND, Condition::LABEL, "eeLoc", Condition::NEGATE,"na");
         conds_m[5].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
         conds_m[5].setActionLabel("transport");
+
+		conds_m[0].setActionCost(1);
+		conds_m[1].setActionCost(5);
+		conds_m[2].setActionCost(1);
+		conds_m[3].setActionCost(3);
+		conds_m[4].setActionCost(3);
 		conds_m[5].setActionCost(5);
 	}
 
