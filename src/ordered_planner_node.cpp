@@ -454,8 +454,10 @@ int main(int argc, char** argv) {
 		conds_m[3].setActionCost(3);
 
 	} else {
-        conds_m.resize(6);
-        cond_ptrs_m.resize(6);
+        conds_m.resize(5);
+        cond_ptrs_m.resize(5);
+        //conds_m.resize(6);
+        //cond_ptrs_m.resize(6);
 
         // Grasp regular
         conds_m[0].addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "false");
@@ -479,7 +481,7 @@ int main(int argc, char** argv) {
         conds_m[1].setCondJunctType(Condition::PRE, Condition::CONJUNCTION); // Used to store eeLoc pre-state variable
         conds_m[1].addCondition(Condition::POST, Condition::ARG_V, Condition::FILLER, Condition::ARG_EQUALS, Condition::LABEL, "eeLoc", Condition::NEGATE, "arg2"); // Stored eeLoc pre-state variable is not the same as post-state eeLoc (eeLoc has moved)
         conds_m[1].addCondition(Condition::POST, Condition::LABEL, "eeLoc", Condition::IN_DOM, Condition::DOM, "side locations", Condition::NEGATE, "na"); // Not in side locations
-        conds_m[1].addCondition(Condition::POST, Condition::LABEL, "grip_type", Condition::EQUALS, Condition::VAR, "none");
+        //conds_m[1].addCondition(Condition::POST, Condition::LABEL, "grip_type", Condition::EQUALS, Condition::VAR, "none");
         conds_m[1].addCondition(Condition::POST, Condition::GROUP, "object locations", Condition::ARG_FIND, Condition::LABEL, "eeLoc", Condition::NEGATE,"na");
         conds_m[1].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
         conds_m[1].setActionLabel("transport");
@@ -492,6 +494,7 @@ int main(int argc, char** argv) {
 
         conds_m[2].addCondition(Condition::POST, Condition::ARG_L, Condition::FILLER, Condition::ARG_EQUALS, Condition::LABEL, "eeLoc", Condition::TRUE, "arg2");
         conds_m[2].addCondition(Condition::POST, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "false");
+        conds_m[2].addCondition(Condition::POST, Condition::LABEL, "grip_type", Condition::EQUALS, Condition::VAR, "none");
         conds_m[2].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
         conds_m[2].setActionLabel("release");
 
@@ -519,25 +522,25 @@ int main(int argc, char** argv) {
         conds_m[4].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
         conds_m[4].setActionLabel("transit_side");
 
-		// Transport Side
-        conds_m[5].addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "true");
-        conds_m[5].addCondition(Condition::PRE, Condition::LABEL, "grip_type", Condition::EQUALS, Condition::VAR, "side");
-        conds_m[5].addCondition(Condition::PRE, Condition::GROUP, "object locations", Condition::ARG_FIND, Condition::LABEL, "eeLoc", Condition::NEGATE, "arg1");
-        conds_m[5].addCondition(Condition::PRE, Condition::LABEL, "eeLoc", Condition::ARG_FIND, Condition::NONE, Condition::FILLER, Condition::TRUE, "arg2");
-        conds_m[5].setCondJunctType(Condition::PRE, Condition::CONJUNCTION); // Used to store eeLoc pre-state variable
-        conds_m[5].addCondition(Condition::POST, Condition::ARG_V, Condition::FILLER, Condition::ARG_EQUALS, Condition::LABEL, "eeLoc", Condition::NEGATE, "arg2"); // Stored eeLoc pre-state variable is not the same as post-state eeLoc (eeLoc has moved)
-        //conds_m[5].addCondition(Condition::POST, Condition::LABEL, "eeLoc", Condition::IN_DOM, Condition::DOM, "side locations", Condition::TRUE, "na");
-        conds_m[5].addCondition(Condition::POST, Condition::LABEL, "grip_type", Condition::EQUALS, Condition::VAR, "none");
-        conds_m[5].addCondition(Condition::POST, Condition::GROUP, "object locations", Condition::ARG_FIND, Condition::LABEL, "eeLoc", Condition::NEGATE,"na");
-        conds_m[5].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
-        conds_m[5].setActionLabel("transport");
+		//// Transport Side
+  //      conds_m[5].addCondition(Condition::PRE, Condition::LABEL, "holding", Condition::EQUALS, Condition::VAR, "true");
+  //      //conds_m[5].addCondition(Condition::PRE, Condition::LABEL, "grip_type", Condition::EQUALS, Condition::VAR, "side");
+  //      conds_m[5].addCondition(Condition::PRE, Condition::GROUP, "object locations", Condition::ARG_FIND, Condition::LABEL, "eeLoc", Condition::NEGATE, "arg1");
+  //      conds_m[5].addCondition(Condition::PRE, Condition::LABEL, "eeLoc", Condition::ARG_FIND, Condition::NONE, Condition::FILLER, Condition::TRUE, "arg2");
+  //      conds_m[5].setCondJunctType(Condition::PRE, Condition::CONJUNCTION); // Used to store eeLoc pre-state variable
+  //      conds_m[5].addCondition(Condition::POST, Condition::ARG_V, Condition::FILLER, Condition::ARG_EQUALS, Condition::LABEL, "eeLoc", Condition::NEGATE, "arg2"); // Stored eeLoc pre-state variable is not the same as post-state eeLoc (eeLoc has moved)
+  //      //conds_m[5].addCondition(Condition::POST, Condition::LABEL, "eeLoc", Condition::IN_DOM, Condition::DOM, "side locations", Condition::TRUE, "na");
+  //      //conds_m[5].addCondition(Condition::POST, Condition::LABEL, "grip_type", Condition::EQUALS, Condition::VAR, "none");
+  //      conds_m[5].addCondition(Condition::POST, Condition::GROUP, "object locations", Condition::ARG_FIND, Condition::LABEL, "eeLoc", Condition::NEGATE,"na");
+  //      conds_m[5].setCondJunctType(Condition::POST, Condition::CONJUNCTION);
+  //      conds_m[5].setActionLabel("transport");
 
 		conds_m[0].setActionCost(1);
 		conds_m[1].setActionCost(5);
 		conds_m[2].setActionCost(1);
 		conds_m[3].setActionCost(3);
 		conds_m[4].setActionCost(3);
-		conds_m[5].setActionCost(5);
+		//conds_m[5].setActionCost(5);
 	}
 
 
