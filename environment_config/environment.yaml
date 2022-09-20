@@ -7,31 +7,31 @@ location_names:
 L0_point: { # Left 
   x: 0.20,
   y: 0.40,
-  z: 0.08,
+  z: .70, #0.08,
   r: 0.08, 
 }
 L1_point: { # Middle
   x: 0.0,
   y: 0.40,
-  z: 0.08,
+  z: .70, #0.08,
   r: 0.08, 
 }
 L2_point: { # Right
   x: -0.20,
   y: 0.40,
-  z: 0.08,
+  z: .70, #0.08,
   r: 0.08, 
 }
 L3_point: { # xtra space L
   x: 0.30,
   y: -0.30,
-  z: 0.08,
+  z: .70, #0.08,
   r: 0.08, 
 }
 L4_point: { # xtra space R
   x: -0.30,
   y: -0.30,
-  z: 0.08,
+  z: .70, #0.08,
   r: 0.08, 
 }
 location_orientation_types:

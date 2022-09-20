@@ -477,8 +477,10 @@ class PlanningQuerySrv {
 					moveit::planning_interface::MoveGroupInterface::Plan direct_plan;
 
 					move_group_ptr->setStartStateToCurrentState();
+					int pose_i = 0;
 					for (auto& goal_pose : poses) {
-						ROS_INFO_STREAM(" --- Working on transit --- ");
+						pose_i++;
+						ROS_INFO_STREAM(" --- Working on transit --- "<<pose_i<<" out of "<<poses.size());
 						printPose(goal_pose);
 						move_group_ptr->setPoseTarget(goal_pose);
 						ros::WallDuration(1.0).sleep();
@@ -509,17 +511,18 @@ class PlanningQuerySrv {
 							}
 							success_ex = (move_group_ptr->plan(direct_plan)==moveit::planning_interface::MoveItErrorCode::SUCCESS);
 							ROS_INFO_NAMED("manipulator_node","Completed planning on iteration: %d",ii);
-							if (success_ex) move_group_ptr->execute(direct_plan);
-							
-							break;
+							if (success_ex) {
+								move_group_ptr->execute(direct_plan);
+								break;
+							}
 						}
 					}
-					if (success) {
+					if (success_ex) {
 						break;
 					}
 					ros::WallDuration(1.0).sleep();
 				}
-				response.success = success;
+				response.success = success_ex;
 			}
 			return true;
 		}

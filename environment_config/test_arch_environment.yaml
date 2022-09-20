@@ -6,19 +6,19 @@ location_names:
 
 BL_point: { # Left base
   x: -0.38,
-  y: 0.25,
+  y: -0.25,
   z: 0.08,
   r: 0.05, # Detection radius (only needed for use with com node)
 }
 BR_point: { # Right base
   x: -0.53,
-  y: 0.25,
+  y: -0.25,
   z: 0.08,
   r: 0.05, 
 }
 T_point: { # Top
   x: -0.46,
-  y: 0.25,
+  y: -0.25,
   z: 0.19,
   r: 0.05, 
 }
