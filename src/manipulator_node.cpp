@@ -42,7 +42,7 @@ class PlanningQuerySrv {
 		const double grip_force = 50;
 		const double grip_epsilon_inner = .03;
 		const double grip_epsilon_outer = .03;
-		const double approach_dist = 0.05;//.3;
+		const double approach_dist = 0.04;//.3;
 		const double jump_thresh = 0.0;
 		const double eef_step = 0.1;
 		const double place_safety_dist = .01; // How far off the ground obj is placed
