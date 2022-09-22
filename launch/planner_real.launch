@@ -4,6 +4,8 @@
 
   <!-- Use cartesian planning approach and retreat for grasp and release -->
   <arg name="use_safe_grasp" default="true" />
+  <arg name="read_model_from_file" default="false" />
+  <arg name="model_filename" default="model.txt" />
 
   <!-- By default, we are not in debug mode -->
   <arg name="debug" default="false" />
@@ -99,6 +101,8 @@
   <!-- Run preference planner -->
   <node name="ordered_planner_node" pkg="manipulation_interface" type="ordered_planner_node" respawn="false" output="screen" >
     <param name="open_loop" value="false"/>
+    <param name="read_model_from_file" value="$(arg read_model_from_file)"/>
+    <param name="model_filename" value="$(find manipulation_interface)/model_files/$(arg model_filename)"/>
   </node>
 
   <!-- Start the pipeline -->

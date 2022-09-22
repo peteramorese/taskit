@@ -305,6 +305,16 @@ int main(int argc, char** argv) {
 		ROS_INFO("Execution in closed loop");
 	}
 
+	bool read_from_file;
+    planner_NH.param("/ordered_planner_node/read_model_from_file", read_from_file, false);
+	std::string model_filename;
+	planner_NH.getParam("/ordered_planner_node/model_filename", model_filename);
+	if (read_from_file) {
+		ROS_INFO_STREAM("Reading model in from existing file: "<<model_filename);
+	} else {
+		ROS_INFO_STREAM("Generating new model in: "<<model_filename);
+	}
+
     // Location names:
     std::vector<std::string> loc_labels;
     planner_NH.getParam("/discrete_environment/location_names", loc_labels);
@@ -571,10 +581,15 @@ int main(int argc, char** argv) {
 	// Create the transition system:
 	TransitionSystem<State> ts(true, false); 
 
-	ts.setInitState(&init_state);
-	ts.setConditions(cond_ptrs_m);
 	ts.setPropositions(AP_m_ptrs);
-	ts.generate();
+	if (!read_from_file) {
+		ts.setInitState(&init_state);
+		ts.setConditions(cond_ptrs_m);
+		ts.generate();
+		ts.writeToFile(model_filename);
+	} else {
+		ts.readFromFile(model_filename);
+	}
 	std::cout<<"\n\n Printing the Transition System: \n\n"<<std::endl;
 	ts.print();
 	std::cout<<"\n";

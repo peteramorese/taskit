@@ -43,14 +43,14 @@
         <origin xyz="0 -0.06 0.085" rpy="0 0 0"/>
         <geometry>
           <!--sphere radius="${0.02+safety_distance}"  /-->
-	  <box size=".03 .04 .07"/>
+	  <box size=".02 .02 .06"/>
         </geometry>
       </collision>
       <collision>
         <origin xyz="0 0.06 0.085" rpy="0 0 0"/>
         <geometry>
           <!--sphere radius="${0.02+safety_distance}"  /-->
-	  <box size=".03 .04 .07"/>
+	  <box size=".02 .02 .06"/>
         </geometry>
       </collision>
     </link>
