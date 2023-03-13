@@ -1,7 +1,6 @@
-string[] world_config
-string prev_state
+string[] state
 ---
+string to_eeloc
+string to_grasp_obj
+string release_obj
 string action
-int64 obj
-string to_loc
-string curr_state

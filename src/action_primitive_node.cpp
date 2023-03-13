@@ -52,6 +52,7 @@ class ExecuteSrv {
 		}
 		bool execute(manipulation_interface::ActionSingle::Request& req, manipulation_interface::ActionSingle::Response& res) {
 			// Execute
+			std::cout<<"IN ACTION PRIMITIVE EXECUTE"<<std::endl;
 			manipulation_interface::PlanningQuery query;
 			std::vector<std::string> bag_domain_labels(req.obj_group.size());
 			for (int i=0; i<req.obj_group.size(); ++i) {
@@ -60,9 +61,12 @@ class ExecuteSrv {
 			if (setup) {
 				query.request.setup_environment = true;
 				query.request.bag_poses = locs->getPoseArray(req.init_obj_locs);
+				setup = false;
 			} else {
 				query.request.setup_environment = false;
 			}
+			query.request.bag_labels = req.obj_group;
+
 			std::cout<<"Received action: "<<req.action<<std::endl;
 			if (req.action.find("transit_up") != std::string::npos) {
 				//// Find the location label that the eef moves to
@@ -82,7 +86,6 @@ class ExecuteSrv {
 				//}
 
 				query.request.manipulator_pose = locs->getLocation(req.to_eeLoc);
-				query.request.bag_labels = req.obj_group;
 				query.request.bag_domain_labels = bag_domain_labels;
 				query.request.pickup_object = "none";
 				query.request.grasp_type = "up";
@@ -106,7 +109,6 @@ class ExecuteSrv {
 				//	}
 				//}
 				query.request.manipulator_pose = locs->getLocation(req.to_eeLoc);
-				query.request.bag_labels = req.obj_group;
 				query.request.bag_domain_labels = bag_domain_labels;
 				query.request.pickup_object = "none";
 				query.request.grasp_type = "side";
@@ -130,10 +132,9 @@ class ExecuteSrv {
 				//query.request.manipulator_pose.orientation = temp_orient;
 				//temp_orient = query.request.manipulator_pose.orientation;
 				//query.request.setup_environment = true;
-				query.request.bag_labels = req.obj_group;
 				query.request.bag_domain_labels = bag_domain_labels;
 				query.request.pickup_object = "none";
-				query.request.grasp_type = "up";
+				query.request.grasp_type = "current";
 				query.request.drop_object = "none";
 				query.request.planning_domain = "domain";
 				query.request.safe_config = false;
@@ -161,18 +162,14 @@ class ExecuteSrv {
 				ROS_WARN("Unrecognized action %s", req.action.c_str());
 				return false;
 			}
-			if (setup) {
-				setup = false;
-			}
 			if (plan_query_client->call(query)) {
 				ROS_INFO("Completed action primitive call");
-				res.success = false;
-				return true;
+				res.success = true;
 			} else {
 				ROS_WARN("Did not find plan query service");
-				res.success = true;
-				return true;
+				res.success = false;
 			}
+			return true;
 		}
 };
 
@@ -182,22 +179,31 @@ int main(int argc, char **argv) {
 
 	//RetrieveData vicon_data(30, &com_NH);
 	LocationCoordinates locs;
-	// Quaternion for downwards release:
-	tf2::Quaternion q_init, q_down, q_side, q_rot_down, q_rot_side;
+
+	// Quaternions:
+	tf2::Quaternion q_init, q_rot, q_res;
 	q_init[0] = 0;
 	q_init[1] = 0;
 	q_init[2] = 1;
 	q_init[3] = 0;
-	//q_rot_down.setRPY(0, M_PI, -M_PI/4);
-	//q_down = q_rot_down * q_init;
-	q_down = q_init;
-	geometry_msgs::Quaternion q_up_msg, q_side_msg;
-	tf2::convert(q_down, q_up_msg);
-	q_rot_side.setRPY(-M_PI/2, 0, 0);
-	q_side = q_rot_side * q_init;
-	tf2::convert(q_side, q_side_msg);
-	q_down.normalize();
-	q_side.normalize();
+	geometry_msgs::Quaternion q_up_x, q_up_y, q_side_x, q_side_y;
+	// Up x
+	tf2::convert(q_init, q_up_x);
+	
+	// Up y
+	q_rot.setRPY(0, 0, M_PI/2);
+	q_res = q_rot * q_init;
+	tf2::convert(q_res, q_up_y);
+
+	// Side x
+	q_rot.setRPY(0, -M_PI/2, 0);
+	q_res = q_rot * q_init;
+	tf2::convert(q_res, q_side_x);
+
+	// Side y
+	q_rot.setRPY(-M_PI/2, M_PI/2, 0);
+	q_res = q_rot * q_init;
+	tf2::convert(q_res, q_side_y);
 
 
 
@@ -218,10 +224,14 @@ int main(int argc, char **argv) {
 		p.x = location_points[i].at("x");
 		p.y = location_points[i].at("y");
 		p.z = location_points[i].at("z");
-		if (location_orientation_types[i] == "up") {
-			locs.addLocation(p, q_up_msg, location_names[i]); 
-		} else if (location_orientation_types[i] == "side") {
-			locs.addLocation(p, q_side_msg, location_names[i]); 
+		if (location_orientation_types[i] == "up_x") {
+			locs.addLocation(p, q_up_x, location_names[i]); 
+		} else if (location_orientation_types[i] == "up_y") {
+			locs.addLocation(p, q_up_y, location_names[i]); 
+		} else if (location_orientation_types[i] == "side_x") {
+			locs.addLocation(p, q_side_x, location_names[i]); 
+		} else if (location_orientation_types[i] == "side_y") {
+			locs.addLocation(p, q_side_y, location_names[i]); 
 		} else {
 			std::string msg = "Did not find orientation preset:" + location_names[i];
 			ROS_ERROR_STREAM(msg.c_str());
@@ -232,7 +242,7 @@ int main(int argc, char **argv) {
 	ros::ServiceClient plan_query_client = action_primitive_NH.serviceClient<manipulation_interface::PlanningQuery>("/manipulation_planning_query");
 	ExecuteSrv ex(&locs, &plan_query_client);
 	ros::ServiceServer ex_srv = action_primitive_NH.advertiseService("/action_primitive", &ExecuteSrv::execute, &ex);
-	ROS_INFO("Execution service is online!");
+	ROS_INFO("Action primitive execution service is online!");
 	ros::spin();
 
 	

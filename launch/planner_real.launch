@@ -2,8 +2,7 @@
 <launch>
 
 
-  <!-- Plan in open loop or closed loop (recieving Vicon Data) -->
-  <arg name="open_loop" default="true" />
+  <!-- Use cartesian planning approach and retreat for grasp and release -->
   <arg name="use_safe_grasp" default="true" />
   <arg name="read_model_from_file" default="false" />
   <arg name="model_filename" default="model.txt" />
@@ -12,9 +11,19 @@
   <arg name="debug" default="false" />
   <arg name="pipeline" default="ompl" />
 
+  <!-- Specify the robot IP, default is the Franka robot in ARIA lab -->
+  <arg name="robot_ip" default="franka-aria.colorado.edu" />
+
   <arg name="env_file" default="environment" />
   <arg name="task_file" default="task_set" />
   <arg name="ws_file" default="workspace" />
+
+  <include file="$(find franka_control)/launch/franka_control.launch">
+	  <arg name="robot_ip" value="$(arg robot_ip)" />
+	  <arg name="load_gripper" value="true" />
+  </include>
+
+
 
   <!-- Load the planning environment and locations -->
   <include file="$(find manipulation_interface)/launch/load_parameters.launch">
@@ -41,13 +50,12 @@
   </include>
 
 
-  <!-- If needed, broadcast static tf for robot root
-  <node pkg="tf2_ros" type="static_transform_publisher" name="virtual_joint_broadcaster_1" args="0.98 0.058 0.31 -2.24 -.3 2.66 2.32 panda_link0" />
-  -->
+  <!-- If needed, broadcast static tf for robot root -->
+  <node pkg="tf2_ros" type="static_transform_publisher" name="virtual_joint_broadcaster_1" args="0 0 0 0 0 0 world panda_link0" />
 
 
 
-  <!-- We do not have a robot connected, so publish fake joint states-->
+  <!-- We do not have a robot connected, so publish fake joint states
   <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
     <param name="/use_gui" value="$(arg use_gui)"/>
     <rosparam param="/source_list">[/move_group/fake_controller_joint_states]</rosparam>
@@ -55,14 +63,14 @@
   <node name="joint_state_desired_publisher" pkg="topic_tools" type="relay" args="joint_states joint_states_desired" />
 
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" output="screen" />
+  -->
 
-
-
+  <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="position_joint_trajectory_controller"/>
 
   <!-- Run the main MoveIt executable without trajectory execution (we do not have controllers configured by default) -->
   <include file="$(find manipulation_interface)/launch/move_group.launch">
     <arg name="allow_trajectory_execution" value="true"/>
-    <arg name="fake_execution" value="true"/>
+    <arg name="fake_execution" value="false"/>
     <arg name="info" value="true"/>
     <arg name="debug" value="$(arg debug)"/>
     <arg name="pipeline" value="$(arg pipeline)"  />
@@ -73,7 +81,7 @@
     <rosparam command="load" file="$(find panda_moveit_config)/config/kinematics.yaml"/>
     <param name="/planning_plugin" value="ompl_interface/OMPLPlanner"/>
     <rosparam command="load" file="$(find panda_moveit_config)/config/ompl_planning.yaml"/>
-    <param name="sim_only" value="true"/>
+    <param name="sim_only" value="false"/>
     <param name="use_grasp" value="$(arg use_safe_grasp)"/>
     <param name="mock_observer" value="false"/>
   </node>
@@ -87,26 +95,19 @@
   <!-- Start the VRPN client to retieve Vicon Tracker data-->
   <include file="$(find manipulation_interface)/launch/vicon_franka_vrpn.launch"/>
 
-  <!-- Run action primitive node handling action primitives in open loop case -->
-  <group if="$(arg open_loop)">
-    <node name="action_primitive_node" pkg="manipulation_interface" type="action_primitive_node" respawn="false" output="screen" />
-  </group>
-
   <!-- Run com node for handling action primitives in closed loop case -->
-  <group unless="$(arg open_loop)">
-    <node name="com_node" pkg="manipulation_interface" type="com_node" respawn="false" output="screen" />
-  </group>
+  <node name="com_node" pkg="manipulation_interface" type="com_node" respawn="false" output="screen" />
 
   <!-- Run preference planner -->
   <node name="ordered_planner_node" pkg="manipulation_interface" type="ordered_planner_node" respawn="false" output="screen" >
-    <param name="open_loop" value="$(arg open_loop)"/>
+    <param name="open_loop" value="false"/>
     <param name="read_model_from_file" value="$(arg read_model_from_file)"/>
     <param name="model_filename" value="$(find manipulation_interface)/model_files/$(arg model_filename)"/>
   </node>
 
   <!-- Start the pipeline -->
   <node name="pipeline_trigger_node" pkg="manipulation_interface" type="pipeline_trigger_node" respawn="false" output="screen">
-    <param name="open_loop" value="$(arg open_loop)"/>
+    <param name="open_loop" value="false"/>
   </node>
 
 </launch>
