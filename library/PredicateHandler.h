@@ -7,6 +7,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include "Quaternions.h"
+#include "Object.h"
 
 namespace ManipulationInterface {
 
@@ -27,14 +28,14 @@ class PredicateHandler {
             public:
                 std::pair<bool, const std::string&> lookupObjectPredicate(const std::string& obj_id) const {
                     auto it = m_obj_id_to_location_name.find(obj_id);
-                    return (it != m_obj_id_to_location_name.end()) ? {true, it->second} : {false, std::string()};
+                    return (it != m_obj_id_to_location_name.end()) ? std::make_pair(true, it->second) : std::make_pair(false, std::string());
                 }
 
-                setObjectPredicate(const std::string& obj_id, const std::string& location_name) {
+                void setObjectPredicate(const std::string& obj_id, const std::string& location_name) {
                     m_obj_id_to_location_name.insert(std::make_pair(obj_id, location_name));
                 }
 
-                setObjectPredicateIgnored(const std::string& obj_id) {
+                void setObjectPredicateIgnored(const std::string& obj_id) {
                     m_obj_id_to_location_name.insert(std::make_pair(obj_id, s_ignored));
                 }
 
@@ -46,7 +47,7 @@ class PredicateHandler {
                     return true;
                 }
 
-                bool m_success = true;
+                bool success = true;
 
             private:
                 std::map<std::string, const std::string&> m_obj_id_to_location_name;
@@ -58,11 +59,11 @@ class PredicateHandler {
             geometry_msgs::Pose pose;
             pose.position = position;
             pose.orientation = Quaternions::convert(Quaternions::get(orientation_type));
-            m_locations.emplace_back(std::piecewise_construct, std::forward_as_tuple(name), std::forward_as_tuple(pose, detection_radius));
+            m_locations.emplace(std::piecewise_construct, std::forward_as_tuple(name), std::forward_as_tuple(pose, detection_radius));
 		}
 
 		void addLocation(const std::string& name, const geometry_msgs::Pose& pose, float detection_radius) {
-            m_locations.emplace_back(std::piecewise_construct, std::forward_as_tuple(name), std::forward_as_tuple(pose, detection_radius));
+            m_locations.emplace(std::piecewise_construct, std::forward_as_tuple(name), std::forward_as_tuple(pose, detection_radius));
 		}
 
         void addLocation(const std::string& name, const Location& location) {
@@ -73,7 +74,7 @@ class PredicateHandler {
     private:
 		static double distance(const geometry_msgs::Point& lhs, const geometry_msgs::Point& rhs);
 
-        geometry_msgs::Pose getLocationPose(const std::string& name) const {return m_locations.at(name);}
+        geometry_msgs::Pose getLocationPose(const std::string& name) const {return m_locations.at(name).pose;}
         std::pair<bool, std::string> findPredicate(const geometry_msgs::Point& loc) const;
 
     private:

@@ -6,6 +6,7 @@ target_link_libraries(ManipulationInterface PUBLIC
     ${Boost_LIBRARIES}
 )
 target_include_directories(ManipulationInterface PUBLIC
+    ${catkin_INCLUDE_DIRS}
     ${MANIPULATION_INTERFACE_LIBRARY_DIR}
 )
 install(TARGETS ManipulationInterface DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})

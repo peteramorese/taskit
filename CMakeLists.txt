@@ -74,7 +74,7 @@ catkin_package(
 #	${EIGEN3_INCLUDE_DIRS}
 #	)
 
-set(MANIPULATION_INTERFACE_LIBRARY_DIR include)
+set(MANIPULATION_INTERFACE_LIBRARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/library)
 
 add_subdirectory(library)
 add_subdirectory(src)

@@ -4,9 +4,10 @@
 #include <string>
 #include <vector>
 
-// Msg types
-#include "manipulation_interface/GraspMsg.h"
-#include "manipulation_interface/ReleaseMsg.h"
+// Srv types
+#include "manipulation_interface/GraspSrv.h"
+#include "manipulation_interface/ReleaseSrv.h"
+#include "manipulation_interface/TransitSrv.h"
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 // MoveIt
@@ -23,14 +24,14 @@ class ActionPrimitive {
         virtual bool operator()(moveit::planning_interface::MoveGroupInterface& move_group, msg_t::Request& request, msg_t::Response& response) = 0;
 };
 
-class SimpleGrasp : public ActionPrimitive<manipulation_interface::GraspMsg> {
+class SimpleGrasp : public ActionPrimitive<manipulation_interface::GraspSrv> {
     public: 
         SimpleGrasp(const std::string& attachment_link) 
             : m_attachment_link(attachment_link)
             {}
 
         virtual bool operator()(moveit::planning_interface::MoveGroupInterface& move_group, msg_t::Request& request, msg_t::Response& response) override {
-            move_group.attachObject(request.grasp_object_id, m_attachment_link);
+            return move_group.attachObject(request.grasp_object_id, m_attachment_link);
         }
 
     private:
@@ -38,11 +39,11 @@ class SimpleGrasp : public ActionPrimitive<manipulation_interface::GraspMsg> {
 
 };
 
-class SimpleRelease : public ActionPrimitive<manipulation_interface::ReleaseMsg> {
+class SimpleRelease : public ActionPrimitive<manipulation_interface::ReleaseSrv> {
     
 };
 
-class Transit : public ActionPrimitive<manipulation_interface::TransitMsg> {
+class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
     public:
         Transit(double planning_time, uint8_t max_trials, const tf2::Vector3 approach_direction, float approach_distance, double max_velocity_scaling_factor = 1.0)
             : m_planning_time(planning_time)
@@ -70,8 +71,9 @@ class Transit : public ActionPrimitive<manipulation_interface::TransitMsg> {
                     response.plan_success = (move_group.plan(plan)==moveit::planning_interface::MoveItErrorCode::SUCCESS);
                     ros::WallDuration(1.0).sleep();
                     if (response.plan_success) {
-                        move_group_ptr->setMaxVelocityScalingFactor(m_max_velocity_scaling_factor);
-                        move_group_ptr->execute(plan);
+                        move_group.setMaxVelocityScalingFactor(m_max_velocity_scaling_factor);
+                        move_group.execute(plan);
+                        return true;
                     }
                 }
 

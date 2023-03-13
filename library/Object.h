@@ -6,6 +6,7 @@
 #include <map>
 #include <set>
 
+#include <ros/ros.h>
 #include <geometry_msgs/Pose.h>
 #include <moveit_msgs/CollisionObject.h>
 
@@ -28,7 +29,7 @@ static ObjectPrimitive getObjectPrimitiveType(const std::string& str) {
     if (str == "box") return ObjectPrimitive::Box;
     if (str == "sphere") return ObjectPrimitive::Sphere;
     if (str == "cylinder") return ObjectPrimitive::Cylinder;
-    ROS_ERROR("Unrecognized primitive type: " + str);
+    ROS_ERROR_STREAM("Unrecognized primitive type: " << str);
 }
 
 struct ObjectSpecification {
@@ -58,7 +59,7 @@ struct SingleObjectSpecification : ObjectSpecification {
 
     protected:
         virtual moveit_msgs::CollisionObject convert() const = 0;
-        virtual constructFromConfig(const ObjectConfig& config) = 0;
+        virtual void constructFromConfig(const ObjectConfig& config) = 0;
 };
 
 struct BoxObjectSpecification : SingleObjectSpecification {
@@ -79,7 +80,7 @@ struct BoxObjectSpecification : SingleObjectSpecification {
             return col_obj;
         }
 
-        virtual constructFromConfig(const ObjectConfig& config) override {
+        virtual void constructFromConfig(const ObjectConfig& config) override {
             try {
                 length = config.at("l");
                 width = config.at("w");
@@ -106,7 +107,7 @@ struct SphereObjectSpecification : SingleObjectSpecification {
             return col_obj;
         }
 
-        virtual constructFromConfig(const ObjectConfig& config) override {
+        virtual void constructFromConfig(const ObjectConfig& config) override {
             try {
                 radius = config.at("r");
             } catch (const std::exception& e) {
@@ -132,7 +133,7 @@ struct CylinderObjectSpecification : SingleObjectSpecification {
             return col_obj;
         }
 
-        virtual constructFromConfig(const ObjectConfig& config) override {
+        virtual void constructFromConfig(const ObjectConfig& config) override {
             try {
                 height = config.at("h");
                 radius = config.at("r");
@@ -240,11 +241,11 @@ class SimilarObjectGroup : public ObjectGroup<POSE_TRACKER_T> {
         }
 
         void addObject(const std::string& id) {
-            m_objects.emplace(std::piecewise_construct, std::forward_as_tuple(id), std::forward_as_tuple(id, m_spec, geometry_msgs::Pose{}))
+            this->m_objects.emplace(std::piecewise_construct, std::forward_as_tuple(id), std::forward_as_tuple(id, m_spec, geometry_msgs::Pose{}));
         }
 
         void addObject(const std::string& id, const geometry_msgs::Pose& pose) {
-            m_objects.emplace(std::piecewise_construct, std::forward_as_tuple(id), std::forward_as_tuple(id, m_spec, pose))
+            this->m_objects.emplace(std::piecewise_construct, std::forward_as_tuple(id), std::forward_as_tuple(id, m_spec, pose));
         }
 
         virtual const ObjectSpecification& getSpec() const {return *m_spec;}
@@ -253,30 +254,31 @@ class SimilarObjectGroup : public ObjectGroup<POSE_TRACKER_T> {
         std::shared_ptr<ObjectSpecification> m_spec;
 };
 
+template <class POSE_TRACKER_T>
 class UniqueObjectGroup : public ObjectGroup<POSE_TRACKER_T> {
     public:
         UniqueObjectGroup() 
             {}
 
         void addObject(const std::string& id, const std::shared_ptr<ObjectSpecification>& spec) {
-            m_objects.emplace(std::piecewise_construct, std::forward_as_tuple(id), std::forward_as_tuple(id, spec, geometry_msgs::Pose{}))
+            this->m_objects.emplace(std::piecewise_construct, std::forward_as_tuple(id), std::forward_as_tuple(id, spec, geometry_msgs::Pose{}));
         }
 
         void addObject(const std::string& id, const std::shared_ptr<ObjectSpecification>& spec, const geometry_msgs::Pose& pose) {
-            m_objects.emplace(std::piecewise_construct, std::forward_as_tuple(id), std::forward_as_tuple(id, spec, pose))
+            this->m_objects.emplace(std::piecewise_construct, std::forward_as_tuple(id), std::forward_as_tuple(id, spec, pose));
         }
 
-        void operator+=(const ObjectType& obj) {
-            m_objects.insert(std::make_pair(obj.id, obj));
+        void operator+=(const Object<POSE_TRACKER_T>& obj) {
+            this->m_objects.insert(std::make_pair(obj.id, obj));
         }
 
-        void operator+=(ObjectType&& obj) {
-            m_objects.insert(std::make_pair(obj.id, std::move(obj)));
+        void operator+=(Object<POSE_TRACKER_T>&& obj) {
+            this->m_objects.insert(std::make_pair(obj.id, std::move(obj)));
         }
 
         void operator+=(const ObjectGroup<POSE_TRACKER_T>& obj_group) {
             for (const auto& v_type : obj_group.getObjects()) {
-                m_objects.insert(std::make_pair(v_type.first, v_type.second));
+                this->m_objects.insert(std::make_pair(v_type.first, v_type.second));
             }
         }
 };

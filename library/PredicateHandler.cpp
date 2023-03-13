@@ -26,7 +26,7 @@ std::pair<bool, std::string> PredicateHandler::findPredicate(const geometry_msgs
     return {found, nearest_predicate};
 }
 
-const PredicateSet PredicateHandler::getPredicates(const std::vector<std::pair<std::string, geometry_msgs::Pose>>& obj_locs, std::set<std::string> ignore_obj_ids) const {
+const PredicateHandler::PredicateSet PredicateHandler::getPredicates(const std::vector<std::pair<std::string, geometry_msgs::Pose>>& obj_locs, std::set<std::string> ignore_obj_ids) const {
     PredicateSet predicate_set;
     for (const auto& obj_loc : obj_locs) {
         const std::string& obj_id = obj_loc.first;

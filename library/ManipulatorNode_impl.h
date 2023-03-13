@@ -6,35 +6,35 @@
 
 namespace ManipulationInterface {
 
-template <class OBJ_GROUP_T, class...ACTION_PRIMITIVES_T>
-ManipulatorNode<ACTION_PRIMITIVES_T...>::ManipulatorNode(int argc, char** argv, const std::string& planning_group, const std::string& frame_id, const std::shared_ptr<OBJ_GROUP_T>& obj_group, ACTION_PRIMITIVES_T&&...action_primitives)
-    : m_action_primitives(std::forward<ACTION_PRIMITIVES_T>(action_primitives)...)
+template <class OBJ_GROUP_T, class...ACTION_PRIMITIVES_TYPES>
+ManipulatorNode<OBJ_GROUP_T, ACTION_PRIMITIVES_TYPES...>::ManipulatorNode(int argc, char** argv, const std::string& planning_group, const std::string& frame_id, const std::shared_ptr<OBJ_GROUP_T>& obj_group, ACTION_PRIMITIVES_TYPES&&...action_primitives)
+    : m_action_primitives(std::forward<ACTION_PRIMITIVES_TYPES>(action_primitives)...)
     , m_obj_group(obj_group)
     , m_move_group(std::make_shared<moveit::planning_interface::MoveGroupInterface>(planning_group))
     , m_planning_interface(std::make_shared<moveit::planning_interface::PlanningSceneInterface>())
-    , m_visual_tools(std::make_shared<>(frame_id))
+    , m_visual_tools(std::make_shared<moveit_visual_tools::MoveItVisualTools>(frame_id))
     , m_frame_id(frame_id)
 {
     // Init ros items
     ros::init(argc, argv, s_node_name);
-    m_node_handle.reset(std::make_unique<ros::NodeHandle>("~"));
-    m_spinner.reset(std::make_unique<ros::AsyncSpinner>(2));
+    m_node_handle = std::make_unique<ros::NodeHandle>("~");
+    m_spinner = std::make_unique<ros::AsyncSpinner>(2);
     m_spinner->start();
 
     // Init MoveIt items
     robot_model_loader::RobotModelLoader robot_model_loader("robot_description");
-    robot_state::RobotStatePtr robot_state(new robot_state::RobotState(robot_model_loader.getModel()));
+	robot_model::RobotModelPtr robot_model = robot_model_loader.getModel();
+    robot_state::RobotStatePtr robot_state(new robot_state::RobotState(robot_model));
     const robot_state::JointModelGroup* joint_model_group = robot_state->getJointModelGroup(planning_group);
-    m_planning_scene(new planning_scene::PlanningScene(robot_model_loader.getModel()));
+    m_planning_scene = std::make_shared<planning_scene::PlanningScene>(robot_model);
     m_planning_scene->getCurrentStateNonConst().setToDefaultValues(joint_model_group, "ready");
-    m_visual_tools(m_frame_id);
 
     // Load planning plugin
     std::unique_ptr<pluginlib::ClassLoader<planning_interface::PlannerManager>> planner_plugin_loader;
     planning_interface::PlannerManagerPtr planner_instance;
     std::string planner_plugin_name;
 
-    if (!M_NH.getParam("planning_plugin", planner_plugin_name))
+    if (!m_node_handle->getParam("planning_plugin", planner_plugin_name))
         ROS_FATAL_STREAM("Could not find planner plugin name");
     try {
         planner_plugin_loader.reset(new pluginlib::ClassLoader<planning_interface::PlannerManager>(
@@ -45,7 +45,7 @@ ManipulatorNode<ACTION_PRIMITIVES_T...>::ManipulatorNode(int argc, char** argv, 
     }
     try {
         planner_instance.reset(planner_plugin_loader->createUnmanagedInstance(planner_plugin_name));
-        if (!planner_instance->initialize(robot_model, M_NH.getNamespace()))
+        if (!planner_instance->initialize(robot_model, m_node_handle->getNamespace()))
             ROS_FATAL_STREAM("Could not initialize planner instance");
         ROS_INFO_STREAM("Using planner '" << planner_instance->getDescription() << "'");
     }
@@ -60,26 +60,26 @@ ManipulatorNode<ACTION_PRIMITIVES_T...>::ManipulatorNode(int argc, char** argv, 
     setPlanner("RRTConnectkConfigDefault");
 
     // Set up action primitives
-    m_action_services.reserve(sizeof...(ACTION_PRIMITIVES_T));
+    m_action_services.reserve(sizeof...(ACTION_PRIMITIVES_TYPES));
 
 }
 
-template <class OBJ_GROUP_T, class...ACTION_PRIMITIVES_T>
-bool ManipulatorNode<ACTION_PRIMITIVES_T...>::createWorkspace(const std::string& param_ns) {
+template <class OBJ_GROUP_T, class...ACTION_PRIMITIVES_TYPES>
+void ManipulatorNode<OBJ_GROUP_T, ACTION_PRIMITIVES_TYPES...>::createWorkspace(const std::string& param_ns) {
 
     std::map<std::string, std::string> obj_domains;
 
     std::vector<std::string> obstacle_ids;
-    M_NH.getParam(getParamName("obstacle_ids", param_ns), obstacle_ids);
+    m_node_handle->getParam(getParamName("obstacle_ids", param_ns), obstacle_ids);
 
     std::vector<std::string> obstacle_types;
-    M_NH.getParam(getParamName("obstacle_types", param_ns), obstacle_types);
+    m_node_handle->getParam(getParamName("obstacle_types", param_ns), obstacle_types);
 
     std::vector<std::string> obstacle_domains;
-    M_NH.getParam(getParamName("obstacle_domains", param_ns), obstacle_domains, {});
+    m_node_handle->param(getParamName("obstacle_domains", param_ns), obstacle_domains, {});
 
     std::vector<std::string> obstacle_orientation_types;
-    M_NH.getParam(getParamName("obstacle_orientation_types", param_ns), obstacle_orientation_types);
+    m_node_handle->getParam(getParamName("obstacle_orientation_types", param_ns), obstacle_orientation_types);
 
     ROS_ASSERT_MSG(obstacle_ids.size() != obstacle_types.size(), "Each obstacle name must correspond to a type");
     ROS_ASSERT_MSG(obstacle_ids.size() != obstacle_orientation_types.size(), "Each obstacle must have an orientation type");
@@ -88,8 +88,8 @@ bool ManipulatorNode<ACTION_PRIMITIVES_T...>::createWorkspace(const std::string&
 
     for (int i=0; i<obstacle_ids.size(); ++i) {
         ObjectConfig config;
-        M_NH.getParam(getParamName(param_ns, obstacle_ids[i]), config);
-        ROS_INFO_STREAM_NAMED(s_node_name, "Loaded obstacle: " << config 
+        m_node_handle->getParam(getParamName(param_ns, obstacle_ids[i]), config);
+        ROS_INFO_STREAM_NAMED(s_node_name, "Loaded obstacle: " << obstacle_ids[i] 
             << " at (x: " << config.at("x") 
             << ", y: " << config.at("y") 
             << ", z: " << config.at("z") 
@@ -97,7 +97,7 @@ bool ManipulatorNode<ACTION_PRIMITIVES_T...>::createWorkspace(const std::string&
 
 
         std::shared_ptr<ObjectSpecification> spec = makeObjectSpecification(obstacle_types[i], config);
-        OBJ_GROUP_T::ObjectType object(obstacle_ids[i], spec, config, obstacle_orientation_types[i]);
+        typename OBJ_GROUP_T::ObjectType object(obstacle_ids[i], spec, config, obstacle_orientation_types[i]);
 
         moveit_msgs::CollisionObject obstacle = object.getCollisionObject();
         obstacle.operation = obstacle.ADD;
@@ -110,9 +110,9 @@ bool ManipulatorNode<ACTION_PRIMITIVES_T...>::createWorkspace(const std::string&
 
 }
 
-template <class OBJ_GROUP_T, class...ACTION_PRIMITIVES_T>
-void ManipulatorNode<ACTION_PRIMITIVES_T...>::updateWorkspace() {
-    auto attached_objects = m_planning_scene->getAttachedObjects();
+template <class OBJ_GROUP_T, class...ACTION_PRIMITIVES_TYPES>
+void ManipulatorNode<OBJ_GROUP_T, ACTION_PRIMITIVES_TYPES...>::updateWorkspace() {
+    auto attached_objects = m_planning_interface->getAttachedObjects();
 
     for (auto& col_obj : m_collision_objects) {
         const auto& id = col_obj.id;
@@ -127,17 +127,17 @@ void ManipulatorNode<ACTION_PRIMITIVES_T...>::updateWorkspace() {
         col_obj.operation = col_obj.ADD;
     }
 
-    m_planning_scene->applyCollisionObjects(m_collision_objects);
+    m_planning_interface->applyCollisionObjects(m_collision_objects);
 
 }
 
 
-template <class OBJ_GROUP_T, class...ACTION_PRIMITIVES_T>
-std::string ManipulatorNode<ACTION_PRIMITIVES_T...>::getParamName(const std::string& param_name, std::string namespace = std::string()) {
-    if (namespace.empty) return "/" + param_name;
-    if (namespace.front() != '/') namespace = "/" + namespace;
-    if (namespace.back() != '/') namespace.push_back('/');
-    return namespace + param_name;
+template <class OBJ_GROUP_T, class...ACTION_PRIMITIVES_TYPES>
+std::string ManipulatorNode<OBJ_GROUP_T, ACTION_PRIMITIVES_TYPES...>::getParamName(const std::string& param_name, std::string ns) {
+    if (ns.empty()) return "/" + param_name;
+    if (ns.front() != '/') ns = "/" + ns;
+    if (ns.back() != '/') ns.push_back('/');
+    return ns + param_name;
 }
 
 }
