@@ -31,6 +31,7 @@ class SimpleGrasp : public ActionPrimitive<manipulation_interface::GraspSrv> {
             {}
 
         virtual bool operator()(moveit::planning_interface::MoveGroupInterface& move_group, msg_t::Request& request, msg_t::Response& response) override {
+            ROS_ERROR("YO HELLO I RAN");
             return move_group.attachObject(request.grasp_object_id, m_attachment_link);
         }
 

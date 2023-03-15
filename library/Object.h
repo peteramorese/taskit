@@ -257,8 +257,7 @@ class SimilarObjectGroup : public ObjectGroup<POSE_TRACKER_T> {
 template <class POSE_TRACKER_T>
 class UniqueObjectGroup : public ObjectGroup<POSE_TRACKER_T> {
     public:
-        UniqueObjectGroup() 
-            {}
+        UniqueObjectGroup() = default;
 
         void addObject(const std::string& id, const std::shared_ptr<ObjectSpecification>& spec) {
             this->m_objects.emplace(std::piecewise_construct, std::forward_as_tuple(id), std::forward_as_tuple(id, spec, geometry_msgs::Pose{}));

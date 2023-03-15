@@ -19,21 +19,26 @@
 
 // Manipulation Interface
 #include "Quaternions.h"
+#include "Tools.h"
 
 namespace ManipulationInterface {
 
     template <class OBJ_GROUP_T, class...ACTION_PRIMITIVES_TYPES>
     class ManipulatorNode {
         public:
-            ManipulatorNode(int argc, char** argv, const std::string& planning_group, const std::string& frame_id, const std::shared_ptr<OBJ_GROUP_T>& obj_group, ACTION_PRIMITIVES_TYPES&&...action_primitives);
+            ManipulatorNode(const std::string& node_name, const std::string& planning_group, const std::string& frame_id, const std::shared_ptr<OBJ_GROUP_T>& obj_group, ACTION_PRIMITIVES_TYPES&&...action_primitives);
+            ~ManipulatorNode() {DEBUG("in dtor");}
 
             inline void setPlanner(const std::string& planner_id) { m_move_group->setPlannerId(planner_id); }
 
-            void createWorkspace(const std::string& param_ns = "workspace");
+            const std::shared_ptr<OBJ_GROUP_T> createWorkspace(const std::string& param_ns = "workspace");
             void updateWorkspace();
             //TODO: void applyWorkspace(const std::string& domain);
 
             void setEndEffectorLink(const std::string& ee_link) { m_move_group->setEndEffectorLink(ee_link); }
+
+            ros::NodeHandle& getNodeHandle() {return *m_node_handle;}
+            const ros::NodeHandle& getNodeHandle() const {return *m_node_handle;}
 
             template <class ACTION_PRIMITIVE_T, typename...ARGS_T>
             void callAction(ARGS_T&&...args) {
@@ -79,6 +84,8 @@ namespace ManipulationInterface {
             }
 
         private:
+            const std::string m_node_name;
+
             std::unique_ptr<ros::NodeHandle> m_node_handle;
             std::unique_ptr<ros::AsyncSpinner> m_spinner;
             std::tuple<ACTION_PRIMITIVES_TYPES...> m_action_primitives;
@@ -90,9 +97,15 @@ namespace ManipulationInterface {
             std::string m_frame_id;
             std::vector<moveit_msgs::CollisionObject> m_collision_objects;
 
+            // Things that just need to exist
+            robot_model::RobotModelPtr m_robot_model;
+            robot_state::RobotStatePtr m_robot_state;
+            boost::scoped_ptr<pluginlib::ClassLoader<planning_interface::PlannerManager>> m_planner_plugin_loader;
+            planning_interface::PlannerManagerPtr m_planner_instance;
+            //boost::shared_ptr<planning_interface::PlannerManager> m_planner_instance;
+
             std::vector<ros::ServiceServer> m_action_services;
 
-            static inline const std::string s_node_name = "manipulator_node";
     };
 }
 

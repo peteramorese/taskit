@@ -3,54 +3,56 @@
 #include "ManipulatorNode.h"
 
 #include "Object.h"
+#include "Tools.h"
 
 namespace ManipulationInterface {
 
 template <class OBJ_GROUP_T, class...ACTION_PRIMITIVES_TYPES>
-ManipulatorNode<OBJ_GROUP_T, ACTION_PRIMITIVES_TYPES...>::ManipulatorNode(int argc, char** argv, const std::string& planning_group, const std::string& frame_id, const std::shared_ptr<OBJ_GROUP_T>& obj_group, ACTION_PRIMITIVES_TYPES&&...action_primitives)
-    : m_action_primitives(std::forward<ACTION_PRIMITIVES_TYPES>(action_primitives)...)
+ManipulatorNode<OBJ_GROUP_T, ACTION_PRIMITIVES_TYPES...>::ManipulatorNode(const std::string& node_name, const std::string& planning_group, const std::string& frame_id, const std::shared_ptr<OBJ_GROUP_T>& obj_group, ACTION_PRIMITIVES_TYPES&&...action_primitives)
+    : m_node_name(node_name)
+    , m_action_primitives(std::forward<ACTION_PRIMITIVES_TYPES>(action_primitives)...)
     , m_obj_group(obj_group)
     , m_move_group(std::make_shared<moveit::planning_interface::MoveGroupInterface>(planning_group))
     , m_planning_interface(std::make_shared<moveit::planning_interface::PlanningSceneInterface>())
     , m_visual_tools(std::make_shared<moveit_visual_tools::MoveItVisualTools>(frame_id))
     , m_frame_id(frame_id)
 {
+    DEBUG("Constructing...");
+
+    //if constexpr (std::is_default_constructible_v<OBJ_GROUP_T>) ROS_ASSERT_MSG(obj_group, "Must provide an object group when using a non-default-constructable object group type");
+    
     // Init ros items
-    ros::init(argc, argv, s_node_name);
     m_node_handle = std::make_unique<ros::NodeHandle>("~");
     m_spinner = std::make_unique<ros::AsyncSpinner>(2);
     m_spinner->start();
 
     // Init MoveIt items
     robot_model_loader::RobotModelLoader robot_model_loader("robot_description");
-	robot_model::RobotModelPtr robot_model = robot_model_loader.getModel();
-    robot_state::RobotStatePtr robot_state(new robot_state::RobotState(robot_model));
-    const robot_state::JointModelGroup* joint_model_group = robot_state->getJointModelGroup(planning_group);
-    m_planning_scene = std::make_shared<planning_scene::PlanningScene>(robot_model);
+	m_robot_model = robot_model_loader.getModel();
+    m_robot_state.reset(new robot_state::RobotState(m_robot_model));
+    const robot_state::JointModelGroup* joint_model_group = m_robot_state->getJointModelGroup(planning_group);
+    m_planning_scene = std::make_shared<planning_scene::PlanningScene>(m_robot_model);
     m_planning_scene->getCurrentStateNonConst().setToDefaultValues(joint_model_group, "ready");
 
     // Load planning plugin
-    std::unique_ptr<pluginlib::ClassLoader<planning_interface::PlannerManager>> planner_plugin_loader;
-    planning_interface::PlannerManagerPtr planner_instance;
     std::string planner_plugin_name;
 
     if (!m_node_handle->getParam("planning_plugin", planner_plugin_name))
         ROS_FATAL_STREAM("Could not find planner plugin name");
     try {
-        planner_plugin_loader.reset(new pluginlib::ClassLoader<planning_interface::PlannerManager>(
+        m_planner_plugin_loader.reset(new pluginlib::ClassLoader<planning_interface::PlannerManager>(
                     "moveit_core", "planning_interface::PlannerManager"));
-    }
-    catch (pluginlib::PluginlibException& ex) {
+    } catch (pluginlib::PluginlibException& ex) {
         ROS_FATAL_STREAM("Exception while creating planning plugin loader " << ex.what());
     }
     try {
-        planner_instance.reset(planner_plugin_loader->createUnmanagedInstance(planner_plugin_name));
-        if (!planner_instance->initialize(robot_model, m_node_handle->getNamespace()))
+        m_planner_instance.reset(m_planner_plugin_loader->createUnmanagedInstance(planner_plugin_name));
+        //m_planner_instance = m_planner_plugin_loader->createInstance(planner_plugin_name);
+        if (!m_planner_instance->initialize(m_robot_model, m_node_handle->getNamespace()))
             ROS_FATAL_STREAM("Could not initialize planner instance");
-        ROS_INFO_STREAM("Using planner '" << planner_instance->getDescription() << "'");
-    }
-    catch (pluginlib::PluginlibException& ex) {
-        const std::vector<std::string>& classes = planner_plugin_loader->getDeclaredClasses();
+        ROS_INFO_STREAM("Using planner '" << m_planner_instance->getDescription() << "'");
+    } catch (pluginlib::PluginlibException& ex) {
+        const std::vector<std::string>& classes = m_planner_plugin_loader->getDeclaredClasses();
         std::stringstream ss;
         for (std::size_t i = 0; i < classes.size(); ++i)
             ss << classes[i] << " ";
@@ -61,12 +63,16 @@ ManipulatorNode<OBJ_GROUP_T, ACTION_PRIMITIVES_TYPES...>::ManipulatorNode(int ar
 
     // Set up action primitives
     m_action_services.reserve(sizeof...(ACTION_PRIMITIVES_TYPES));
+    DEBUG("end of ctor");
 
 }
 
 template <class OBJ_GROUP_T, class...ACTION_PRIMITIVES_TYPES>
-void ManipulatorNode<OBJ_GROUP_T, ACTION_PRIMITIVES_TYPES...>::createWorkspace(const std::string& param_ns) {
+const std::shared_ptr<OBJ_GROUP_T> ManipulatorNode<OBJ_GROUP_T, ACTION_PRIMITIVES_TYPES...>::createWorkspace(const std::string& param_ns) {
+    static_assert(std::is_default_constructible_v<OBJ_GROUP_T>, "Cannot createWorkspace with a non default constructable object group");
 
+    m_obj_group.reset(new OBJ_GROUP_T);
+    
     std::map<std::string, std::string> obj_domains;
 
     std::vector<std::string> obstacle_ids;
@@ -88,8 +94,8 @@ void ManipulatorNode<OBJ_GROUP_T, ACTION_PRIMITIVES_TYPES...>::createWorkspace(c
 
     for (int i=0; i<obstacle_ids.size(); ++i) {
         ObjectConfig config;
-        m_node_handle->getParam(getParamName(param_ns, obstacle_ids[i]), config);
-        ROS_INFO_STREAM_NAMED(s_node_name, "Loaded obstacle: " << obstacle_ids[i] 
+        m_node_handle->getParam(getParamName(obstacle_ids[i], param_ns), config);
+        ROS_INFO_STREAM_NAMED(m_node_name, "Loaded obstacle: " << obstacle_ids[i] 
             << " at (x: " << config.at("x") 
             << ", y: " << config.at("y") 
             << ", z: " << config.at("z") 
@@ -100,6 +106,7 @@ void ManipulatorNode<OBJ_GROUP_T, ACTION_PRIMITIVES_TYPES...>::createWorkspace(c
         typename OBJ_GROUP_T::ObjectType object(obstacle_ids[i], spec, config, obstacle_orientation_types[i]);
 
         moveit_msgs::CollisionObject obstacle = object.getCollisionObject();
+        obstacle.header.frame_id = m_frame_id;
         obstacle.operation = obstacle.ADD;
 
         if (i < obstacle_domains.size()) obj_domains[obstacle.id] = obstacle_domains[i];
@@ -107,7 +114,9 @@ void ManipulatorNode<OBJ_GROUP_T, ACTION_PRIMITIVES_TYPES...>::createWorkspace(c
         m_collision_objects.push_back(std::move(obstacle));
 
     }
+    updateWorkspace();
 
+    return m_obj_group;
 }
 
 template <class OBJ_GROUP_T, class...ACTION_PRIMITIVES_TYPES>
@@ -120,7 +129,7 @@ void ManipulatorNode<OBJ_GROUP_T, ACTION_PRIMITIVES_TYPES...>::updateWorkspace()
         auto it = attached_objects.find(id);
         if (it == attached_objects.end()) continue;
 
-        auto obj_in_group = m_obj_group.getObject(id);
+        auto obj_in_group = m_obj_group->getObject(id);
         obj_in_group.updatePose();
         col_obj = obj_in_group.getCollisionObject();
 

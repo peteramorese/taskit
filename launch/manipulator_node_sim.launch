@@ -69,8 +69,11 @@
     <arg name="pipeline" value="$(arg pipeline)"  />
   </include>
 
+  <include file="$(find manipulation_interface)/launch/load_parameters.launch">
+  </include>
 
-  <node name="manipulator_node" pkg="manipulation_interface" type="manipulator_node" respawn="false" output="screen">
+
+  <node name="simple_manipulator_node" pkg="manipulation_interface" type="simple_manipulator_node" respawn="false" output="screen">
     <rosparam command="load" file="$(find panda_moveit_config)/config/kinematics.yaml"/>
     <param name="/planning_plugin" value="ompl_interface/OMPLPlanner"/>
     <rosparam command="load" file="$(find panda_moveit_config)/config/ompl_planning.yaml"/>

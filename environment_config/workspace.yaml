@@ -1,4 +1,4 @@
-obstacle_names:
+obstacle_ids:
   - "ground"
 
 obstacle_types:
