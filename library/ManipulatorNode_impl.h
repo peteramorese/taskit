@@ -7,11 +7,10 @@
 
 namespace ManipulationInterface {
 
-template <class OBJ_GROUP_T, class...ACTION_PRIMITIVES_TYPES>
-ManipulatorNode<OBJ_GROUP_T, ACTION_PRIMITIVES_TYPES...>::ManipulatorNode(const std::string& node_name, const std::string& planning_group, const std::string& frame_id, const std::shared_ptr<OBJ_GROUP_T>& obj_group, ACTION_PRIMITIVES_TYPES&&...action_primitives)
+template <class...ACTION_PRIMITIVES_TYPES>
+ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::ManipulatorNode(const std::string& node_name, const std::string& planning_group, const std::string& frame_id, ACTION_PRIMITIVES_TYPES&&...action_primitives)
     : m_node_name(node_name)
     , m_action_primitives(std::forward<ACTION_PRIMITIVES_TYPES>(action_primitives)...)
-    , m_obj_group(obj_group)
     , m_move_group(std::make_shared<moveit::planning_interface::MoveGroupInterface>(planning_group))
     , m_planning_interface(std::make_shared<moveit::planning_interface::PlanningSceneInterface>())
     , m_visual_tools(std::make_shared<moveit_visual_tools::MoveItVisualTools>(frame_id))
@@ -62,74 +61,76 @@ ManipulatorNode<OBJ_GROUP_T, ACTION_PRIMITIVES_TYPES...>::ManipulatorNode(const 
     setPlanner("RRTConnectkConfigDefault");
 
     // Set up action primitives
-    m_action_services.reserve(sizeof...(ACTION_PRIMITIVES_TYPES));
     DEBUG("end of ctor");
 
 }
 
-template <class OBJ_GROUP_T, class...ACTION_PRIMITIVES_TYPES>
-const std::shared_ptr<OBJ_GROUP_T> ManipulatorNode<OBJ_GROUP_T, ACTION_PRIMITIVES_TYPES...>::createWorkspace(const std::string& param_ns) {
-    static_assert(std::is_default_constructible_v<OBJ_GROUP_T>, "Cannot createWorkspace with a non default constructable object group");
+template <class...ACTION_PRIMITIVES_TYPES>
+void ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::createObjects(const std::string& workspace_ns, const std::shared_ptr<PoseTracker>& pose_tracker) {
 
-    m_obj_group.reset(new OBJ_GROUP_T);
-    
     std::map<std::string, std::string> obj_domains;
 
-    std::vector<std::string> obstacle_ids;
-    m_node_handle->getParam(getParamName("obstacle_ids", param_ns), obstacle_ids);
+    std::vector<std::string> object_ids;
+    m_node_handle->getParam(getParamName("object_ids", workspace_ns), object_ids);
 
-    std::vector<std::string> obstacle_types;
-    m_node_handle->getParam(getParamName("obstacle_types", param_ns), obstacle_types);
+    std::vector<std::string> object_types;
+    m_node_handle->getParam(getParamName("object_types", workspace_ns), object_types);
 
-    std::vector<std::string> obstacle_domains;
-    m_node_handle->param(getParamName("obstacle_domains", param_ns), obstacle_domains, {});
+    std::vector<std::string> object_domains;
+    m_node_handle->param(getParamName("object_domains", workspace_ns), object_domains, {});
 
-    std::vector<std::string> obstacle_orientation_types;
-    m_node_handle->getParam(getParamName("obstacle_orientation_types", param_ns), obstacle_orientation_types);
+    std::vector<std::string> object_orientation_types;
+    m_node_handle->getParam(getParamName("object_orientation_types", workspace_ns), object_orientation_types);
 
-    ROS_ASSERT_MSG(obstacle_ids.size() != obstacle_types.size(), "Each obstacle name must correspond to a type");
-    ROS_ASSERT_MSG(obstacle_ids.size() != obstacle_orientation_types.size(), "Each obstacle must have an orientation type");
+    ROS_ASSERT_MSG(object_ids.size() != object_types.size(), "Each object name must correspond to a type");
+    ROS_ASSERT_MSG(object_ids.size() != object_orientation_types.size(), "Each object must have an orientation type");
 
-    m_collision_objects.reserve(obstacle_ids.size());
+    m_collision_objects.reserve(object_ids.size());
 
-    for (int i=0; i<obstacle_ids.size(); ++i) {
+    for (int i=0; i<object_ids.size(); ++i) {
         ObjectConfig config;
-        m_node_handle->getParam(getParamName(obstacle_ids[i], param_ns), config);
-        ROS_INFO_STREAM_NAMED(m_node_name, "Loaded obstacle: " << obstacle_ids[i] 
+        m_node_handle->getParam(getParamName(object_ids[i], workspace_ns), config);
+        ROS_INFO_STREAM_NAMED(m_node_name, "Loaded object: " << object_ids[i] 
             << " at (x: " << config.at("x") 
             << ", y: " << config.at("y") 
             << ", z: " << config.at("z") 
             << ")");
 
 
-        std::shared_ptr<ObjectSpecification> spec = makeObjectSpecification(obstacle_types[i], config);
-        typename OBJ_GROUP_T::ObjectType object(obstacle_ids[i], spec, config, obstacle_orientation_types[i]);
+        std::shared_ptr<ObjectSpecification> spec = makeObjectSpecification(object_types[i], config);
+        Object object(object_ids[i], spec, config, object_orientation_types[i], pose_tracker);
 
-        moveit_msgs::CollisionObject obstacle = object.getCollisionObject();
-        obstacle.header.frame_id = m_frame_id;
-        obstacle.operation = obstacle.ADD;
+        moveit_msgs::CollisionObject collision_object = object.getCollisionObject();
+        collision_object.header.frame_id = m_frame_id;
+        collision_object.operation = collision_object.ADD;
 
-        if (i < obstacle_domains.size()) obj_domains[obstacle.id] = obstacle_domains[i];
+        if (i < object_domains.size()) obj_domains[object.id] = object_domains[i];
 
-        m_collision_objects.push_back(std::move(obstacle));
+        m_obj_group->insertObject(std::move(object));
+        m_collision_objects.push_back(std::move(collision_object));
 
     }
-    updateWorkspace();
-
-    return m_obj_group;
+    updateEnvironment();
 }
 
-template <class OBJ_GROUP_T, class...ACTION_PRIMITIVES_TYPES>
-void ManipulatorNode<OBJ_GROUP_T, ACTION_PRIMITIVES_TYPES...>::updateWorkspace() {
+
+template <class...ACTION_PRIMITIVES_TYPES>
+void ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::updateEnvironment() {
     auto attached_objects = m_planning_interface->getAttachedObjects();
 
     for (auto& col_obj : m_collision_objects) {
         const auto& id = col_obj.id;
 
         auto it = attached_objects.find(id);
-        if (it == attached_objects.end()) continue;
+        
+        // Do not update if the object is attached
+        if (it != attached_objects.end()) continue;
 
-        auto obj_in_group = m_obj_group->getObject(id);
+        auto& obj_in_group = m_obj_group->getObject(id);
+
+        // Do not update if the object is static
+        if (obj_in_group.isStatic()) continue;
+
         obj_in_group.updatePose();
         col_obj = obj_in_group.getCollisionObject();
 
@@ -141,8 +142,8 @@ void ManipulatorNode<OBJ_GROUP_T, ACTION_PRIMITIVES_TYPES...>::updateWorkspace()
 }
 
 
-template <class OBJ_GROUP_T, class...ACTION_PRIMITIVES_TYPES>
-std::string ManipulatorNode<OBJ_GROUP_T, ACTION_PRIMITIVES_TYPES...>::getParamName(const std::string& param_name, std::string ns) {
+template <class...ACTION_PRIMITIVES_TYPES>
+std::string ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::getParamName(const std::string& param_name, std::string ns) {
     if (ns.empty()) return "/" + param_name;
     if (ns.front() != '/') ns = "/" + ns;
     if (ns.back() != '/') ns.push_back('/');

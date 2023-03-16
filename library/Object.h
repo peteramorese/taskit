@@ -11,6 +11,7 @@
 #include <moveit_msgs/CollisionObject.h>
 
 #include "Quaternions.h"
+#include "PoseTracker.h"
 
 namespace ManipulationInterface {
 
@@ -157,31 +158,36 @@ static std::shared_ptr<ObjectSpecification> makeObjectSpecification(const std::s
     return makeObjectSpecification(getObjectPrimitiveType(primitive_str), config);
 }
 
+
 // Object classes
-template <class POSE_TRACKER_T>
 struct Object {
     public:
         std::string id;
         std::shared_ptr<ObjectSpecification> spec;
+        std::shared_ptr<PoseTracker> tracker;
         geometry_msgs::Pose pose;
 
     public:
         Object() = delete;
 
-        Object(const std::string& id_, const std::shared_ptr<ObjectSpecification>& spec_, const ObjectConfig& config, const std::string& orientation_type)  
+        Object(const std::string& id_, const std::shared_ptr<ObjectSpecification>& spec_, const ObjectConfig& config, const std::string& orientation_type, const std::shared_ptr<PoseTracker>& tracker_ = nullptr)  
             : id(id_)
             , spec(spec_)
+            , tracker(tracker_)
         {
             setPoseFromConfig(config, orientation_type);
         }
 
-        Object(const std::string& id_, const std::shared_ptr<ObjectSpecification>& spec_, const geometry_msgs::Pose& pose_)  
+        Object(const std::string& id_, const std::shared_ptr<ObjectSpecification>& spec_, const geometry_msgs::Pose& pose_, const std::shared_ptr<PoseTracker>& tracker_ = nullptr)  
             : id(id_)
             , spec(spec_)
+            , tracker(tracker_)
             , pose(pose_)
             {}
 
-        void updatePose() {POSE_TRACKER_T::update(id, pose);}
+        bool isStatic() const {return !tracker;}
+        void updatePose() {if (!tracker) tracker->update(*this);}
+
         void setPoseFromConfig(const ObjectConfig& config, const std::string& orientation_type) {
             pose.position.x = config.at("x");
             pose.position.y = config.at("y");
@@ -197,67 +203,19 @@ struct Object {
         }
 };
 
-template <class POSE_TRACKER_T>
 class ObjectGroup {
     public:
-        typedef POSE_TRACKER_T pose_tracker_t;
-        using ObjectType = Object<POSE_TRACKER_T>;
-    protected:
         ObjectGroup() = default;
 
-    public:
         std::set<std::string> getIds() const {
             std::set<std::string> ids;
             for (auto v_type : m_objects) {ids.insert(v_type.first);}
             return ids;
         }
 
-        inline const ObjectType& getObject(const std::string& id) const {return m_objects.at(id);}
-        inline const std::map<std::string, ObjectType>& getObjects() const {return m_objects;}
-
-        void insertObject(const ObjectType& obj) {
-            m_objects.insert(std::make_pair(obj.id, obj));
-        }
-
-        void insertObject(ObjectType&& obj) {
-            m_objects.insert(std::make_pair(obj.id, std::move(obj)));
-        }
-
-        void updatePoses() {
-            for (auto& v_type : m_objects) v_type.second.updatePose();
-        }
-
-
-    protected:
-        std::map<std::string, ObjectType> m_objects;
-};
-
-template <class POSE_TRACKER_T>
-class SimilarObjectGroup : public ObjectGroup<POSE_TRACKER_T> {
-    public:
-        SimilarObjectGroup(const std::shared_ptr<ObjectSpecification>& spec) 
-            : m_spec(spec)
-        {
-        }
-
-        void addObject(const std::string& id) {
-            this->m_objects.emplace(std::piecewise_construct, std::forward_as_tuple(id), std::forward_as_tuple(id, m_spec, geometry_msgs::Pose{}));
-        }
-
-        void addObject(const std::string& id, const geometry_msgs::Pose& pose) {
-            this->m_objects.emplace(std::piecewise_construct, std::forward_as_tuple(id), std::forward_as_tuple(id, m_spec, pose));
-        }
-
-        virtual const ObjectSpecification& getSpec() const {return *m_spec;}
-
-    private:
-        std::shared_ptr<ObjectSpecification> m_spec;
-};
-
-template <class POSE_TRACKER_T>
-class UniqueObjectGroup : public ObjectGroup<POSE_TRACKER_T> {
-    public:
-        UniqueObjectGroup() = default;
+        inline Object& getObject(const std::string& id) {return m_objects.at(id);}
+        inline const Object& getObject(const std::string& id) const {return m_objects.at(id);}
+        inline const std::map<std::string, Object>& getObjects() const {return m_objects;}
 
         void addObject(const std::string& id, const std::shared_ptr<ObjectSpecification>& spec) {
             this->m_objects.emplace(std::piecewise_construct, std::forward_as_tuple(id), std::forward_as_tuple(id, spec, geometry_msgs::Pose{}));
@@ -267,19 +225,20 @@ class UniqueObjectGroup : public ObjectGroup<POSE_TRACKER_T> {
             this->m_objects.emplace(std::piecewise_construct, std::forward_as_tuple(id), std::forward_as_tuple(id, spec, pose));
         }
 
-        void operator+=(const Object<POSE_TRACKER_T>& obj) {
-            this->m_objects.insert(std::make_pair(obj.id, obj));
+        void insertObject(const Object& obj) {
+            m_objects.insert(std::make_pair(obj.id, obj));
         }
 
-        void operator+=(Object<POSE_TRACKER_T>&& obj) {
-            this->m_objects.insert(std::make_pair(obj.id, std::move(obj)));
+        void insertObject(Object&& obj) {
+            m_objects.insert(std::make_pair(obj.id, std::move(obj)));
         }
 
-        void operator+=(const ObjectGroup<POSE_TRACKER_T>& obj_group) {
-            for (const auto& v_type : obj_group.getObjects()) {
-                this->m_objects.insert(std::make_pair(v_type.first, v_type.second));
-            }
+        void updatePoses() {
+            for (auto& v_type : m_objects) v_type.second.updatePose();
         }
+
+    protected:
+        std::map<std::string, Object> m_objects;
 };
 
 }

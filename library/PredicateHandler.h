@@ -39,8 +39,7 @@ class PredicateHandler {
                     m_obj_id_to_location_name.insert(std::make_pair(obj_id, s_ignored));
                 }
 
-                template <class POSE_TRACKER_T>
-                bool assertAllObjectsFound(const ObjectGroup<POSE_TRACKER_T>& obj_group) const {
+                bool assertAllObjectsFound(const ObjectGroup& obj_group) const {
                     for (const auto& id : obj_group.getIds()) {
                         if (m_obj_id_to_location_name.find(id) == m_obj_id_to_location_name.end()) return false;
                     }
@@ -70,11 +69,12 @@ class PredicateHandler {
             m_locations.insert(std::make_pair(name, location));
         }
 
+        const geometry_msgs::Pose& getLocationPose(const std::string& name) const {return m_locations.at(name).pose;}
+
 		const PredicateSet getPredicates(const std::vector<std::pair<std::string, geometry_msgs::Pose>>& obj_locs, std::set<std::string> ignore_obj_ids) const;
     private:
 		static double distance(const geometry_msgs::Point& lhs, const geometry_msgs::Point& rhs);
 
-        geometry_msgs::Pose getLocationPose(const std::string& name) const {return m_locations.at(name).pose;}
         std::pair<bool, std::string> findPredicate(const geometry_msgs::Point& loc) const;
 
     private:
