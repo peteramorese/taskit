@@ -32,6 +32,9 @@ ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::ManipulatorNode(const std::string& 
     const robot_state::JointModelGroup* joint_model_group = m_robot_state->getJointModelGroup(planning_group);
     m_planning_scene = std::make_shared<planning_scene::PlanningScene>(m_robot_model);
     m_planning_scene->getCurrentStateNonConst().setToDefaultValues(joint_model_group, "ready");
+    
+    // Read in the quaternion properties for the given arm
+    Quaternions::readDefaultDownQuaternions(*m_node_handle, planning_group, "arm_config");
 
     // Load planning plugin
     std::string planner_plugin_name;
@@ -141,13 +144,5 @@ void ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::updateEnvironment() {
 
 }
 
-
-template <class...ACTION_PRIMITIVES_TYPES>
-std::string ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::getParamName(const std::string& param_name, std::string ns) {
-    if (ns.empty()) return "/" + param_name;
-    if (ns.front() != '/') ns = "/" + ns;
-    if (ns.back() != '/') ns.push_back('/');
-    return ns + param_name;
-}
 
 }

@@ -1,0 +1,5 @@
+default_down_quaternion: {
+  roll: rad(0.0),
+  pitch: rad(pi),
+  yaw: rad(-pi/4 + pi/2)
+}

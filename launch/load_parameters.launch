@@ -2,11 +2,15 @@
   <arg name="env_file" default="environment" />
   <arg name="task_file" default="task_set" />
   <arg name="ws_file" default="workspace" />
+  <arg name="arm_cfg_file" default="panda_arm_config" />
   <group ns="environment">
     <rosparam file="$(find manipulation_interface)/environment_config/$(arg env_file).yaml" />
     <rosparam file="$(find manipulation_interface)/environment_config/$(arg task_file).yaml" />
   </group>
   <group ns="workspace">
     <rosparam file="$(find manipulation_interface)/environment_config/$(arg ws_file).yaml" />
+  </group>
+  <group ns="arm_config">
+    <rosparam file="$(find manipulation_interface)/environment_config/$(arg arm_cfg_file).yaml" />
   </group>
 </launch>

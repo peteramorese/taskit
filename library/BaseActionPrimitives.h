@@ -61,8 +61,9 @@ class SimpleRelease : public ActionPrimitive<manipulation_interface::ReleaseSrv>
 
 class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
     public:
-        Transit(const std::string& topic, const std::shared_ptr<PredicateHandler>&, double planning_time, uint8_t max_trials, double max_velocity_scaling_factor = 1.0)
+        Transit(const std::string& topic, const std::shared_ptr<PredicateHandler>& predicate_handler, double planning_time, uint8_t max_trials, double max_velocity_scaling_factor = 1.0)
             : ActionPrimitive<manipulation_interface::TransitSrv>(topic)
+            , m_predicate_handler(predicate_handler)
             , m_planning_time(planning_time)
             , m_max_trials(max_trials)
             , m_max_velocity_scaling_factor(max_velocity_scaling_factor)
@@ -108,6 +109,7 @@ class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
         }
     
     private:
+        std::shared_ptr<PredicateHandler> m_predicate_handler;
         double m_planning_time;
         uint8_t m_max_trials;
         double m_max_velocity_scaling_factor;

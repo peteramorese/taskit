@@ -106,7 +106,6 @@ namespace ManipulationInterface {
                 return callActionByIndex<I>(request, response);
             }
 
-            static std::string getParamName(const std::string& param_name, std::string ns = std::string());
 
             template <uint32_t I, class ACTION_PRIMITIVE_T>
             static constexpr uint32_t getIndexByType() {
