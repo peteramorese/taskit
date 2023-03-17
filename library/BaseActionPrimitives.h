@@ -105,7 +105,15 @@ class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
     private:
 
         std::vector<geometry_msgs::Pose> getGoalPoses(const msg_t::Request& request) const {
-            //const geometry_msgs::Pose& location_pose = request.destination_location;
+            geometry_msgs::Pose test_pose;
+            test_pose.position.x = 0.4f;
+            test_pose.position.y = 0.4f;
+            test_pose.position.z = 0.4f;
+            test_pose.orientation.x = 0.0f;
+            test_pose.orientation.y = 0.0f;
+            test_pose.orientation.z = 0.0f;
+            test_pose.orientation.w = 1.0f;
+            return {Quaternions::getPointAlongPose("panda_arm", tf2::Vector3(0.0, 0.0, 1.0), test_pose, Quaternions::RotationType::DownAxis)};
         }
     
     private:

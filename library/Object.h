@@ -203,9 +203,13 @@ struct Object {
         }
 };
 
+using CollisionObjectVector = std::vector<moveit_msgs::CollisionObject>;
+
 class ObjectGroup {
     public:
         ObjectGroup() = default;
+
+        void createObjects(const ros::NodeHandle& nh, const std::string& workspace_ns, const std::string& frame_id, CollisionObjectVector& collision_objs, const std::shared_ptr<PoseTracker>& pose_tracker = nullptr);
 
         std::set<std::string> getIds() const {
             std::set<std::string> ids;
@@ -215,7 +219,18 @@ class ObjectGroup {
 
         inline Object& getObject(const std::string& id) {return m_objects.at(id);}
         inline const Object& getObject(const std::string& id) const {return m_objects.at(id);}
-        inline const std::map<std::string, Object>& getObjects() const {return m_objects;}
+        inline std::vector<const Object*> getObjects() const {
+            std::vector<const Object*> objects(m_objects.size());
+            auto it = objects.begin();
+            for (const auto v_type : m_objects) *it++ = &v_type.second;
+            return objects;
+        }
+        inline std::vector<Object*> getObjects() {
+            std::vector<Object*> objects(m_objects.size());
+            auto it = objects.begin();
+            for (auto v_type : m_objects) *it++ = &v_type.second;
+            return objects;
+        }
 
         void addObject(const std::string& id, const std::shared_ptr<ObjectSpecification>& spec) {
             this->m_objects.emplace(std::piecewise_construct, std::forward_as_tuple(id), std::forward_as_tuple(id, spec, geometry_msgs::Pose{}));

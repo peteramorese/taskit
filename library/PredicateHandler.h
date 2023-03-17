@@ -3,6 +3,7 @@
 #include <map>
 #include <set>
 
+#include <ros/ros.h>
 #include "geometry_msgs/Pose.h"
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
@@ -26,9 +27,20 @@ class PredicateHandler {
 		};
         struct PredicateSet {
             public:
-                std::pair<bool, const std::string&> lookupObjectPredicate(const std::string& obj_id) const {
+                std::pair<bool, std::string> lookupObjectPredicate(const std::string& obj_id) const {
                     auto it = m_obj_id_to_location_name.find(obj_id);
                     return (it != m_obj_id_to_location_name.end()) ? std::make_pair(true, it->second) : std::make_pair(false, std::string());
+                }
+
+                std::pair<bool, std::string> lookupLocationPredicate(const std::string& location_name) const {
+                    std::pair<bool, std::string> ret = std::make_pair(false, std::string());
+                    for (const auto v_type : m_obj_id_to_location_name) {
+                        if (v_type.second == location_name && !ret.first) 
+                            ret = std::make_pair(true, v_type.first);
+                        else if (v_type.second == location_name)
+                            ROS_WARN_STREAM("Found multiple objects in location '" << location_name << "'");
+                    }
+                    return ret;
                 }
 
                 void setObjectPredicate(const std::string& obj_id, const std::string& location_name) {
@@ -53,6 +65,9 @@ class PredicateHandler {
         };
 	public:
         //std::size_t size() const {return m_locations.size(); }
+        PredicateHandler(const std::shared_ptr<const ObjectGroup>& obj_group) : m_obj_group(obj_group) {}
+
+        void createEnvironment(const ros::NodeHandle& nh, const std::string& environment_ns);
 
 		void addLocation(const std::string& name, const geometry_msgs::Point& position, Quaternions::Type orientation_type, float detection_radius) {
             geometry_msgs::Pose pose;
@@ -71,13 +86,15 @@ class PredicateHandler {
 
         const geometry_msgs::Pose& getLocationPose(const std::string& name) const {return m_locations.at(name).pose;}
 
-		const PredicateSet getPredicates(const std::vector<std::pair<std::string, geometry_msgs::Pose>>& obj_locs, std::set<std::string> ignore_obj_ids) const;
+        // Look up
+		const PredicateSet getPredicates(const std::set<std::string>& ignore_obj_ids) const;
     private:
 		static double distance(const geometry_msgs::Point& lhs, const geometry_msgs::Point& rhs);
 
-        std::pair<bool, std::string> findPredicate(const geometry_msgs::Point& loc) const;
+        const std::string* findPredicate(const geometry_msgs::Point& loc) const;
 
     private:
         std::map<std::string, Location> m_locations;
+        std::shared_ptr<const ObjectGroup> m_obj_group; 
 };
 }

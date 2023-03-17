@@ -25,6 +25,20 @@ namespace ManipulationInterface {
             };
 
         public:
+
+            static inline Quaternions::Type toType(const std::string& type_str) {
+                if (type_str == "up_x" || type_str == "UpX") {
+                    return Type::UpX;
+                } else if (type_str == "up_y" || type_str == "UpY") {
+                    return Type::UpY;
+                } else if (type_str == "side_x" || type_str == "SideX") {
+                    return Type::SideX;
+                } else if (type_str == "side_y" || type_str == "SideY") {
+                    return Type::SideY;
+                }
+                ROS_ERROR_STREAM("Unrecognized quaternion type '" << type_str << "'");
+            }
+
             static inline geometry_msgs::Quaternion convert(const tf2::Quaternion q) {
                 //geometry_msgs::Quaternion q_converted;
                 return tf2::toMsg(q);
@@ -47,18 +61,8 @@ namespace ManipulationInterface {
                 return q_rot * q_default_up;
             }
 
-            static tf2::Quaternion get(const std::string& type_str) {
-                Type type;
-                if (type_str == "up_x" || type_str == "UpX") {
-                    type = Type::UpX;
-                } else if (type_str == "up_y" || type_str == "UpY") {
-                    type = Type::UpY;
-                } else if (type_str == "side_x" || type_str == "SideX") {
-                    type = Type::SideX;
-                } else if (type_str == "side_y" || type_str == "SideY") {
-                    type = Type::SideY;
-                }
-                return get(type);
+            static inline tf2::Quaternion get(const std::string& type_str) {
+                return get(toType(type_str));
             }
 
             static tf2::Quaternion getRotation(RotationType rotation_type) {
@@ -90,7 +94,9 @@ namespace ManipulationInterface {
                 tf2::Quaternion q_to_match;
                 tf2::fromMsg(pose_to_match.orientation, q_to_match);
                 tf2::Quaternion q_disp_rotated = q_to_match * q_displacement * q_to_match.inverse(); 
-                pose.position = geometry_msgs::Point(q_disp_rotated.x, q_disp_rotated.y, q_disp_rotated.z);
+                pose.position.x = q_disp_rotated[0] + pose_to_match.position.x; 
+                pose.position.y = q_disp_rotated[1] + pose_to_match.position.y;
+                pose.position.z = q_disp_rotated[2] + pose_to_match.position.z;
                 pose.orientation = convert(q_to_match * getRotation(rotation_type) * default_down);
                 return pose;
             }

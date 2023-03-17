@@ -23,6 +23,7 @@
 #include "Tools.h"
 #include "PoseTracker.h"
 #include "Object.h"
+#include "PredicateHandler.h"
 
 namespace ManipulationInterface {
 
@@ -30,7 +31,6 @@ namespace ManipulationInterface {
     class ManipulatorNode {
         public:
             ManipulatorNode(const std::string& node_name, const std::string& planning_group, const std::string& frame_id, ACTION_PRIMITIVES_TYPES&&...action_primitives);
-            ~ManipulatorNode() {DEBUG("in dtor");}
 
             static constexpr uint32_t numActionPrimitives() {return sizeof...(ACTION_PRIMITIVES_TYPES);}
 
@@ -40,24 +40,28 @@ namespace ManipulationInterface {
             //void insertObjectGroup(const std::shared_ptr<ObjectGroup>& obj_group) {m_obj_group = obj_group;}
 
             // Automatically create the objects based off the parameter server (workspace_ns: param namespace for static obstacles, objects_ns: namespace for dynamic objects and predicates)
-            const std::shared_ptr<ObjectGroup> createScene(const std::string& workspace_ns = "workspace", const std::string& objects_ns = "objects", const std::shared_ptr<PoseTracker>& environment_pose_tracker = nullptr) {
+            void createScene(const std::shared_ptr<PoseTracker>& pose_tracker = nullptr, const std::string& environment_ns = "environment", const std::string& workspace_ns = "workspace", const std::string& objects_ns = "objects") {
                 m_obj_group.reset(new ObjectGroup);
-                createObjects(workspace_ns);
-                createObjects(objects_ns, environment_pose_tracker);
-                return m_obj_group;
+                m_obj_group->createObjects(*m_node_handle, workspace_ns, m_frame_id, m_collision_objects);
+                m_obj_group->createObjects(*m_node_handle, objects_ns, m_frame_id, m_collision_objects, pose_tracker);
+
+                m_collision_objects.clear();
+                m_predicate_handler.reset(new PredicateHandler(m_obj_group));
+                m_predicate_handler->createEnvironment(*m_node_handle, environment_ns);
             }
 
+            void createEnvironment(const std::string& environment_ns);
             void createObjects(const std::string& objects_ns, const std::shared_ptr<PoseTracker>& pose_tracker = nullptr);
             void updateEnvironment();
             //TODO: void applyWorkspace(const std::string& domain);
 
-            void setEndEffectorLink(const std::string& ee_link) { m_move_group->setEndEffectorLink(ee_link); }
+            inline void setEndEffectorLink(const std::string& ee_link) { m_move_group->setEndEffectorLink(ee_link); }
 
-            ros::NodeHandle& getNodeHandle() {return *m_node_handle;}
-            const ros::NodeHandle& getNodeHandle() const {return *m_node_handle;}
+            inline ros::NodeHandle& getNodeHandle() {return *m_node_handle;}
+            inline const ros::NodeHandle& getNodeHandle() const {return *m_node_handle;}
 
             // Spawn services for action primitives
-            void spawnAllActionServices() {
+            inline void spawnAllActionServices() {
                 spawnActionServices<0, numActionPrimitives()>();
             }
 
@@ -66,7 +70,7 @@ namespace ManipulationInterface {
                 static_assert(FINAL_ACTION_INDEX <= numActionPrimitives(), "Final action index out of range");
                 if constexpr (INIT_ACTION_INDEX < FINAL_ACTION_INDEX) {
                     auto action = std::get<INIT_ACTION_INDEX>(m_action_primitives);
-                    DEBUG("spawing service on topic: " << action.topic());
+                    ROS_INFO_STREAM_NAMED(m_node_name, "Spawning action service on topic: " << action.topic());
                     m_action_services[INIT_ACTION_INDEX] = m_node_handle->advertiseService(action.topic(), &ManipulatorNode::actionServiceCallback<INIT_ACTION_INDEX>, this);
                     spawnActionServices<INIT_ACTION_INDEX + 1, FINAL_ACTION_INDEX>();
                 }
@@ -132,6 +136,7 @@ namespace ManipulationInterface {
             std::array<ros::ServiceServer, numActionPrimitives()> m_action_services;
 
             std::shared_ptr<ObjectGroup> m_obj_group;
+            std::shared_ptr<PredicateHandler> m_predicate_handler;
             std::shared_ptr<moveit::planning_interface::MoveGroupInterface> m_move_group;
             std::shared_ptr<moveit::planning_interface::PlanningSceneInterface> m_planning_interface;
             std::shared_ptr<moveit_visual_tools::MoveItVisualTools> m_visual_tools;
