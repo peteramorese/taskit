@@ -76,31 +76,40 @@ ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::ManipulatorNode(const std::string& 
 
 
 template <class...ACTION_PRIMITIVES_TYPES>
-void ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::updateEnvironment() {
+void ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::updateEnvironment(bool ignore_static) {
     auto attached_objects = m_planning_interface->getAttachedObjects();
 
-    DEBUG("in update environment col obj size: " << m_collision_objects.size());
-    for (auto& col_obj : m_collision_objects) {
-        const auto& id = col_obj.id;
+    CollisionObjectVector collision_objects;
+    collision_objects.reserve(m_obj_group->size());
 
-        auto it = attached_objects.find(id);
-        
+    DEBUG("updating environment!");
+    for (auto obj : m_obj_group->getObjects()) {
+        const auto& id = obj->id;
+        DEBUG("working on obj: " << id);
+
         // Do not update if the object is attached
+        auto it = attached_objects.find(id);
+        DEBUG("b4 attach check");
         if (it != attached_objects.end()) continue;
-
-        auto& obj_in_group = m_obj_group->getObject(id);
+        DEBUG("af attach check");
 
         // Do not update if the object is static
-        if (obj_in_group.isStatic()) continue;
+        DEBUG("b4 static check");
+        if (ignore_static && obj->isStatic()) continue;
+        DEBUG("af static check");
 
-        obj_in_group.updatePose();
-        col_obj = obj_in_group.getCollisionObject();
+        obj->updatePose();
+        DEBUG("af update pose");
+        moveit_msgs::CollisionObject col_obj = obj->getCollisionObject(m_frame_id);
+        DEBUG("af get col obj");
 
         DEBUG("adding collision obj: " << id);
         col_obj.operation = col_obj.ADD;
+
+        collision_objects.push_back(std::move(col_obj));
     }
 
-    m_planning_interface->applyCollisionObjects(m_collision_objects);
+    m_planning_interface->applyCollisionObjects(collision_objects);
 
 }
 

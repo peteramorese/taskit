@@ -60,21 +60,18 @@ namespace ManipulationInterface {
             //void insertObjectGroup(const std::shared_ptr<ObjectGroup>& obj_group) {m_obj_group = obj_group;}
 
             // Automatically create the objects based off the parameter server (workspace_ns: param namespace for static obstacles, objects_ns: namespace for dynamic objects and predicates)
-            void createScene(const std::shared_ptr<PoseTracker>& pose_tracker = nullptr, const std::string& environment_ns = "environment", const std::string& workspace_ns = "workspace", const std::string& objects_ns = "objects") {
+            void createScene(const std::shared_ptr<PoseTracker>& pose_tracker, const std::string& environment_ns = "environment", const std::string& workspace_ns = "workspace", const std::string& objects_ns = "objects") {
                 m_obj_group.reset(new ObjectGroup);
-                m_collision_objects.clear();
-                m_obj_group->createObjects(*m_node_handle, workspace_ns, m_frame_id, m_collision_objects);
-                m_obj_group->createObjects(*m_node_handle, objects_ns, m_frame_id, m_collision_objects, pose_tracker);
+                m_obj_group->createObjects(*m_node_handle, workspace_ns, m_frame_id);
+                m_obj_group->createObjects(*m_node_handle, objects_ns, m_frame_id, pose_tracker);
 
                 m_predicate_handler.reset(new PredicateHandler(m_obj_group));
                 m_predicate_handler->createEnvironment(*m_node_handle, environment_ns);
                 m_predicate_handler->setObjectPosesToLocations(*m_node_handle, objects_ns);
+                updateEnvironment(false);
             }
 
-            void createEnvironment(const std::string& environment_ns);
-            void createObjects(const std::string& objects_ns, const std::shared_ptr<PoseTracker>& pose_tracker = nullptr);
-            void updateEnvironment();
-            //TODO: void applyWorkspace(const std::string& domain);
+            void updateEnvironment(bool ignore_static = true);
 
             inline void setEndEffectorLink(const std::string& ee_link) { m_move_group->setEndEffectorLink(ee_link); }
 
@@ -166,7 +163,6 @@ namespace ManipulationInterface {
             //std::shared_ptr<moveit_visual_tools::MoveItVisualTools> m_visual_tools;
             std::shared_ptr<planning_scene::PlanningScene> m_planning_scene;
             std::string m_frame_id;
-            std::vector<moveit_msgs::CollisionObject> m_collision_objects;
 
             // Things that just need to exist
             robot_model::RobotModelPtr m_robot_model;

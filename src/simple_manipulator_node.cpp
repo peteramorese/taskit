@@ -7,6 +7,7 @@
 #include "ManipulatorNode.h"
 #include "BaseActionPrimitives.h"
 #include "Object.h"
+#include "PoseTracker.h"
 
 using namespace ManipulationInterface;
 
@@ -31,7 +32,10 @@ int main(int argc, char** argv) {
 
 	ros::WallDuration(1.0).sleep();
 
-	manipulator_node.createScene();
+	// Pose tracker
+	std::shared_ptr<SimulationPoseTracker> pose_tracker = std::make_shared<SimulationPoseTracker>();
+
+	manipulator_node.createScene(pose_tracker);
 	manipulator_node.updateEnvironment();
 
 	ActionPrimitives::SimpleGrasp::msg_t::Request req;

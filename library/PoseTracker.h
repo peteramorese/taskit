@@ -10,7 +10,13 @@ class PoseTracker {
         virtual void update(Object& object) const = 0;
 
     protected:
-        PoseTracker();
+        PoseTracker() {}
+};
+
+class SimulationPoseTracker : public PoseTracker {
+    public:
+        virtual void update(Object& object) const override {}
+
 };
 
 }

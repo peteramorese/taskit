@@ -77,11 +77,13 @@ struct BoxObjectSpecification : SingleObjectSpecification {
 
     protected:
         virtual moveit_msgs::CollisionObject convert() const override {
+            DEBUG("b4 convert");
             moveit_msgs::CollisionObject col_obj;
             col_obj.primitives.resize(1);
             auto& prim = col_obj.primitives[0];
             prim.type = prim.BOX;
             prim.dimensions = {length, width, height};
+            DEBUG("af convert");
             return col_obj;
         }
 
@@ -181,6 +183,7 @@ struct Object {
             , spec(spec_)
             , tracker(tracker_)
         {
+            DEBUG("setting w id: " << id);
             setPoseFromConfig(config, orientation_type);
         }
 
@@ -192,7 +195,7 @@ struct Object {
             {}
 
         bool isStatic() const {return !tracker;}
-        void updatePose() {if (!tracker) tracker->update(*this);}
+        void updatePose() {if (tracker) tracker->update(*this);}
 
         void setPoseFromConfig(const ObjectConfig& config, const std::string& orientation_type) {
             if (config.find("x") != config.end()) {
@@ -210,9 +213,15 @@ struct Object {
         }
 
 
-        moveit_msgs::CollisionObject getCollisionObject() const {
+        moveit_msgs::CollisionObject getCollisionObject(const std::string& frame_id) const {
+            DEBUG("does spec exist? " << static_cast<bool>(spec));
             moveit_msgs::CollisionObject col_obj = spec->getCollisionObject(pose);
+            DEBUG("af spec get col obj");
+            col_obj.header.frame_id = frame_id;
+            DEBUG("af frame id ");
+            DEBUG("obj id: " << id);
             col_obj.id = id;
+            DEBUG("af obj get col obj");
             return col_obj;
         }
 };
@@ -223,7 +232,7 @@ class ObjectGroup {
     public:
         ObjectGroup() = default;
 
-        void createObjects(const ros::NodeHandle& nh, const std::string& ns, const std::string& frame_id, CollisionObjectVector& collision_objs, const std::shared_ptr<PoseTracker>& pose_tracker = nullptr);
+        void createObjects(const ros::NodeHandle& nh, const std::string& ns, const std::string& frame_id, const std::shared_ptr<PoseTracker>& pose_tracker = nullptr);
 
         std::set<std::string> getIds() const {
             std::set<std::string> ids;
@@ -231,19 +240,27 @@ class ObjectGroup {
             return ids;
         }
 
+        inline std::size_t size() const {return m_objects.size();}
+
         inline Object& getObject(const std::string& id) {return m_objects.at(id);}
         inline const Object& getObject(const std::string& id) const {return m_objects.at(id);}
         inline std::vector<const Object*> getObjects() const {
             std::vector<const Object*> objects(m_objects.size());
             auto it = objects.begin();
-            for (const auto v_type : m_objects) *it++ = &v_type.second;
+            for (const auto v_type : m_objects) *(it++) = &v_type.second;
             return objects;
         }
         inline std::vector<Object*> getObjects() {
             std::vector<Object*> objects(m_objects.size());
             auto it = objects.begin();
-            for (auto v_type : m_objects) *it++ = &v_type.second;
+            for (auto v_type : m_objects) *(it++) = &v_type.second;
             return objects;
+        }
+
+        CollisionObjectVector getCollisionObjects(const std::string& frame_id) const {
+            CollisionObjectVector collision_objs;
+            for (const auto v_type : m_objects) collision_objs.push_back(v_type.second.getCollisionObject(frame_id));
+            return collision_objs;
         }
 
         void addObject(const std::string& id, const std::shared_ptr<ObjectSpecification>& spec) {
@@ -256,11 +273,12 @@ class ObjectGroup {
 
         void insertObject(const Object& obj) {
             m_objects.insert(std::make_pair(obj.id, obj));
+            //m_objects[obj.id] = obj;
         }
 
-        void insertObject(Object&& obj) {
-            m_objects.insert(std::make_pair(obj.id, std::move(obj)));
-        }
+        //void insertObject(Object&& obj) {
+        //    m_objects.insert(std::make_pair(std::move(obj.id), std::move(obj)));
+        //}
 
         void updatePoses() {
             for (auto& v_type : m_objects) v_type.second.updatePose();
