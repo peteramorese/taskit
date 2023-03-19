@@ -16,10 +16,8 @@ ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::ManipulatorNode(const std::string& 
     , m_action_primitives(std::forward<ACTION_PRIMITIVES_TYPES>(action_primitives)...)
     , m_move_group(std::make_shared<moveit::planning_interface::MoveGroupInterface>(planning_group))
     , m_planning_interface(std::make_shared<moveit::planning_interface::PlanningSceneInterface>())
-    //, m_visual_tools(std::make_shared<moveit_visual_tools::MoveItVisualTools>(frame_id))
     , m_frame_id(frame_id)
 {
-    DEBUG("Constructing...");
 
     //if constexpr (std::is_default_constructible_v<OBJ_GROUP_T>) ROS_ASSERT_MSG(obj_group, "Must provide an object group when using a non-default-constructable object group type");
     
@@ -67,10 +65,6 @@ ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::ManipulatorNode(const std::string& 
 
     // Setup the marker publisher
     m_visualizer.reset(new ManipulatorNodeVisualizer(*m_node_handle, m_frame_id, "/rviz_visual_tools"));
-
-    // Set up action primitives
-    DEBUG("end of ctor");
-
 }
 
 
@@ -82,28 +76,19 @@ void ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::updateEnvironment(bool ignore_
     CollisionObjectVector collision_objects;
     collision_objects.reserve(m_obj_group->size());
 
-    DEBUG("updating environment!");
     for (auto obj : m_obj_group->getObjects()) {
         const auto& id = obj->id;
-        DEBUG("working on obj: " << id);
 
         // Do not update if the object is attached
         auto it = attached_objects.find(id);
-        DEBUG("b4 attach check");
         if (it != attached_objects.end()) continue;
-        DEBUG("af attach check");
 
         // Do not update if the object is static
-        DEBUG("b4 static check");
         if (ignore_static && obj->isStatic()) continue;
-        DEBUG("af static check");
 
         obj->updatePose();
-        DEBUG("af update pose");
         moveit_msgs::CollisionObject col_obj = obj->getCollisionObject(m_frame_id);
-        DEBUG("af get col obj");
 
-        DEBUG("adding collision obj: " << id);
         col_obj.operation = col_obj.ADD;
 
         collision_objects.push_back(std::move(col_obj));
@@ -112,6 +97,10 @@ void ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::updateEnvironment(bool ignore_
     m_planning_interface->applyCollisionObjects(collision_objects);
 
 }
+
+#define MI_GOAL_MARKER_R  58.0
+#define MI_GOAL_MARKER_G  240.0
+#define MI_GOAL_MARKER_B  221.0
 
 void ManipulatorNodeVisualizer::publishGoalMarker(const geometry_msgs::Pose& pose, const std::string& msg, float scale) {
     visualization_msgs::MarkerArray marker_array;
@@ -128,9 +117,9 @@ void ManipulatorNodeVisualizer::publishGoalMarker(const geometry_msgs::Pose& pos
     marker.scale.y = scale * 0.03;
     marker.scale.z = scale * 0.03;
     marker.color.a = 1.0; 
-    marker.color.r = 58.0 / 255.0;
-    marker.color.g = 240.0 / 255.0;
-    marker.color.b = 221.0 / 255.0;
+    marker.color.r = MI_GOAL_MARKER_R / 255.0;
+    marker.color.g = MI_GOAL_MARKER_G / 255.0;
+    marker.color.b = MI_GOAL_MARKER_B / 255.0;
 
     visualization_msgs::Marker& text = marker_array.markers[1];
 
@@ -146,9 +135,9 @@ void ManipulatorNodeVisualizer::publishGoalMarker(const geometry_msgs::Pose& pos
     text.scale.y = scale * 0.07;
     text.scale.z = scale * 0.07;
     text.color.a = 1.0; 
-    text.color.r = 58.0 / 255.0;
-    text.color.g = 240.0 / 255.0;
-    text.color.b = 221.0 / 255.0;
+    text.color.r = MI_GOAL_MARKER_R / 255.0;
+    text.color.g = MI_GOAL_MARKER_G / 255.0;
+    text.color.b = MI_GOAL_MARKER_B / 255.0;
     text.text = msg;
 
     m_visualization_marker_pub.publish(marker_array);
@@ -172,9 +161,9 @@ void ManipulatorNodeVisualizer::publishGoalObjectMarker(const geometry_msgs::Pos
     marker.scale.y = scale * 0.03;
     marker.scale.z = scale * 0.03;
     marker.color.a = 1.0; 
-    marker.color.r = 58.0 / 255.0;
-    marker.color.g = 240.0 / 255.0;
-    marker.color.b = 221.0 / 255.0;
+    marker.color.r = MI_GOAL_MARKER_R / 255.0;
+    marker.color.g = MI_GOAL_MARKER_G / 255.0;
+    marker.color.b = MI_GOAL_MARKER_B / 255.0;
 
     // Goal text
     visualization_msgs::Marker& text = marker_array.markers[1];
@@ -191,9 +180,9 @@ void ManipulatorNodeVisualizer::publishGoalObjectMarker(const geometry_msgs::Pos
     text.scale.y = scale * 0.07;
     text.scale.z = scale * 0.07;
     text.color.a = 1.0; 
-    text.color.r = 58.0 / 255.0;
-    text.color.g = 240.0 / 255.0;
-    text.color.b = 221.0 / 255.0;
+    text.color.r = MI_GOAL_MARKER_R / 255.0;
+    text.color.g = MI_GOAL_MARKER_G / 255.0;
+    text.color.b = MI_GOAL_MARKER_B / 255.0;
     text.text = msg;
 
     // Dotted line to object
@@ -226,9 +215,9 @@ void ManipulatorNodeVisualizer::publishGoalObjectMarker(const geometry_msgs::Pos
         float scale = static_cast<float>(i + 1) / static_cast<float>(num_points);
         tf2::toMsg(scale * along, points.points[i]);
         points.colors[i].a = 1.0;
-        points.colors[i].r = 58.0 / 255.0;
-        points.colors[i].g = (1.0f - scale) * 240.0 / 255.0;
-        points.colors[i].b = 221.0 / 255.0;
+        points.colors[i].r = MI_GOAL_MARKER_R / 255.0;
+        points.colors[i].g = (1.0f - scale) * MI_GOAL_MARKER_G / 255.0;
+        points.colors[i].b = MI_GOAL_MARKER_B / 255.0;
     }
 
     m_visualization_marker_pub.publish(marker_array);

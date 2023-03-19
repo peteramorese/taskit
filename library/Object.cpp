@@ -32,7 +32,7 @@ void ObjectGroup::createObjects(const ros::NodeHandle& nh, const std::string& ns
         Object object(object_ids[i], spec, config, object_orientation_types[i], pose_tracker);
 
         //insertObject(std::move(object));
-        insertObject(object);
+        insertObject(std::move(object));
     }
 
 }

@@ -12,4 +12,4 @@ stow_joint_values:
   - 1.5708
   - .785398
 
-eef_offset: 0.075
+eef_offset: 0.005

@@ -13,9 +13,9 @@
 // MoveIt
 #include <moveit/planning_interface/planning_interface.h>
 
-
 #include "ManipulatorNodeInterface.h"
 #include "PredicateHandler.h"
+#include "Gripper.h"
 
 namespace ManipulationInterface {
 namespace ActionPrimitives {
@@ -37,26 +37,54 @@ class ActionPrimitive {
         const std::string m_topic;
 };
 
+template <GripperUse GRIPPER_USE_T>
 class SimpleGrasp : public ActionPrimitive<manipulation_interface::GraspSrv> {
     public: 
-        SimpleGrasp(const std::string& topic, const std::string& attachment_link) 
+        SimpleGrasp(const std::string& topic, const std::shared_ptr<GripperHandler<GRIPPER_USE_T>>& gripper_handler, const std::string& attachment_link) 
             : ActionPrimitive<manipulation_interface::GraspSrv>(topic)
+            , m_gripper_handler(gripper_handler)
             , m_attachment_link(attachment_link)
             {}
 
-
         virtual bool operator()(ManipulatorNodeInterface&& interface, msg_t::Request& request, msg_t::Response& response) override {
-            DEBUG("grasping!!");
-            return interface.move_group.lock()->attachObject(request.grasp_object_id, m_attachment_link);
+            auto move_group = interface.move_group.lock();
+            auto obj_group = interface.object_group.lock();
+            ROS_ASSERT_MSG(obj_group->hasObject(request.obj_id), "Object not found");
+            response.success = m_gripper_handler->close(*(obj_group->getObject(request.obj_id).spec));
+            move_group->attachObject(request.obj_id, m_attachment_link);
+
+            return true;
         }
 
     private:
+        std::shared_ptr<GripperHandler<GRIPPER_USE_T>> m_gripper_handler;
         std::string m_attachment_link;
-
 };
 
+template <GripperUse GRIPPER_USE_T>
 class SimpleRelease : public ActionPrimitive<manipulation_interface::ReleaseSrv> {
-    
+    public: 
+        SimpleRelease(const std::string& topic, const std::shared_ptr<GripperHandler<GRIPPER_USE_T>>& gripper_handler) 
+            : ActionPrimitive<manipulation_interface::ReleaseSrv>(topic)
+            , m_gripper_handler(gripper_handler)
+            {}
+
+        virtual bool operator()(ManipulatorNodeInterface&& interface, msg_t::Request& request, msg_t::Response& response) override {
+            auto move_group = interface.move_group.lock();
+            auto obj_group = interface.object_group.lock();
+            auto planning_interface = interface.planning_interface.lock();
+            ROS_ASSERT_MSG(obj_group->hasObject(request.obj_id), "Object not found");
+
+            auto attached_objects = planning_interface->getAttachedObjects();
+            ROS_ASSERT_MSG(attached_objects.find(request.obj_id) != attached_objects.end(), "Release object is not currently attached");
+
+            response.success = m_gripper_handler->open(*(obj_group->getObject(request.obj_id).spec));
+            move_group->detachObject(request.obj_id);
+            return true;
+        }
+
+    private:
+        std::shared_ptr<GripperHandler<GRIPPER_USE_T>> m_gripper_handler;
 };
 
 class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
@@ -77,7 +105,6 @@ class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
             auto vis = interface.visualizer.lock();
 
             // Get the goal pose from the request location
-            DEBUG("looking up location: " << request.destination_location);
             GoalPoseProperties goal_pose_props = getGoalPose(*predicate_handler, *obj_group, request);
             if (goal_pose_props.moving_to_object) {
                 ROS_INFO_STREAM("Goal pose for location '" << request.destination_location <<"' extracted from pose for object: " << goal_pose_props.obj_id);
@@ -148,11 +175,8 @@ class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
     private:
         GoalPoseProperties getGoalPose(const PredicateHandler& predicate_handler, const ObjectGroup& obj_group, const msg_t::Request& request) const {
 
-            DEBUG("b4 get prds");
 		    const PredicateHandler::PredicateSet predicate_set = predicate_handler.getPredicates();
-            DEBUG("af get prds");
             std::pair<bool, std::string> location_predicate = predicate_set.lookupLocationPredicate(request.destination_location);
-            DEBUG("af lookup");
 
             if (location_predicate.first) // Object is in location
                 return GoalPoseProperties(obj_group.getObject(location_predicate.second).pose, true, location_predicate.second);
@@ -164,11 +188,11 @@ class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
             // Grab object along its 'height' axis
             tf2::Vector3 relative_offset = tf2::Vector3(0.0, 0.0, 0.1);
             if (goal_pose_props.moving_to_object)
-                relative_offset[2] = obj_group.getObject(goal_pose_props.obj_id).spec->getVerticalDimension();
+                relative_offset[2] = obj_group.getObject(goal_pose_props.obj_id).spec->getVerticalDimension() + ManipulatorProperties::getEndEffectorOffset("panda_arm");
 
             std::vector<geometry_msgs::Pose> grasp_poses(2);
             grasp_poses[0] = Quaternions::getPointAlongPose("panda_arm", relative_offset, goal_pose_props.pose, Quaternions::RotationType::DownAxis);
-            grasp_poses[0] = Quaternions::getPointAlongPose("panda_arm", relative_offset, goal_pose_props.pose, Quaternions::RotationType::UpAxis);
+            grasp_poses[1] = Quaternions::getPointAlongPose("panda_arm", relative_offset, goal_pose_props.pose, Quaternions::RotationType::UpAxis);
             return grasp_poses;
         }
     

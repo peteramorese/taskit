@@ -1,6 +1,0 @@
-string[] state
----
-string to_eeloc
-string to_grasp_obj
-string release_obj
-string action

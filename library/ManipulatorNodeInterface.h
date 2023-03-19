@@ -8,11 +8,14 @@
 //#include <moveit/planning_interface/planning_interface.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 
+#include "Gripper.h"
+
 namespace ManipulationInterface {
 
 // Forward declarations
 class ObjectGroup;
 class PredicateHandler;
+class ManipulatorNodeVisualizer;
 class ManipulatorNodeVisualizer;
 
 struct ManipulatorNodeInterface {

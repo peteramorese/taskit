@@ -42,8 +42,10 @@ struct ObjectSpecification {
         double grip_speed = 0.1;
         double grip_width_closed = 0.05;
         double grip_width_open = 0.1;
+        double grip_epsilon_inner = 0.03;
+        double grip_epsilon_outter = 0.03;
 
-        double end_effector_offset = 0.08;
+
         double placement_safety_distance = 0.01;
 
     public:
@@ -77,13 +79,11 @@ struct BoxObjectSpecification : SingleObjectSpecification {
 
     protected:
         virtual moveit_msgs::CollisionObject convert() const override {
-            DEBUG("b4 convert");
             moveit_msgs::CollisionObject col_obj;
             col_obj.primitives.resize(1);
             auto& prim = col_obj.primitives[0];
             prim.type = prim.BOX;
             prim.dimensions = {length, width, height};
-            DEBUG("af convert");
             return col_obj;
         }
 
@@ -183,7 +183,6 @@ struct Object {
             , spec(spec_)
             , tracker(tracker_)
         {
-            DEBUG("setting w id: " << id);
             setPoseFromConfig(config, orientation_type);
         }
 
@@ -214,14 +213,9 @@ struct Object {
 
 
         moveit_msgs::CollisionObject getCollisionObject(const std::string& frame_id) const {
-            DEBUG("does spec exist? " << static_cast<bool>(spec));
             moveit_msgs::CollisionObject col_obj = spec->getCollisionObject(pose);
-            DEBUG("af spec get col obj");
             col_obj.header.frame_id = frame_id;
-            DEBUG("af frame id ");
-            DEBUG("obj id: " << id);
             col_obj.id = id;
-            DEBUG("af obj get col obj");
             return col_obj;
         }
 };
@@ -247,13 +241,15 @@ class ObjectGroup {
         inline std::vector<const Object*> getObjects() const {
             std::vector<const Object*> objects(m_objects.size());
             auto it = objects.begin();
-            for (const auto v_type : m_objects) *(it++) = &v_type.second;
+            for (auto obj_it = m_objects.begin(); obj_it != m_objects.end(); ++obj_it)
+                *(it++) = &obj_it->second;
             return objects;
         }
         inline std::vector<Object*> getObjects() {
             std::vector<Object*> objects(m_objects.size());
             auto it = objects.begin();
-            for (auto v_type : m_objects) *(it++) = &v_type.second;
+            for (auto obj_it = m_objects.begin(); obj_it != m_objects.end(); ++obj_it)
+                *(it++) = &obj_it->second;
             return objects;
         }
 
@@ -273,17 +269,17 @@ class ObjectGroup {
 
         void insertObject(const Object& obj) {
             m_objects.insert(std::make_pair(obj.id, obj));
-            //m_objects[obj.id] = obj;
         }
 
-        //void insertObject(Object&& obj) {
-        //    m_objects.insert(std::make_pair(std::move(obj.id), std::move(obj)));
-        //}
+        void insertObject(Object&& obj) {
+            m_objects.insert(std::make_pair(obj.id, std::move(obj)));
+        }
 
         void updatePoses() {
             for (auto& v_type : m_objects) v_type.second.updatePose();
         }
 
+        bool hasObject(const std::string& obj_id) const {return m_objects.find(obj_id) != m_objects.end();}
     protected:
         std::map<std::string, Object> m_objects;
 };

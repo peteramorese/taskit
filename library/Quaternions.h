@@ -74,7 +74,7 @@ namespace ManipulationInterface {
                 switch (rotation_type) {
                     case RotationType::DownAxis:    { q_rot.setRPY(0.0f, 0.0f, 0.0f); break; }
                     case RotationType::UpAxis:      { q_rot.setRPY(0.0f, M_PI, 0.0f); break; }
-                    default:                { q_rot.setRPY(0.0f, 0.0f, 0.0f); }
+                    default:                        { q_rot.setRPY(0.0f, 0.0f, 0.0f); }
                 }
                 return q_rot;
             }
@@ -96,9 +96,12 @@ namespace ManipulationInterface {
                 tf2::Quaternion default_down = getDefaultDown(planning_group);
                 tf2::Quaternion q_to_match;
                 tf2::fromMsg(pose_to_match.orientation, q_to_match);
-                tf2::Quaternion orientation = q_to_match * getRotation(rotation_type) * default_down;
+                tf2::Quaternion orientation = getRotation(rotation_type) * q_to_match * default_down;
                 orientation.normalize();
                 tf2::Vector3 disp_rotated = tf2::quatRotate(orientation, relative_displacement_vector);
+                DEBUG("disp_rotated[0]: " << disp_rotated[0]);
+                DEBUG("disp_rotated[1]: " << disp_rotated[1]);
+                DEBUG("disp_rotated[2]: " << disp_rotated[2]);
                 pose.position.x = pose_to_match.position.x - disp_rotated[0]; 
                 pose.position.y = pose_to_match.position.y - disp_rotated[1];
                 pose.position.z = pose_to_match.position.z - disp_rotated[2];

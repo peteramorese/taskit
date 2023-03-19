@@ -8,6 +8,7 @@
 #include "BaseActionPrimitives.h"
 #include "Object.h"
 #include "PoseTracker.h"
+#include "Gripper.h"
 
 using namespace ManipulationInterface;
 
@@ -25,10 +26,20 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, node_name);
 
 	const std::string ee_link = "panda_link8";
-	//std::shared_ptr<SimilarObjectGroup<TestPoseTracker>> obj_group;
-	ActionPrimitives::SimpleGrasp grasp("grasp", ee_link);
+	
+	// Make the simulation gripper handler
+	std::shared_ptr<GripperHandler<GripperUse::Simulation>> gripper_handler = std::make_shared<GripperHandler<GripperUse::Simulation>>(MI_FRANKA_GRIPPER_TOPIC, 5.0);
+
+	// Construct action primitives
+	ActionPrimitives::SimpleGrasp<GripperUse::Simulation> grasp("grasp", gripper_handler, ee_link);
+	ActionPrimitives::SimpleRelease<GripperUse::Simulation> release("release", gripper_handler);
 	ActionPrimitives::Transit transit("transit", 5.0f, 1);
-	ManipulatorNode<ActionPrimitives::SimpleGrasp, ActionPrimitives::Transit> manipulator_node(node_name, "panda_arm", "panda_link0", std::move(grasp), std::move(transit));
+
+	ManipulatorNode<
+		ActionPrimitives::SimpleGrasp<GripperUse::Simulation>, 
+		ActionPrimitives::SimpleRelease<GripperUse::Simulation>, 
+		ActionPrimitives::Transit
+	> manipulator_node(node_name, "panda_arm", "panda_link0", std::move(grasp), std::move(release), std::move(transit));
 
 	ros::WallDuration(1.0).sleep();
 
@@ -38,8 +49,6 @@ int main(int argc, char** argv) {
 	manipulator_node.createScene(pose_tracker);
 	manipulator_node.updateEnvironment();
 
-	ActionPrimitives::SimpleGrasp::msg_t::Request req;
-	ActionPrimitives::SimpleGrasp::msg_t::Response res;
 	manipulator_node.spawnAllActionServices();
 	//manipulator_node.template callActionByType<ActionPrimitives::SimpleGrasp>(req, res);
 	//manipulator_node.template callActionByIndex<0>(req, res);
