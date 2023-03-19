@@ -21,10 +21,14 @@ namespace ManipulationInterface {
                 SideY
             };
 
-            enum class RotationType {
+            enum class RotationType { 
                 None,
-                DownAxis,       // zero radians
-                UpAxis,         // pi radians
+                Pitch90,
+                Pitch180,
+                Pitch270,
+                Yaw90,
+                Yaw180,
+                Yaw270,
             };
 
         public:
@@ -49,18 +53,18 @@ namespace ManipulationInterface {
             }
 
             static inline tf2::Quaternion getDefaultUp() {
-                return tf2::Quaternion(0.0f, 0.0f, 1.0f, 0.0f);
+                return tf2::Quaternion(0.0, 0.0, 1.0, 0.0);
             }
 
             static tf2::Quaternion get(Type type) {
                 tf2::Quaternion q_default_up = getDefaultUp();
                 tf2::Quaternion q_rot;
                 switch (type) {
-                    case Type::UpX:         { q_rot.setRPY(0.0f, 0.0f, 0.0f); break; }
-                    case Type::UpY:         { q_rot.setRPY(0.0f, 0.0f, M_PI/2.0f); break; }
-                    case Type::SideX:       { q_rot.setRPY(0.0f, -M_PI/2.0f, 0.0f); break; }
-                    case Type::SideY:       { q_rot.setRPY(-M_PI/2.0f, M_PI/2.0f, 0.0f); break; }
-                    default:                { q_rot.setRPY(0.0f, 0.0f, 0.0f); }
+                    case Type::UpX:         { q_rot.setRPY(0.0, 0.0, 0.0); break; }
+                    case Type::UpY:         { q_rot.setRPY(0.0, 0.0, M_PI/2.0); break; }
+                    case Type::SideX:       { q_rot.setRPY(0.0, -M_PI/2.0, 0.0); break; }
+                    case Type::SideY:       { q_rot.setRPY(-M_PI/2.0, M_PI/2.0, 0.0); break; }
+                    default:                { q_rot.setRPY(0.0, 0.0, 0.0); }
                 }
                 return q_rot * q_default_up;
             }
@@ -72,9 +76,13 @@ namespace ManipulationInterface {
             static tf2::Quaternion getRotation(RotationType rotation_type) {
                 tf2::Quaternion q_rot;
                 switch (rotation_type) {
-                    case RotationType::DownAxis:    { q_rot.setRPY(0.0f, 0.0f, 0.0f); break; }
-                    case RotationType::UpAxis:      { q_rot.setRPY(0.0f, M_PI, 0.0f); break; }
-                    default:                        { q_rot.setRPY(0.0f, 0.0f, 0.0f); }
+                    case RotationType::Pitch90:     { q_rot.setRPY(0.0, M_PI/2.0, 0.0); break;}
+                    case RotationType::Pitch180:    { q_rot.setRPY(0.0, M_PI, 0.0); break;}
+                    case RotationType::Pitch270:    { q_rot.setRPY(0.0, 3.0*M_PI/2.0, 0.0); break;}
+                    case RotationType::Yaw90:       { q_rot.setRPY(0.0, 0.0, M_PI/2.0); break;}
+                    case RotationType::Yaw180:      { q_rot.setRPY(0.0, 0.0, M_PI); break;}
+                    case RotationType::Yaw270:      { q_rot.setRPY(0.0, 0.0, 3.0*M_PI/2.0); break;}
+                    case RotationType::None:        { q_rot.setRPY(0.0, 0.0, 0.0); break;}
                 }
                 return q_rot;
             }
@@ -96,15 +104,15 @@ namespace ManipulationInterface {
                 tf2::Quaternion default_down = getDefaultDown(planning_group);
                 tf2::Quaternion q_to_match;
                 tf2::fromMsg(pose_to_match.orientation, q_to_match);
-                tf2::Quaternion orientation = getRotation(rotation_type) * q_to_match * default_down;
+                tf2::Quaternion rotate_by = getRotation(rotation_type) * q_to_match;
+
+                tf2::Vector3 disp_rotated = tf2::quatRotate(rotate_by, relative_displacement_vector);
+                pose.position.x = pose_to_match.position.x + disp_rotated[0]; 
+                pose.position.y = pose_to_match.position.y + disp_rotated[1];
+                pose.position.z = pose_to_match.position.z + disp_rotated[2];
+
+                tf2::Quaternion orientation = rotate_by * default_down;
                 orientation.normalize();
-                tf2::Vector3 disp_rotated = tf2::quatRotate(orientation, relative_displacement_vector);
-                DEBUG("disp_rotated[0]: " << disp_rotated[0]);
-                DEBUG("disp_rotated[1]: " << disp_rotated[1]);
-                DEBUG("disp_rotated[2]: " << disp_rotated[2]);
-                pose.position.x = pose_to_match.position.x - disp_rotated[0]; 
-                pose.position.y = pose_to_match.position.y - disp_rotated[1];
-                pose.position.z = pose_to_match.position.z - disp_rotated[2];
                 pose.orientation = convert(orientation);
                 return pose;
             }

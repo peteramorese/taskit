@@ -194,8 +194,7 @@ void ManipulatorNodeVisualizer::publishGoalObjectMarker(const geometry_msgs::Pos
     points.id = MarkerIds::ToObjLine;
     points.type = visualization_msgs::Marker::POINTS;
     points.action = visualization_msgs::Marker::ADD;
-    points.pose = goal_pose;
-    points.pose.position.z += 0.04;
+    points.pose = geometry_msgs::Pose{};//goal_pose;
     points.scale.x = scale * 0.007;
     points.scale.y = scale * 0.007;
     points.scale.z = scale * 0.007;
@@ -213,7 +212,7 @@ void ManipulatorNodeVisualizer::publishGoalObjectMarker(const geometry_msgs::Pos
 
     for (uint32_t i=0; i<num_points; ++i) {
         float scale = static_cast<float>(i + 1) / static_cast<float>(num_points);
-        tf2::toMsg(scale * along, points.points[i]);
+        tf2::toMsg(to_goal + scale * along, points.points[i]);
         points.colors[i].a = 1.0;
         points.colors[i].r = MI_GOAL_MARKER_R / 255.0;
         points.colors[i].g = (1.0f - scale) * MI_GOAL_MARKER_G / 255.0;

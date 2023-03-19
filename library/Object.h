@@ -50,7 +50,9 @@ struct ObjectSpecification {
 
     public:
         virtual moveit_msgs::CollisionObject getCollisionObject(const geometry_msgs::Pose& pose) const = 0;
-        virtual float getVerticalDimension() const = 0;
+        virtual float getLengthOffset() const = 0;
+        virtual float getWidthOffset() const = 0;
+        virtual float getHeightOffset() const = 0;
 
 };
 
@@ -75,7 +77,9 @@ struct BoxObjectSpecification : SingleObjectSpecification {
 
     BoxObjectSpecification() = default;
     BoxObjectSpecification(const ObjectConfig& config) {constructFromConfig(config);}
-    virtual float getVerticalDimension() const override {return height;}
+    virtual float getLengthOffset() const override {return length / 2.0;}
+    virtual float getWidthOffset() const override {return width / 2.0;}
+    virtual float getHeightOffset() const override {return height / 2.0;}
 
     protected:
         virtual moveit_msgs::CollisionObject convert() const override {
@@ -103,7 +107,9 @@ struct SphereObjectSpecification : SingleObjectSpecification {
 
     SphereObjectSpecification() = default;
     SphereObjectSpecification(const ObjectConfig& config) {constructFromConfig(config);}
-    virtual float getVerticalDimension() const override {return radius;}
+    virtual float getLengthOffset() const override {return radius;}
+    virtual float getWidthOffset() const override {return radius;}
+    virtual float getHeightOffset() const override {return radius;}
 
     protected:
         virtual moveit_msgs::CollisionObject convert() const override {
@@ -130,7 +136,9 @@ struct CylinderObjectSpecification : SingleObjectSpecification {
 
     CylinderObjectSpecification() = default;
     CylinderObjectSpecification(const ObjectConfig& config) {constructFromConfig(config);}
-    virtual float getVerticalDimension() const override {return height;}
+    virtual float getLengthOffset() const override {return radius;}
+    virtual float getWidthOffset() const override {return radius;}
+    virtual float getHeightOffset() const override {return height / 2.0;}
 
     protected:
         virtual moveit_msgs::CollisionObject convert() const override {

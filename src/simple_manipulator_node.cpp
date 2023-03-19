@@ -33,13 +33,15 @@ int main(int argc, char** argv) {
 	// Construct action primitives
 	ActionPrimitives::SimpleGrasp<GripperUse::Simulation> grasp("grasp", gripper_handler, ee_link);
 	ActionPrimitives::SimpleRelease<GripperUse::Simulation> release("release", gripper_handler);
-	ActionPrimitives::Transit transit("transit", 5.0f, 1);
+	ActionPrimitives::TransitSide transit_side("transit_side", 5.0f, 1);
+	ActionPrimitives::TransitUp transit_up("transit_up", 5.0f, 1);
 
 	ManipulatorNode<
 		ActionPrimitives::SimpleGrasp<GripperUse::Simulation>, 
 		ActionPrimitives::SimpleRelease<GripperUse::Simulation>, 
-		ActionPrimitives::Transit
-	> manipulator_node(node_name, "panda_arm", "panda_link0", std::move(grasp), std::move(release), std::move(transit));
+		ActionPrimitives::TransitSide,
+		ActionPrimitives::TransitUp
+	> manipulator_node(node_name, "panda_arm", "panda_link0", std::move(grasp), std::move(release), std::move(transit_side), std::move(transit_up));
 
 	ros::WallDuration(1.0).sleep();
 

@@ -16,6 +16,7 @@
 #include "ManipulatorNodeInterface.h"
 #include "PredicateHandler.h"
 #include "Gripper.h"
+#include "Tools.h"
 
 namespace ManipulationInterface {
 namespace ActionPrimitives {
@@ -160,6 +161,23 @@ class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
             }
         }
 
+        virtual std::vector<Quaternions::RotationType> getTransitRotationTypes() const {
+            // Use all rotation types
+            return {Quaternions::RotationType::None, Quaternions::RotationType::Pitch90, Quaternions::RotationType::Pitch180, Quaternions::RotationType::Pitch270};
+        }
+
+        static float getOffsetDimension(const Object& obj, Quaternions::RotationType rotation_type) {
+            switch (rotation_type) {
+                case Quaternions::RotationType::None:
+                case Quaternions::RotationType::Pitch180: return obj.spec->getHeightOffset();
+                case Quaternions::RotationType::Pitch90:
+                case Quaternions::RotationType::Pitch270: return obj.spec->getWidthOffset();
+                // length offset
+            }
+            ROS_ASSERT_MSG("Unknown rotation type");
+            return 0.0f;
+        }
+
     private:
         struct GoalPoseProperties {
             GoalPoseProperties(const geometry_msgs::Pose& pose_, bool moving_to_object_, const std::string& obj_id_)
@@ -187,12 +205,19 @@ class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
         std::vector<geometry_msgs::Pose> getGraspGoalPoses(const ObjectGroup& obj_group, const GoalPoseProperties& goal_pose_props) const {
             // Grab object along its 'height' axis
             tf2::Vector3 relative_offset = tf2::Vector3(0.0, 0.0, 0.1);
-            if (goal_pose_props.moving_to_object)
-                relative_offset[2] = obj_group.getObject(goal_pose_props.obj_id).spec->getVerticalDimension() + ManipulatorProperties::getEndEffectorOffset("panda_arm");
 
-            std::vector<geometry_msgs::Pose> grasp_poses(2);
-            grasp_poses[0] = Quaternions::getPointAlongPose("panda_arm", relative_offset, goal_pose_props.pose, Quaternions::RotationType::DownAxis);
-            grasp_poses[1] = Quaternions::getPointAlongPose("panda_arm", relative_offset, goal_pose_props.pose, Quaternions::RotationType::UpAxis);
+            std::vector<Quaternions::RotationType> rotation_types = getTransitRotationTypes();
+            std::vector<geometry_msgs::Pose> grasp_poses;
+            grasp_poses.reserve(rotation_types.size());
+            
+            for (auto rot_type : rotation_types) {
+                if (goal_pose_props.moving_to_object) {
+                    DEBUG("offset: " << getOffsetDimension(obj_group.getObject(goal_pose_props.obj_id), rot_type));
+                    relative_offset[2] = getOffsetDimension(obj_group.getObject(goal_pose_props.obj_id), rot_type) + ManipulatorProperties::getEndEffectorOffset("panda_arm");
+                    DEBUG("offset z component: " << relative_offset[2]);
+                }
+                grasp_poses.push_back(Quaternions::getPointAlongPose("panda_arm", relative_offset, goal_pose_props.pose, rot_type));
+            }
             return grasp_poses;
         }
     
@@ -200,6 +225,28 @@ class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
         double m_planning_time;
         uint8_t m_max_trials;
         double m_max_velocity_scaling_factor;
+};
+
+class TransitUp : public Transit {
+    public:
+        TransitUp(const std::string& topic, double planning_time, uint8_t max_trials, double max_velocity_scaling_factor = 1.0) 
+            : Transit(topic, planning_time, max_trials, max_velocity_scaling_factor) {}
+
+        virtual std::vector<Quaternions::RotationType> getTransitRotationTypes() const override {
+            // Use only None and pitch 180 (up or down)
+            return {Quaternions::RotationType::None, Quaternions::RotationType::Pitch180};
+        }
+};
+
+class TransitSide : public Transit {
+    public:
+        TransitSide(const std::string& topic, double planning_time, uint8_t max_trials, double max_velocity_scaling_factor = 1.0) 
+            : Transit(topic, planning_time, max_trials, max_velocity_scaling_factor) {}
+
+        virtual std::vector<Quaternions::RotationType> getTransitRotationTypes() const override {
+            // Use only pitch 90 and pitch 270 (side left or side right)
+            return {Quaternions::RotationType::Pitch90, Quaternions::RotationType::Pitch270};
+        }
 };
 
 //class LinearApproachTransit : public ActionPrimitive<manipulation_interface::TransitSrv> {
