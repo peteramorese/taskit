@@ -1,25 +1,36 @@
 object_ids:
   - blueBox_1
-  #- blueBox_2
+  - blueBox_2
   #- pinkBox_1
   #- pinkBox_2
   #- greenBox_1
 
 object_types:
   - "box"
-  #- "box"
+  - "box"
   #- "box"
   #- "box"
   #- "box"
 
 blueBox_1: {
-  x: 0.5,
-  y: 0.5,
+  x: 0.3,
+  y: 0.3,
   z: 0.05,
   l: 0.05,
   w: 0.05,
   h: 0.1,
 }
 
+blueBox_2: {
+  l: 0.05,
+  w: 0.10,
+  h: 0.15,
+}
+
 object_orientation_types:
   - up_x
+  - up_x
+
+initial_locations: {
+  blueBox_2: "L2"
+}

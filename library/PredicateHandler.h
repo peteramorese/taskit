@@ -61,13 +61,15 @@ class PredicateHandler {
                 bool success = true;
 
             private:
-                std::map<std::string, const std::string&> m_obj_id_to_location_name;
+                std::map<std::string, std::string> m_obj_id_to_location_name;
         };
 	public:
         //std::size_t size() const {return m_locations.size(); }
-        PredicateHandler(const std::shared_ptr<const ObjectGroup>& obj_group) : m_obj_group(obj_group) {}
+        PredicateHandler(const std::shared_ptr<ObjectGroup>& obj_group) : m_obj_group(obj_group) {}
 
         void createEnvironment(const ros::NodeHandle& nh, const std::string& environment_ns);
+
+        void setObjectPosesToLocations(const ros::NodeHandle& nh, const std::string& objects_ns = "objects");
 
 		void addLocation(const std::string& name, const geometry_msgs::Point& position, Quaternions::Type orientation_type, float detection_radius) {
             geometry_msgs::Pose pose;
@@ -87,14 +89,14 @@ class PredicateHandler {
         const geometry_msgs::Pose& getLocationPose(const std::string& name) const {return m_locations.at(name).pose;}
 
         // Look up
-		const PredicateSet getPredicates(const std::set<std::string>& ignore_obj_ids) const;
+		const PredicateSet getPredicates(const std::set<std::string>& ignore_obj_ids = std::set<std::string>{}) const;
     private:
 		static double distance(const geometry_msgs::Point& lhs, const geometry_msgs::Point& rhs);
 
-        const std::string* findPredicate(const geometry_msgs::Point& loc) const;
+        std::pair<bool, std::string> findPredicate(const geometry_msgs::Point& loc) const;
 
     private:
         std::map<std::string, Location> m_locations;
-        std::shared_ptr<const ObjectGroup> m_obj_group; 
+        std::shared_ptr<ObjectGroup> m_obj_group; 
 };
 }

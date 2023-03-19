@@ -1,25 +1,26 @@
 #include "Object.h"
+#include "Tools.h"
 
 
 namespace ManipulationInterface {
 
 
-void ObjectGroup::createObjects(const ros::NodeHandle& nh, const std::string& workspace_ns, const std::string& frame_id, CollisionObjectVector& collision_objs, const std::shared_ptr<PoseTracker>& pose_tracker) {
+void ObjectGroup::createObjects(const ros::NodeHandle& nh, const std::string& ns, const std::string& frame_id, CollisionObjectVector& collision_objs, const std::shared_ptr<PoseTracker>& pose_tracker) {
 
+    DEBUG("creating objects");
     // TODO
-    //std::map<std::string, std::string> obj_domains;
 
     std::vector<std::string> object_ids;
-    nh.getParam(getParamName("object_ids", workspace_ns), object_ids);
+    nh.getParam(getParamName("object_ids", ns), object_ids);
 
     std::vector<std::string> object_types;
-    nh.getParam(getParamName("object_types", workspace_ns), object_types);
+    nh.getParam(getParamName("object_types", ns), object_types);
 
     std::vector<std::string> object_domains;
-    nh.param(getParamName("object_domains", workspace_ns), object_domains, {});
+    nh.param(getParamName("object_domains", ns), object_domains, {});
 
     std::vector<std::string> object_orientation_types;
-    nh.getParam(getParamName("object_orientation_types", workspace_ns), object_orientation_types);
+    nh.getParam(getParamName("object_orientation_types", ns), object_orientation_types);
 
     ROS_ASSERT_MSG(object_ids.size() != object_types.size(), "Each object name must correspond to a type");
     ROS_ASSERT_MSG(object_ids.size() != object_orientation_types.size(), "Each object must have an orientation type");
@@ -28,13 +29,9 @@ void ObjectGroup::createObjects(const ros::NodeHandle& nh, const std::string& wo
 
     for (uint32_t i=0; i<object_ids.size(); ++i) {
         ObjectConfig config;
-        nh.getParam(getParamName(object_ids[i], workspace_ns), config);
-        ROS_INFO_STREAM("Loaded object: " << object_ids[i] 
-            << " at (x: " << config.at("x") 
-            << ", y: " << config.at("y") 
-            << ", z: " << config.at("z") 
-            << ")");
+        nh.getParam(getParamName(object_ids[i], ns), config);
 
+        ROS_INFO_STREAM("Loaded object: " << object_ids[i]);
 
         std::shared_ptr<ObjectSpecification> spec = makeObjectSpecification(object_types[i], config);
         Object object(object_ids[i], spec, config, object_orientation_types[i], pose_tracker);

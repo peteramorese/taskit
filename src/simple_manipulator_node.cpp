@@ -26,10 +26,13 @@ int main(int argc, char** argv) {
 	const std::string ee_link = "panda_link8";
 	//std::shared_ptr<SimilarObjectGroup<TestPoseTracker>> obj_group;
 	ActionPrimitives::SimpleGrasp grasp("grasp", ee_link);
-	ActionPrimitives::Transit transit("transit", nullptr, 5.0f, 1);
+	ActionPrimitives::Transit transit("transit", 5.0f, 1);
 	ManipulatorNode<ActionPrimitives::SimpleGrasp, ActionPrimitives::Transit> manipulator_node(node_name, "panda_arm", "panda_link0", std::move(grasp), std::move(transit));
 
+	ros::WallDuration(1.0).sleep();
+
 	manipulator_node.createScene();
+	manipulator_node.updateEnvironment();
 
 	ActionPrimitives::SimpleGrasp::msg_t::Request req;
 	ActionPrimitives::SimpleGrasp::msg_t::Response res;

@@ -2,8 +2,11 @@
 
 #include "ManipulatorNode.h"
 
+#include "visualization_msgs/MarkerArray.h"
+
 #include "Object.h"
 #include "Tools.h"
+#include "ManipulatorProperties.h"
 
 namespace ManipulationInterface {
 
@@ -13,7 +16,7 @@ ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::ManipulatorNode(const std::string& 
     , m_action_primitives(std::forward<ACTION_PRIMITIVES_TYPES>(action_primitives)...)
     , m_move_group(std::make_shared<moveit::planning_interface::MoveGroupInterface>(planning_group))
     , m_planning_interface(std::make_shared<moveit::planning_interface::PlanningSceneInterface>())
-    , m_visual_tools(std::make_shared<moveit_visual_tools::MoveItVisualTools>(frame_id))
+    //, m_visual_tools(std::make_shared<moveit_visual_tools::MoveItVisualTools>(frame_id))
     , m_frame_id(frame_id)
 {
     DEBUG("Constructing...");
@@ -33,8 +36,8 @@ ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::ManipulatorNode(const std::string& 
     m_planning_scene = std::make_shared<planning_scene::PlanningScene>(m_robot_model);
     m_planning_scene->getCurrentStateNonConst().setToDefaultValues(joint_model_group, "ready");
     
-    // Read in the quaternion properties for the given arm
-    Quaternions::readDefaultDownQuaternions(*m_node_handle, planning_group, "arm_config");
+    // Read in the manipulator properties
+    ManipulatorProperties::load(*m_node_handle, planning_group, "arm_config");
 
     // Load planning plugin
     std::string planner_plugin_name;
@@ -42,8 +45,7 @@ ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::ManipulatorNode(const std::string& 
     if (!m_node_handle->getParam("planning_plugin", planner_plugin_name))
         ROS_FATAL_STREAM("Could not find planner plugin name");
     try {
-        m_planner_plugin_loader.reset(new pluginlib::ClassLoader<planning_interface::PlannerManager>(
-                    "moveit_core", "planning_interface::PlannerManager"));
+        m_planner_plugin_loader.reset(new pluginlib::ClassLoader<planning_interface::PlannerManager>("moveit_core", "planning_interface::PlannerManager"));
     } catch (pluginlib::PluginlibException& ex) {
         ROS_FATAL_STREAM("Exception while creating planning plugin loader " << ex.what());
     }
@@ -63,64 +65,21 @@ ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::ManipulatorNode(const std::string& 
 
     setPlanner("RRTConnectkConfigDefault");
 
+    // Setup the marker publisher
+    m_visualizer.reset(new ManipulatorNodeVisualizer(*m_node_handle, m_frame_id, "/rviz_visual_tools"));
+
     // Set up action primitives
     DEBUG("end of ctor");
 
 }
 
-template <class...ACTION_PRIMITIVES_TYPES>
-void ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::createObjects(const std::string& workspace_ns, const std::shared_ptr<PoseTracker>& pose_tracker) {
-
-    std::map<std::string, std::string> obj_domains;
-
-    std::vector<std::string> object_ids;
-    m_node_handle->getParam(getParamName("object_ids", workspace_ns), object_ids);
-
-    std::vector<std::string> object_types;
-    m_node_handle->getParam(getParamName("object_types", workspace_ns), object_types);
-
-    std::vector<std::string> object_domains;
-    m_node_handle->param(getParamName("object_domains", workspace_ns), object_domains, {});
-
-    std::vector<std::string> object_orientation_types;
-    m_node_handle->getParam(getParamName("object_orientation_types", workspace_ns), object_orientation_types);
-
-    ROS_ASSERT_MSG(object_ids.size() != object_types.size(), "Each object name must correspond to a type");
-    ROS_ASSERT_MSG(object_ids.size() != object_orientation_types.size(), "Each object must have an orientation type");
-
-    m_collision_objects.reserve(object_ids.size());
-
-    for (int i=0; i<object_ids.size(); ++i) {
-        ObjectConfig config;
-        m_node_handle->getParam(getParamName(object_ids[i], workspace_ns), config);
-        ROS_INFO_STREAM_NAMED(m_node_name, "Loaded object: " << object_ids[i] 
-            << " at (x: " << config.at("x") 
-            << ", y: " << config.at("y") 
-            << ", z: " << config.at("z") 
-            << ")");
-
-
-        std::shared_ptr<ObjectSpecification> spec = makeObjectSpecification(object_types[i], config);
-        Object object(object_ids[i], spec, config, object_orientation_types[i], pose_tracker);
-
-        moveit_msgs::CollisionObject collision_object = object.getCollisionObject();
-        collision_object.header.frame_id = m_frame_id;
-        collision_object.operation = collision_object.ADD;
-
-        if (i < object_domains.size()) obj_domains[object.id] = object_domains[i];
-
-        m_obj_group->insertObject(std::move(object));
-        m_collision_objects.push_back(std::move(collision_object));
-
-    }
-    updateEnvironment();
-}
 
 
 template <class...ACTION_PRIMITIVES_TYPES>
 void ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::updateEnvironment() {
     auto attached_objects = m_planning_interface->getAttachedObjects();
 
+    DEBUG("in update environment col obj size: " << m_collision_objects.size());
     for (auto& col_obj : m_collision_objects) {
         const auto& id = col_obj.id;
 
@@ -137,6 +96,7 @@ void ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::updateEnvironment() {
         obj_in_group.updatePose();
         col_obj = obj_in_group.getCollisionObject();
 
+        DEBUG("adding collision obj: " << id);
         col_obj.operation = col_obj.ADD;
     }
 
@@ -144,5 +104,124 @@ void ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::updateEnvironment() {
 
 }
 
+void ManipulatorNodeVisualizer::publishGoalMarker(const geometry_msgs::Pose& pose, const std::string& msg, float scale) {
+    visualization_msgs::MarkerArray marker_array;
+    marker_array.markers.resize(2);
+    visualization_msgs::Marker& marker = marker_array.markers[0];
+    marker.header.frame_id = m_frame_id;
+    marker.header.stamp = ros::Time();
+    marker.ns = "vis_marker_ns";
+    marker.id = MarkerIds::GoalMarker;
+    marker.type = visualization_msgs::Marker::SPHERE;
+    marker.action = visualization_msgs::Marker::ADD;
+    marker.pose = pose;
+    marker.scale.x = scale * 0.03;
+    marker.scale.y = scale * 0.03;
+    marker.scale.z = scale * 0.03;
+    marker.color.a = 1.0; 
+    marker.color.r = 58.0 / 255.0;
+    marker.color.g = 240.0 / 255.0;
+    marker.color.b = 221.0 / 255.0;
 
+    visualization_msgs::Marker& text = marker_array.markers[1];
+
+    text.header.frame_id = m_frame_id;
+    text.header.stamp = ros::Time();
+    text.ns = "vis_marker_ns";
+    text.id = MarkerIds::GoalMarkerText;
+    text.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+    text.action = visualization_msgs::Marker::ADD;
+    text.pose = pose;
+    text.pose.position.z += 0.04;
+    text.scale.x = scale * 0.07;
+    text.scale.y = scale * 0.07;
+    text.scale.z = scale * 0.07;
+    text.color.a = 1.0; 
+    text.color.r = 58.0 / 255.0;
+    text.color.g = 240.0 / 255.0;
+    text.color.b = 221.0 / 255.0;
+    text.text = msg;
+
+    m_visualization_marker_pub.publish(marker_array);
+}
+
+void ManipulatorNodeVisualizer::publishGoalObjectMarker(const geometry_msgs::Pose& obj_pose, const geometry_msgs::Pose& goal_pose, const std::string& msg, float scale, uint32_t num_points) {
+    visualization_msgs::MarkerArray marker_array;
+    marker_array.markers.resize(3);
+    
+    // Goal sphere
+    visualization_msgs::Marker& marker = marker_array.markers[0];
+
+    marker.header.frame_id = m_frame_id;
+    marker.header.stamp = ros::Time();
+    marker.ns = "vis_marker_ns";
+    marker.id = MarkerIds::GoalMarker;
+    marker.type = visualization_msgs::Marker::SPHERE;
+    marker.action = visualization_msgs::Marker::ADD;
+    marker.pose = goal_pose;
+    marker.scale.x = scale * 0.03;
+    marker.scale.y = scale * 0.03;
+    marker.scale.z = scale * 0.03;
+    marker.color.a = 1.0; 
+    marker.color.r = 58.0 / 255.0;
+    marker.color.g = 240.0 / 255.0;
+    marker.color.b = 221.0 / 255.0;
+
+    // Goal text
+    visualization_msgs::Marker& text = marker_array.markers[1];
+
+    text.header.frame_id = m_frame_id;
+    text.header.stamp = ros::Time();
+    text.ns = "vis_marker_ns";
+    text.id = MarkerIds::GoalMarkerText;
+    text.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+    text.action = visualization_msgs::Marker::ADD;
+    text.pose = goal_pose;
+    text.pose.position.z += 0.04;
+    text.scale.x = scale * 0.07;
+    text.scale.y = scale * 0.07;
+    text.scale.z = scale * 0.07;
+    text.color.a = 1.0; 
+    text.color.r = 58.0 / 255.0;
+    text.color.g = 240.0 / 255.0;
+    text.color.b = 221.0 / 255.0;
+    text.text = msg;
+
+    // Dotted line to object
+    visualization_msgs::Marker& points = marker_array.markers[2];
+
+    points.header.frame_id = m_frame_id;
+    points.header.stamp = ros::Time();
+    points.ns = "vis_marker_ns";
+    points.id = MarkerIds::ToObjLine;
+    points.type = visualization_msgs::Marker::POINTS;
+    points.action = visualization_msgs::Marker::ADD;
+    points.pose = goal_pose;
+    points.pose.position.z += 0.04;
+    points.scale.x = scale * 0.007;
+    points.scale.y = scale * 0.007;
+    points.scale.z = scale * 0.007;
+
+    points.points.resize(num_points);
+    points.colors.resize(num_points);
+
+    tf2::Vector3 to_goal, to_obj_center;
+    tf2::fromMsg(goal_pose.position, to_goal);
+    tf2::fromMsg(obj_pose.position, to_obj_center);
+    tf2::Vector3 along = to_obj_center - to_goal;
+    DEBUG("along.x: " << along[0]);
+    DEBUG("along.y: " << along[1]);
+    DEBUG("along.z: " << along[2]);
+
+    for (uint32_t i=0; i<num_points; ++i) {
+        float scale = static_cast<float>(i + 1) / static_cast<float>(num_points);
+        tf2::toMsg(scale * along, points.points[i]);
+        points.colors[i].a = 1.0;
+        points.colors[i].r = 58.0 / 255.0;
+        points.colors[i].g = (1.0f - scale) * 240.0 / 255.0;
+        points.colors[i].b = 221.0 / 255.0;
+    }
+
+    m_visualization_marker_pub.publish(marker_array);
+}
 }

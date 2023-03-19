@@ -1,5 +1,15 @@
 default_down_quaternion: {
   roll: rad(0.0),
   pitch: rad(pi),
-  yaw: rad(-pi/4 + pi/2)
+  yaw: rad(pi/4 - pi/2)
 }
+
+stow_joint_values:
+  - 0.0
+  - -.785398
+  - 0.0
+  - -2.35619
+  - 1.5708
+  - .785398
+
+eef_offset: 0.075

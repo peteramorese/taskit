@@ -21,6 +21,7 @@ using ObjectConfig = std::map<std::string, float>;
 // Object specifications
 
 enum class ObjectPrimitive {
+    None,
     Box,
     Sphere,
     Cylinder
@@ -31,6 +32,7 @@ static ObjectPrimitive getObjectPrimitiveType(const std::string& str) {
     if (str == "sphere") return ObjectPrimitive::Sphere;
     if (str == "cylinder") return ObjectPrimitive::Cylinder;
     ROS_ERROR_STREAM("Unrecognized primitive type: " << str);
+    return ObjectPrimitive::None;
 }
 
 struct ObjectSpecification {
@@ -46,6 +48,7 @@ struct ObjectSpecification {
 
     public:
         virtual moveit_msgs::CollisionObject getCollisionObject(const geometry_msgs::Pose& pose) const = 0;
+        virtual float getVerticalDimension() const = 0;
 
 };
 
@@ -70,6 +73,7 @@ struct BoxObjectSpecification : SingleObjectSpecification {
 
     BoxObjectSpecification() = default;
     BoxObjectSpecification(const ObjectConfig& config) {constructFromConfig(config);}
+    virtual float getVerticalDimension() const override {return height;}
 
     protected:
         virtual moveit_msgs::CollisionObject convert() const override {
@@ -97,6 +101,7 @@ struct SphereObjectSpecification : SingleObjectSpecification {
 
     SphereObjectSpecification() = default;
     SphereObjectSpecification(const ObjectConfig& config) {constructFromConfig(config);}
+    virtual float getVerticalDimension() const override {return radius;}
 
     protected:
         virtual moveit_msgs::CollisionObject convert() const override {
@@ -123,6 +128,7 @@ struct CylinderObjectSpecification : SingleObjectSpecification {
 
     CylinderObjectSpecification() = default;
     CylinderObjectSpecification(const ObjectConfig& config) {constructFromConfig(config);}
+    virtual float getVerticalDimension() const override {return height;}
 
     protected:
         virtual moveit_msgs::CollisionObject convert() const override {
@@ -189,9 +195,17 @@ struct Object {
         void updatePose() {if (!tracker) tracker->update(*this);}
 
         void setPoseFromConfig(const ObjectConfig& config, const std::string& orientation_type) {
-            pose.position.x = config.at("x");
-            pose.position.y = config.at("y");
-            pose.position.z = config.at("z");
+            if (config.find("x") != config.end()) {
+                pose.position.x = config.at("x"); 
+                pose.position.y = config.at("y");
+                pose.position.z = config.at("z");
+            } else {
+                ROS_ASSERT_MSG(config.find("y") == config.end() && config.find("x") == config.end(), "Must provide (x, y, z) for the object, or leave all three fields empty");
+                ROS_WARN_STREAM("No (x, y, z) coordinate provided for object '" << id <<"', assuming 0.0");
+                pose.position.x = 0.0f;
+                pose.position.y = 0.0f;
+                pose.position.z = 0.0f;
+            }
             pose.orientation = Quaternions::convert(Quaternions::get(orientation_type));
         }
 
@@ -209,7 +223,7 @@ class ObjectGroup {
     public:
         ObjectGroup() = default;
 
-        void createObjects(const ros::NodeHandle& nh, const std::string& workspace_ns, const std::string& frame_id, CollisionObjectVector& collision_objs, const std::shared_ptr<PoseTracker>& pose_tracker = nullptr);
+        void createObjects(const ros::NodeHandle& nh, const std::string& ns, const std::string& frame_id, CollisionObjectVector& collision_objs, const std::shared_ptr<PoseTracker>& pose_tracker = nullptr);
 
         std::set<std::string> getIds() const {
             std::set<std::string> ids;

@@ -26,6 +26,26 @@
 #include "PredicateHandler.h"
 
 namespace ManipulationInterface {
+    
+    class ManipulatorNodeVisualizer {
+        public:
+            ManipulatorNodeVisualizer(ros::NodeHandle& nh, const std::string& frame_id, const std::string& topic = "/rviz_visual_tools") 
+                : m_visualization_marker_pub(nh.advertise<visualization_msgs::MarkerArray>(topic, 0))
+                , m_frame_id(frame_id)
+            {}
+
+            void publishGoalMarker(const geometry_msgs::Pose& pose, const std::string& msg = "goal", float scale = 1.0f);
+            void publishGoalObjectMarker(const geometry_msgs::Pose& obj_pose, const geometry_msgs::Pose& goal_pose, const std::string& msg = "goal", float scale = 1.0f, uint32_t num_points = 10);
+        private:
+            enum MarkerIds {
+                GoalMarker,
+                GoalMarkerText,
+                ToObjLine
+            };
+        private:
+            ros::Publisher m_visualization_marker_pub;
+            std::string m_frame_id;
+    };
 
     template <class...ACTION_PRIMITIVES_TYPES>
     class ManipulatorNode {
@@ -42,12 +62,13 @@ namespace ManipulationInterface {
             // Automatically create the objects based off the parameter server (workspace_ns: param namespace for static obstacles, objects_ns: namespace for dynamic objects and predicates)
             void createScene(const std::shared_ptr<PoseTracker>& pose_tracker = nullptr, const std::string& environment_ns = "environment", const std::string& workspace_ns = "workspace", const std::string& objects_ns = "objects") {
                 m_obj_group.reset(new ObjectGroup);
+                m_collision_objects.clear();
                 m_obj_group->createObjects(*m_node_handle, workspace_ns, m_frame_id, m_collision_objects);
                 m_obj_group->createObjects(*m_node_handle, objects_ns, m_frame_id, m_collision_objects, pose_tracker);
 
-                m_collision_objects.clear();
                 m_predicate_handler.reset(new PredicateHandler(m_obj_group));
                 m_predicate_handler->createEnvironment(*m_node_handle, environment_ns);
+                m_predicate_handler->setObjectPosesToLocations(*m_node_handle, objects_ns);
             }
 
             void createEnvironment(const std::string& environment_ns);
@@ -97,11 +118,12 @@ namespace ManipulationInterface {
                 return std::get<I>(m_action_primitives)(getInterface(), std::forward<ARGS_T>(args)...);
             }
 
-            // Access important
-            ManipulatorNodeInterface getInterface() {return ManipulatorNodeInterface(m_move_group, m_planning_interface, m_obj_group);}
-            ConstManipulatorNodeInterface getInterface() const {return ConstManipulatorNodeInterface(m_move_group, m_planning_interface, m_obj_group);}
+            // Access important components
+            ManipulatorNodeInterface getInterface() {return ManipulatorNodeInterface(m_move_group, m_planning_interface, m_obj_group, m_predicate_handler, m_visualizer);}
+            ConstManipulatorNodeInterface getInterface() const {return ConstManipulatorNodeInterface(m_move_group, m_planning_interface, m_obj_group, m_predicate_handler, m_visualizer);}
 
         private:
+
 
             template <uint32_t I>
             inline bool actionServiceCallback(
@@ -126,6 +148,7 @@ namespace ManipulationInterface {
                 }
             }
 
+
         private:
             const std::string m_node_name;
 
@@ -139,7 +162,8 @@ namespace ManipulationInterface {
             std::shared_ptr<PredicateHandler> m_predicate_handler;
             std::shared_ptr<moveit::planning_interface::MoveGroupInterface> m_move_group;
             std::shared_ptr<moveit::planning_interface::PlanningSceneInterface> m_planning_interface;
-            std::shared_ptr<moveit_visual_tools::MoveItVisualTools> m_visual_tools;
+
+            //std::shared_ptr<moveit_visual_tools::MoveItVisualTools> m_visual_tools;
             std::shared_ptr<planning_scene::PlanningScene> m_planning_scene;
             std::string m_frame_id;
             std::vector<moveit_msgs::CollisionObject> m_collision_objects;
@@ -150,7 +174,10 @@ namespace ManipulationInterface {
             boost::scoped_ptr<pluginlib::ClassLoader<planning_interface::PlannerManager>> m_planner_plugin_loader;
             planning_interface::PlannerManagerPtr m_planner_instance;
 
+            std::shared_ptr<ManipulatorNodeVisualizer> m_visualizer;
+
     };
+
 }
 
 #include "ManipulatorNode_impl.h"

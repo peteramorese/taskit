@@ -8,11 +8,13 @@
 #include <geometry_msgs/Quaternion.h>
 
 #include "Tools.h"
+#include "ManipulatorProperties.h"
 
 namespace ManipulationInterface {
     class Quaternions {
         public:
             enum class Type {
+                None,
                 UpX,
                 UpY,
                 SideX,
@@ -20,6 +22,7 @@ namespace ManipulationInterface {
             };
 
             enum class RotationType {
+                None,
                 DownAxis,       // zero radians
                 UpAxis,         // pi radians
             };
@@ -37,6 +40,7 @@ namespace ManipulationInterface {
                     return Type::SideY;
                 }
                 ROS_ERROR_STREAM("Unrecognized quaternion type '" << type_str << "'");
+                return Type::None;
             }
 
             static inline geometry_msgs::Quaternion convert(const tf2::Quaternion q) {
@@ -78,7 +82,7 @@ namespace ManipulationInterface {
             static tf2::Quaternion getDefaultDown(const std::string& planning_group) {
                 tf2::Quaternion to_default_down;
                 ROS_ASSERT_MSG(s_default_down.find(planning_group) != s_default_down.end(), "Default down quaternion not found for planning group");
-                auto planning_group_properties = s_default_down.at(planning_group);
+                auto planning_group_properties = ManipulatorProperties::getDefaultDownRPY(planning_group);
                 to_default_down.setRPY(
                     planning_group_properties.at("roll"), 
                     planning_group_properties.at("pitch"), 
@@ -90,22 +94,18 @@ namespace ManipulationInterface {
             static geometry_msgs::Pose getPointAlongPose(const std::string& planning_group, const tf2::Vector3& relative_displacement_vector, const geometry_msgs::Pose& pose_to_match, RotationType rotation_type) {
                 geometry_msgs::Pose pose;
                 tf2::Quaternion default_down = getDefaultDown(planning_group);
-                tf2::Quaternion q_displacement(relative_displacement_vector, 0.0f);
                 tf2::Quaternion q_to_match;
                 tf2::fromMsg(pose_to_match.orientation, q_to_match);
-                tf2::Quaternion q_disp_rotated = q_to_match * q_displacement * q_to_match.inverse(); 
-                pose.position.x = q_disp_rotated[0] + pose_to_match.position.x; 
-                pose.position.y = q_disp_rotated[1] + pose_to_match.position.y;
-                pose.position.z = q_disp_rotated[2] + pose_to_match.position.z;
-                pose.orientation = convert(q_to_match * getRotation(rotation_type) * default_down);
+                tf2::Quaternion orientation = q_to_match * getRotation(rotation_type) * default_down;
+                orientation.normalize();
+                tf2::Vector3 disp_rotated = tf2::quatRotate(orientation, relative_displacement_vector);
+                pose.position.x = pose_to_match.position.x - disp_rotated[0]; 
+                pose.position.y = pose_to_match.position.y - disp_rotated[1];
+                pose.position.z = pose_to_match.position.z - disp_rotated[2];
+                pose.orientation = convert(orientation);
                 return pose;
             }
 
-            static void readDefaultDownQuaternions(const ros::NodeHandle& nh, const std::string& planning_group, const std::string& arm_config_ns = "arm_config") {
-                nh.getParam(getParamName("default_down_quaternion", arm_config_ns), s_default_down[planning_group]);
-            }
 
-        private:
-            inline static std::map<std::string, std::map<std::string, float>> s_default_down;
     };
 }
