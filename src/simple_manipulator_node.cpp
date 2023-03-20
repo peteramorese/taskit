@@ -39,6 +39,8 @@ int main(int argc, char** argv) {
 	ActionPrimitives::TransitUp transit_up("transit_up", 5.0f, 1);
 	ActionPrimitives::LinearTransit linear_transit("linear_transit", 5.0f, 1, 0.05);
 	ActionPrimitives::LinearTransitSide linear_transit_side("linear_transit_side", 5.0f, 1, 0.05);
+	ActionPrimitives::Transport transport("transport", 5.0f, 1, 0.05);
+	ActionPrimitives::LinearTransport linear_transport("linear_transport", 5.0f, 1, 0.05);
 
 	ManipulatorNode<
 	 	ActionPrimitives::Stow,
@@ -47,7 +49,9 @@ int main(int argc, char** argv) {
 		ActionPrimitives::TransitSide,
 		ActionPrimitives::TransitUp,
 		ActionPrimitives::LinearTransit,
-		ActionPrimitives::LinearTransitSide
+		ActionPrimitives::LinearTransitSide,
+		ActionPrimitives::Transport,
+		ActionPrimitives::LinearTransport
 	> manipulator_node(node_name, "panda_arm", "panda_link0", 
 		std::move(stow), 
 		std::move(grasp), 
@@ -55,7 +59,9 @@ int main(int argc, char** argv) {
 		std::move(transit_side), 
 		std::move(transit_up), 
 		std::move(linear_transit), 
-		std::move(linear_transit_side)
+		std::move(linear_transit_side),
+		std::move(transport),
+		std::move(linear_transport)
 	);
 
 	ros::WallDuration(1.0).sleep();

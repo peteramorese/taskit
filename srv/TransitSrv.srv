@@ -1,5 +1,4 @@
 string destination_location
-bool use_linear_approach
 ---
 bool execution_success
 bool plan_success

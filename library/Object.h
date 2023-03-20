@@ -41,7 +41,6 @@ struct ObjectSpecification {
         double grip_force = 50.0;
         double grip_speed = 0.1;
         double grip_width_closed = 0.05;
-        double grip_width_open = 0.1;
         double grip_epsilon_inner = 0.03;
         double grip_epsilon_outter = 0.03;
 

@@ -54,11 +54,13 @@ class ManipulatorNodeVisualizer {
 
 struct ManipulatorNodeState {
     public:
+        std::string curr_location_name = std::string();
         bool near_object = false;
         Quaternions::RotationType grasp_rotation_type;
     public:
         ManipulatorNodeState() {reset();}
         void reset() {
+            curr_location_name = std::string();
             near_object = false;
             grasp_rotation_type = Quaternions::RotationType::None;
         }

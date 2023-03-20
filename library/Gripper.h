@@ -42,7 +42,11 @@ class GripperHandler<GripperUse::FrankaHand> {
         typedef franka_gripper::GraspAction action_t;
         typedef franka_gripper::GraspActionGoal action_goal_t;
     public:
-        GripperHandler(const std::string& gripper_topic, double timeout = 5.0) : m_gripper_action(gripper_topic, true), m_timeout(timeout) {}
+        GripperHandler(const std::string& gripper_topic, double grip_width_open = 0.1, double timeout = 5.0) 
+            : m_gripper_action(gripper_topic, true)
+            , m_timeout(timeout) 
+            , m_grip_width_open(grip_width_open)
+        {}
         bool close(const ObjectSpecification& grip_spec) {
             action_goal_t grip_goal;
             grip_goal.goal.width = grip_spec.grip_width_closed;
@@ -55,7 +59,7 @@ class GripperHandler<GripperUse::FrankaHand> {
         }
         bool open(const ObjectSpecification& grip_spec) {
             action_goal_t grip_goal;
-            grip_goal.goal.width = grip_spec.grip_width_open;
+            grip_goal.goal.width = m_grip_width_open;
             grip_goal.goal.speed = grip_spec.grip_speed;
             grip_goal.goal.force = grip_spec.grip_force;
             grip_goal.goal.epsilon.inner = grip_spec.grip_epsilon_inner;
@@ -66,6 +70,7 @@ class GripperHandler<GripperUse::FrankaHand> {
     public:
         actionlib::SimpleActionClient<franka_gripper::GraspAction> m_gripper_action;
         double m_timeout;
+        double m_grip_width_open = 0.1;
 };
 
 #endif

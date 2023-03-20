@@ -4,39 +4,32 @@ location_names:
   - L2
   - L3
 
-L0: { # Left 
+L0: { 
   x: 0.20,
   y: 0.40,
-  z: .70, #0.08,
+  z: .30, 
   r: 0.08, 
 }
-L1: { # Middle
+L1: { 
   x: 0.0,
   y: 0.40,
-  z: .70, #0.08,
+  z: .30,
   r: 0.08, 
 }
-L2: { # Right
+L2: { 
   x: 0.50,
   y: 0.40,
-  z: .10, #0.08,
+  z: .30, 
   r: 0.08, 
 }
-L3: { # xtra space L
+L3: { 
   x: 0.30,
   y: -0.30,
-  z: .70, #0.08,
-  r: 0.08, 
-}
-L4: { # xtra space R
-  x: -0.30,
-  y: -0.30,
-  z: .70, #0.08,
+  z: .30, 
   r: 0.08, 
 }
 location_orientation_types:
   - up_x
   - up_x 
-  - up_x
   - up_x
   - up_x

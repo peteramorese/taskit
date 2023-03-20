@@ -70,9 +70,21 @@ class SimpleGrasp : public ActionPrimitive<manipulation_interface::GraspSrv> {
         virtual bool operator()(ManipulatorNodeInterface&& interface, msg_t::Request& request, msg_t::Response& response) override {
             auto move_group = interface.move_group.lock();
             auto obj_group = interface.object_group.lock();
-            ROS_ASSERT_MSG(obj_group->hasObject(request.obj_id), "Object not found");
-            response.success = m_gripper_handler->close(*(obj_group->getObject(request.obj_id).spec));
-            move_group->attachObject(request.obj_id, m_attachment_link);
+            auto predicate_handler = interface.predicate_handler.lock();
+            auto state = interface.state.lock();
+
+            std::string obj_id;
+            if (request.obj_id.empty()) {
+                std::pair<bool, std::string> curr_location_predicate = predicate_handler->getPredicates().lookupLocationPredicate(state->curr_location_name);
+                obj_id = curr_location_predicate.second;
+                ROS_ASSERT_MSG(curr_location_predicate.first, "Object not found in current location");
+                ROS_INFO_STREAM("Found object '" << curr_location_predicate.second << "' to pickup");
+            } else {
+                ROS_ASSERT_MSG(obj_group->hasObject(request.obj_id), "Object not found");
+                obj_id = request.obj_id;
+            }
+            response.success = m_gripper_handler->close(*(obj_group->getObject(obj_id).spec));
+            move_group->attachObject(obj_id, m_attachment_link);
 
             return true;
         }
@@ -97,10 +109,18 @@ class SimpleRelease : public ActionPrimitive<manipulation_interface::ReleaseSrv>
             ROS_ASSERT_MSG(obj_group->hasObject(request.obj_id), "Object not found");
 
             auto attached_objects = planning_interface->getAttachedObjects();
-            ROS_ASSERT_MSG(attached_objects.find(request.obj_id) != attached_objects.end(), "Release object is not currently attached");
+            std::string obj_id;
+            if (!request.obj_id.empty()) {
+                auto it = attached_objects.find(request.obj_id);
+                ROS_ASSERT_MSG(it != attached_objects.end(), "Release object is not currently attached");
+                obj_id = it->first;
+            } else {
+                ROS_ASSERT_MSG(!attached_objects.empty(), "No objects attached, cannot release");
+                obj_id = attached_objects.begin()->first;
+            }
 
-            response.success = m_gripper_handler->open(*(obj_group->getObject(request.obj_id).spec));
-            move_group->detachObject(request.obj_id);
+            response.success = m_gripper_handler->open(*(obj_group->getObject(obj_id).spec));
+            move_group->detachObject(obj_id);
             return true;
         }
 
@@ -157,9 +177,9 @@ class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
                     
                     // Visualize plan goal
                     if (goal_pose_props.moving_to_object) {
-                        vis->publishGoalObjectMarker(eef_pose, goal_pose_props.pose, "planning...");
+                        vis->publishGoalObjectMarker(eef_pose, goal_pose_props.pose, "Planning...");
                     } else {
-                        vis->publishGoalMarker(eef_pose, "planning...");
+                        vis->publishGoalMarker(eef_pose, "Planning...");
                     }
 
                     response.plan_success = move_group->plan(plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS;
@@ -169,14 +189,14 @@ class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
 
                         // Visualize actual goal
                         if (goal_pose_props.moving_to_object) {
-                            vis->publishGoalObjectMarker(eef_pose, goal_pose_props.pose, "goal");
+                            vis->publishGoalObjectMarker(eef_pose, goal_pose_props.pose, "Goal");
                         } else {
-                            vis->publishGoalMarker(eef_pose, "goal");
+                            vis->publishGoalMarker(eef_pose, "Goal");
                         }
 
                         response.execution_success = move_group->execute(plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS;
                         if (response.execution_success) {
-                            updateState(*state, goal_pose_props.moving_to_object, pose_rot_type);
+                            updateState(*state, request.destination_location, goal_pose_props.moving_to_object, pose_rot_type);
                         }
                         return true;
                     }
@@ -189,15 +209,6 @@ class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
             }
         }
 
-        void updateState(ManipulatorNodeState& state, bool near_object, Quaternions::RotationType final_rotation_type) const {
-            state.near_object = near_object;
-            state.grasp_rotation_type = final_rotation_type;
-        }
-
-        virtual std::vector<Quaternions::RotationType> getTransitRotationTypes() const {
-            // Use all rotation types
-            return {Quaternions::RotationType::None, Quaternions::RotationType::Pitch90, Quaternions::RotationType::Pitch180, Quaternions::RotationType::Pitch270};
-        }
 
     protected:
         struct GoalPoseProperties {
@@ -213,6 +224,17 @@ class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
         };
     protected:
 
+        void updateState(ManipulatorNodeState& state, const std::string& curr_location_name, bool near_object, Quaternions::RotationType final_rotation_type) const {
+            state.curr_location_name = curr_location_name;
+            state.near_object = near_object;
+            state.grasp_rotation_type = final_rotation_type;
+        }
+
+        virtual std::vector<Quaternions::RotationType> getTransitRotationTypes() const {
+            // Use all rotation types
+            return {Quaternions::RotationType::None, Quaternions::RotationType::Pitch90, Quaternions::RotationType::Pitch180, Quaternions::RotationType::Pitch270};
+        }
+
         static float getOffsetDimension(const Object& obj, Quaternions::RotationType rotation_type) {
             switch (rotation_type) {
                 case Quaternions::RotationType::None:
@@ -221,7 +243,7 @@ class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
                 case Quaternions::RotationType::Pitch270: return obj.spec->getWidthOffset();
                 // length offset
             }
-            ROS_ASSERT_MSG("Unknown rotation type");
+            ROS_ASSERT_MSG(false, "Unknown rotation type");
             return 0.0f;
         }
 
@@ -282,6 +304,113 @@ class TransitSide : public Transit {
         }
 };
 
+class Transport : public Transit {
+    public:
+        Transport(const std::string& topic, double planning_time, uint8_t max_trials, double max_velocity_scaling_factor = 1.0)
+            : Transit(topic, planning_time, max_trials, max_velocity_scaling_factor)
+        {}
+
+        virtual bool operator()(ManipulatorNodeInterface&& interface, msg_t::Request& request, msg_t::Response& response) override {
+
+            // Extract what we need
+            auto move_group = interface.move_group.lock();
+            auto obj_group = interface.object_group.lock();
+            auto predicate_handler = interface.predicate_handler.lock();
+            auto vis = interface.visualizer.lock();
+            auto state = interface.state.lock();
+
+            response.plan_success = false;
+            response.execution_success = false;
+
+            // Make sure at least one object is attached
+            if (!interface.planning_interface.lock()->getAttachedObjects().size()) {
+                ROS_WARN_STREAM("Did not find attached object (is the manipulator grasping?), not executing");
+                return false;
+            }
+
+            // Get the goal pose from the request location
+            GoalPoseProperties goal_pose_props = getGoalPose(*predicate_handler, *obj_group, request);
+            if (goal_pose_props.moving_to_object) {
+                ROS_ERROR_STREAM("Destination location '" << request.destination_location << "' is occupied by object: " << goal_pose_props.obj_id << ", not executing");
+                return false;
+            } else {
+                ROS_INFO_STREAM("Goal pose for location '" << request.destination_location <<"' extracted from predicate handler");
+            }
+
+            // Set the temporary member before getting grasp goal poses
+            t_grasp_rotation_type = state->grasp_rotation_type;
+
+            // Get the grasp pose options
+            std::vector<std::pair<geometry_msgs::Pose, Quaternions::RotationType>> eef_poses = getGraspGoalPoses(*obj_group, goal_pose_props);
+
+
+            move_group->setPlanningTime(m_planning_time);
+
+            uint8_t trial = 0;
+            while (true) {
+                move_group->setStartStateToCurrentState();
+                moveit::planning_interface::MoveGroupInterface::Plan plan;
+
+                for (const auto& eef_pose_props : eef_poses) {
+
+                    const auto& eef_pose = eef_pose_props.first;
+                    Quaternions::RotationType pose_rot_type = eef_pose_props.second;
+
+                    move_group->setPoseTarget(eef_pose);
+                    ros::WallDuration(1.0).sleep();
+                    
+                    // Visualize plan goal
+                    if (goal_pose_props.moving_to_object) {
+                        vis->publishGoalObjectMarker(eef_pose, goal_pose_props.pose, "Planning...");
+                    } else {
+                        vis->publishGoalMarker(eef_pose, "Planning...");
+                    }
+
+                    response.plan_success = move_group->plan(plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS;
+                    ros::WallDuration(1.0).sleep();
+                    if (response.plan_success) {
+                        move_group->setMaxVelocityScalingFactor(m_max_velocity_scaling_factor);
+
+                        // Visualize actual goal
+                        if (goal_pose_props.moving_to_object) {
+                            vis->publishGoalObjectMarker(eef_pose, goal_pose_props.pose, "Goal");
+                        } else {
+                            vis->publishGoalMarker(eef_pose, "Goal");
+                        }
+
+                        response.execution_success = move_group->execute(plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS;
+                        if (response.execution_success) {
+                            updateState(*state, request.destination_location, goal_pose_props.moving_to_object, pose_rot_type);
+                        }
+                        return true;
+                    }
+                }
+
+                ++trial;        
+                if (trial >= m_max_trials) {
+                    return true;
+                }
+            }
+        }
+
+    protected:
+
+        virtual std::vector<Quaternions::RotationType> getTransitRotationTypes() const {
+            // Use all rotation types
+            switch (t_grasp_rotation_type) {
+                case Quaternions::RotationType::None:
+                case Quaternions::RotationType::Pitch180: return {Quaternions::RotationType::None, Quaternions::RotationType::Pitch180};
+                case Quaternions::RotationType::Pitch90:
+                case Quaternions::RotationType::Pitch270: return {Quaternions::RotationType::Pitch90, Quaternions::RotationType::Pitch270};
+                // length offset
+            }
+            ROS_ASSERT_MSG(false, "Unknown rotation type");
+            return {};
+        }
+
+    protected:
+        Quaternions::RotationType t_grasp_rotation_type;
+};
 
 
 }
