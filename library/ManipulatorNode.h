@@ -37,15 +37,31 @@ class ManipulatorNodeVisualizer {
 
         void publishGoalMarker(const geometry_msgs::Pose& pose, const std::string& msg = "goal", float scale = 1.0f);
         void publishGoalObjectMarker(const geometry_msgs::Pose& obj_pose, const geometry_msgs::Pose& goal_pose, const std::string& msg = "goal", float scale = 1.0f, uint32_t num_points = 20);
+        void removeAllMarkers();
     private:
+
         enum MarkerIds {
             GoalMarker,
             GoalMarkerText,
-            ToObjLine
+            ToObjLine,
+            ApproachGoalMarker,
+            ApproachGoalMarkerText,
         };
     private:
         ros::Publisher m_visualization_marker_pub;
         std::string m_frame_id;
+};
+
+struct ManipulatorNodeState {
+    public:
+        bool near_object = false;
+        Quaternions::RotationType grasp_rotation_type;
+    public:
+        ManipulatorNodeState() {reset();}
+        void reset() {
+            near_object = false;
+            grasp_rotation_type = Quaternions::RotationType::None;
+        }
 };
 
 
@@ -118,8 +134,8 @@ class ManipulatorNode {
         }
 
         // Access important components
-        ManipulatorNodeInterface getInterface() {return ManipulatorNodeInterface(m_move_group, m_planning_interface, m_obj_group, m_predicate_handler, m_visualizer);}
-        ConstManipulatorNodeInterface getInterface() const {return ConstManipulatorNodeInterface(m_move_group, m_planning_interface, m_obj_group, m_predicate_handler, m_visualizer);}
+        ManipulatorNodeInterface getInterface() {return ManipulatorNodeInterface(m_move_group, m_planning_interface, m_obj_group, m_predicate_handler, m_visualizer, m_state);}
+        ConstManipulatorNodeInterface getInterface() const {return ConstManipulatorNodeInterface(m_move_group, m_planning_interface, m_obj_group, m_predicate_handler, m_visualizer, m_state);}
 
     private:
 
@@ -173,6 +189,8 @@ class ManipulatorNode {
         planning_interface::PlannerManagerPtr m_planner_instance;
 
         std::shared_ptr<ManipulatorNodeVisualizer> m_visualizer;
+
+        std::shared_ptr<ManipulatorNodeState> m_state;
 
 };
 

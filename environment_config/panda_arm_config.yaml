@@ -6,10 +6,11 @@ default_down_quaternion: {
 
 stow_joint_values:
   - 0.0
-  - -.785398
+  - -0.785398
   - 0.0
   - -2.35619
+  - 0.0
   - 1.5708
-  - .785398
+  - 0.785398
 
 eef_offset: 0.075

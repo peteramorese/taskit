@@ -31,18 +31,13 @@ find_package(catkin REQUIRED COMPONENTS
 #find_package(Eigen3 REQUIRED)
 find_package(Boost REQUIRED system filesystem date_time thread)
 
-
 add_service_files(
 	DIRECTORY srv
 	FILES
+	StowSrv.srv
 	GraspSrv.srv
 	ReleaseSrv.srv
 	TransitSrv.srv
-	#ActionSingle.srv
-	#PlanningQuery.srv
-	#PreferenceQuery.srv
-	#RunQuery.srv
-	#Strategy.srv
 )
 
 generate_messages(

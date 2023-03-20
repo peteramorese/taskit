@@ -52,6 +52,12 @@ namespace ManipulationInterface {
                 return tf2::toMsg(q);
             }
 
+            static inline tf2::Quaternion convert(const geometry_msgs::Quaternion q) {
+                tf2::Quaternion q_converted;
+                tf2::fromMsg(q, q_converted);
+                return q_converted;
+            }
+
             static inline tf2::Quaternion getDefaultUp() {
                 return tf2::Quaternion(0.0, 0.0, 1.0, 0.0);
             }
@@ -97,6 +103,11 @@ namespace ManipulationInterface {
                     planning_group_properties.at("yaw")
                 );
                 return to_default_down;
+            }
+
+            static tf2::Vector3 getEndEffectorHeading(const tf2::Quaternion& eef_orientation) {
+                tf2::Vector3 up(0.0, 0.0, 1.0);
+                return tf2::quatRotate(eef_orientation, up);
             }
 
             static geometry_msgs::Pose getPointAlongPose(const std::string& planning_group, const tf2::Vector3& relative_displacement_vector, const geometry_msgs::Pose& pose_to_match, RotationType rotation_type) {

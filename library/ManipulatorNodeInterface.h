@@ -16,7 +16,7 @@ namespace ManipulationInterface {
 class ObjectGroup;
 class PredicateHandler;
 class ManipulatorNodeVisualizer;
-class ManipulatorNodeVisualizer;
+class ManipulatorNodeState;
 
 struct ManipulatorNodeInterface {
     std::weak_ptr<moveit::planning_interface::MoveGroupInterface> move_group;
@@ -24,18 +24,21 @@ struct ManipulatorNodeInterface {
     std::weak_ptr<ObjectGroup> object_group;
     std::weak_ptr<PredicateHandler> predicate_handler;
     std::weak_ptr<ManipulatorNodeVisualizer> visualizer;
+    std::weak_ptr<ManipulatorNodeState> state;
 
     ManipulatorNodeInterface(
         const std::shared_ptr<moveit::planning_interface::MoveGroupInterface>& move_group_, 
         const std::shared_ptr<moveit::planning_interface::PlanningSceneInterface>& planning_interface_,
         const std::shared_ptr<ObjectGroup>& object_group_,
         const std::shared_ptr<PredicateHandler>& predicate_handler_,
-        const std::shared_ptr<ManipulatorNodeVisualizer>& visualizer_)
+        const std::shared_ptr<ManipulatorNodeVisualizer>& visualizer_,
+        const std::shared_ptr<ManipulatorNodeState>& state_)
         : move_group(move_group_)
         , planning_interface(planning_interface_)
         , object_group(object_group_)
         , predicate_handler(predicate_handler_)
         , visualizer(visualizer_)
+        , state(state_)
     {}
 
 
@@ -47,18 +50,21 @@ struct ConstManipulatorNodeInterface {
     std::weak_ptr<const ObjectGroup> object_group;
     std::weak_ptr<const PredicateHandler> predicate_handler;
     std::weak_ptr<const ManipulatorNodeVisualizer> visualizer;
+    std::weak_ptr<const ManipulatorNodeState> state;
 
     ConstManipulatorNodeInterface(
         const std::shared_ptr<moveit::planning_interface::MoveGroupInterface>& move_group_, 
         const std::shared_ptr<moveit::planning_interface::PlanningSceneInterface>& planning_interface_,
         const std::shared_ptr<ObjectGroup>& object_group_,
         const std::shared_ptr<PredicateHandler>& predicate_handler_,
-        const std::shared_ptr<ManipulatorNodeVisualizer>& visualizer_)
+        const std::shared_ptr<ManipulatorNodeVisualizer>& visualizer_,
+        const std::shared_ptr<ManipulatorNodeState>& state_)
         : move_group(move_group_)
         , planning_interface(planning_interface_)
         , object_group(object_group_)
         , predicate_handler(predicate_handler_)
         , visualizer(visualizer_)
+        , state(state_)
     {}
 };
 

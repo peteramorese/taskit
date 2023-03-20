@@ -31,10 +31,6 @@ void PredicateHandler::setObjectPosesToLocations(const ros::NodeHandle& nh, cons
     nh.getParam(getParamName("initial_locations", objects_ns), initial_locations);
 
     for (const auto& v_type : initial_locations) {
-        DEBUG("setting obj: " << v_type.first << " to location: " << v_type.second);
-        DEBUG("pose x: " << getLocationPose(v_type.second).position.x);
-        DEBUG("pose y: " << getLocationPose(v_type.second).position.y);
-        DEBUG("pose z: " << getLocationPose(v_type.second).position.z);
         m_obj_group->getObject(v_type.first).pose = getLocationPose(v_type.second);
     }
 
@@ -61,25 +57,18 @@ std::pair<bool, std::string> PredicateHandler::findPredicate(const geometry_msgs
             }
         }
     }
-    DEBUG("found: " << found << " nearest predicate: " << nearest_predicate);
     return {found, nearest_predicate};
 }
 
 const PredicateHandler::PredicateSet PredicateHandler::getPredicates(const std::set<std::string>& ignore_obj_ids) const {
     PredicateSet predicate_set;
     for (const auto obj : m_obj_group->getObjects()) {
-        DEBUG("b4 id lookup");
         const std::string& obj_id = obj->id;
-        DEBUG("af id lookup");
         if (ignore_obj_ids.empty() || ignore_obj_ids.find(obj_id) != ignore_obj_ids.end()) {
             //const geometry_msgs::Pose& obj_pose = obj_loc.second;
-            DEBUG("b4 find predicate");
             std::pair<bool, std::string> result = findPredicate(obj->pose.position);
-            DEBUG("af find predicate");
             if (result.first) {
-                DEBUG("b4 set obj predicate");
                 predicate_set.setObjectPredicate(obj_id, result.second);
-                DEBUG("af set obj predicate");
             } else {
                 ROS_WARN_STREAM("Object with id: " << obj_id << " was not found within any predicate regions");
                 predicate_set.success = false;
@@ -88,7 +77,6 @@ const PredicateHandler::PredicateSet PredicateHandler::getPredicates(const std::
             predicate_set.setObjectPredicateIgnored(obj_id);
         }
     }
-    DEBUG("returning predicate set");
     return predicate_set;
 }
 

@@ -5,9 +5,11 @@
 #include <vector>
 
 // Srv types
+#include "manipulation_interface/StowSrv.h"
 #include "manipulation_interface/GraspSrv.h"
 #include "manipulation_interface/ReleaseSrv.h"
 #include "manipulation_interface/TransitSrv.h"
+
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 // MoveIt
@@ -36,6 +38,24 @@ class ActionPrimitive {
 
     private:
         const std::string m_topic;
+};
+
+class Stow : public ActionPrimitive<manipulation_interface::StowSrv> {
+    public:
+        Stow(const std::string& topic)
+            : ActionPrimitive<manipulation_interface::StowSrv>(topic)
+            {}
+
+        virtual bool operator()(ManipulatorNodeInterface&& interface, msg_t::Request& request, msg_t::Response& response) override {
+            auto move_group = interface.move_group.lock();
+            interface.state.lock()->reset();
+            
+            move_group->clearPoseTargets();
+            move_group->setStartStateToCurrentState();
+            move_group->setJointValueTarget(ManipulatorProperties::getStowJointValues("panda_arm"));
+            response.execution_success = move_group->move() == moveit::planning_interface::MoveItErrorCode::SUCCESS;
+            return true;
+        }
 };
 
 template <GripperUse GRIPPER_USE_T>
@@ -104,6 +124,7 @@ class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
             auto obj_group = interface.object_group.lock();
             auto predicate_handler = interface.predicate_handler.lock();
             auto vis = interface.visualizer.lock();
+            auto state = interface.state.lock();
 
             // Get the goal pose from the request location
             GoalPoseProperties goal_pose_props = getGoalPose(*predicate_handler, *obj_group, request);
@@ -114,7 +135,7 @@ class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
             }
 
             // Get the grasp pose options
-            std::vector<geometry_msgs::Pose> eef_poses = getGraspGoalPoses(*obj_group, goal_pose_props);
+            std::vector<std::pair<geometry_msgs::Pose, Quaternions::RotationType>> eef_poses = getGraspGoalPoses(*obj_group, goal_pose_props);
 
             response.plan_success = false;
             response.execution_success = false;
@@ -126,7 +147,11 @@ class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
                 move_group->setStartStateToCurrentState();
                 moveit::planning_interface::MoveGroupInterface::Plan plan;
 
-                for (const auto& eef_pose : eef_poses) {
+                for (const auto& eef_pose_props : eef_poses) {
+
+                    const auto& eef_pose = eef_pose_props.first;
+                    Quaternions::RotationType pose_rot_type = eef_pose_props.second;
+
                     move_group->setPoseTarget(eef_pose);
                     ros::WallDuration(1.0).sleep();
                     
@@ -150,6 +175,9 @@ class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
                         }
 
                         response.execution_success = move_group->execute(plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS;
+                        if (response.execution_success) {
+                            updateState(*state, goal_pose_props.moving_to_object, pose_rot_type);
+                        }
                         return true;
                     }
                 }
@@ -161,10 +189,29 @@ class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
             }
         }
 
+        void updateState(ManipulatorNodeState& state, bool near_object, Quaternions::RotationType final_rotation_type) const {
+            state.near_object = near_object;
+            state.grasp_rotation_type = final_rotation_type;
+        }
+
         virtual std::vector<Quaternions::RotationType> getTransitRotationTypes() const {
             // Use all rotation types
             return {Quaternions::RotationType::None, Quaternions::RotationType::Pitch90, Quaternions::RotationType::Pitch180, Quaternions::RotationType::Pitch270};
         }
+
+    protected:
+        struct GoalPoseProperties {
+            GoalPoseProperties(const geometry_msgs::Pose& pose_, bool moving_to_object_, const std::string& obj_id_)
+                : pose(pose_)
+                , moving_to_object(moving_to_object_)
+                , obj_id(obj_id_)
+            {}
+
+            const geometry_msgs::Pose& pose;
+            bool moving_to_object;
+            std::string obj_id;
+        };
+    protected:
 
         static float getOffsetDimension(const Object& obj, Quaternions::RotationType rotation_type) {
             switch (rotation_type) {
@@ -178,20 +225,7 @@ class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
             return 0.0f;
         }
 
-    private:
-        struct GoalPoseProperties {
-            GoalPoseProperties(const geometry_msgs::Pose& pose_, bool moving_to_object_, const std::string& obj_id_)
-                : pose(pose_)
-                , moving_to_object(moving_to_object_)
-                , obj_id(obj_id_)
-            {}
-
-            const geometry_msgs::Pose& pose;
-            bool moving_to_object;
-            std::string obj_id;
-        };
-    private:
-        GoalPoseProperties getGoalPose(const PredicateHandler& predicate_handler, const ObjectGroup& obj_group, const msg_t::Request& request) const {
+        static GoalPoseProperties getGoalPose(const PredicateHandler& predicate_handler, const ObjectGroup& obj_group, const msg_t::Request& request) {
 
 		    const PredicateHandler::PredicateSet predicate_set = predicate_handler.getPredicates();
             std::pair<bool, std::string> location_predicate = predicate_set.lookupLocationPredicate(request.destination_location);
@@ -202,26 +236,25 @@ class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
                 return GoalPoseProperties(predicate_handler.getLocationPose(request.destination_location), false, std::string());
         }
 
-        std::vector<geometry_msgs::Pose> getGraspGoalPoses(const ObjectGroup& obj_group, const GoalPoseProperties& goal_pose_props) const {
+        std::vector<std::pair<geometry_msgs::Pose, Quaternions::RotationType>> getGraspGoalPoses(const ObjectGroup& obj_group, const GoalPoseProperties& goal_pose_props, double distance_offset = 0.0) {
             // Grab object along its 'height' axis
             tf2::Vector3 relative_offset = tf2::Vector3(0.0, 0.0, 0.1);
 
             std::vector<Quaternions::RotationType> rotation_types = getTransitRotationTypes();
-            std::vector<geometry_msgs::Pose> grasp_poses;
+            std::vector<std::pair<geometry_msgs::Pose, Quaternions::RotationType>> grasp_poses;
             grasp_poses.reserve(rotation_types.size());
             
             for (auto rot_type : rotation_types) {
                 if (goal_pose_props.moving_to_object) {
-                    DEBUG("offset: " << getOffsetDimension(obj_group.getObject(goal_pose_props.obj_id), rot_type));
-                    relative_offset[2] = getOffsetDimension(obj_group.getObject(goal_pose_props.obj_id), rot_type) + ManipulatorProperties::getEndEffectorOffset("panda_arm");
-                    DEBUG("offset z component: " << relative_offset[2]);
+                    relative_offset[2] = getOffsetDimension(obj_group.getObject(goal_pose_props.obj_id), rot_type) + ManipulatorProperties::getEndEffectorOffset("panda_arm") + distance_offset;
                 }
-                grasp_poses.push_back(Quaternions::getPointAlongPose("panda_arm", relative_offset, goal_pose_props.pose, rot_type));
+                grasp_poses.emplace_back(Quaternions::getPointAlongPose("panda_arm", relative_offset, goal_pose_props.pose, rot_type), rot_type);
             }
             return grasp_poses;
         }
+
     
-    private:
+    protected:
         double m_planning_time;
         uint8_t m_max_trials;
         double m_max_velocity_scaling_factor;
@@ -249,31 +282,7 @@ class TransitSide : public Transit {
         }
 };
 
-//class LinearApproachTransit : public ActionPrimitive<manipulation_interface::TransitSrv> {
-//    public:
-//        LinearApproachTransit(const std::string& topic, const std::shared_ptr<PredicateHandler>&, double planning_time, uint8_t max_trials, const tf2::Vector3 approach_direction, float approach_distance, double max_velocity_scaling_factor = 1.0)
-//            : ActionPrimitive<manipulation_interface::TransitSrv>(topic)
-//            , m_planning_time(planning_time)
-//            , m_max_trials(max_trials)
-//            , m_approach_direction(approach_direction)
-//            , m_approach_distance(approach_distance)
-//            , m_max_velocity_scaling_factor(max_velocity_scaling_factor)
-//        {}
-//
-//
-//        std::vector<geometry_msgs::Pose> getGoalPoses(bool use_linear_approach) const {
-//
-//        }
-//    
-//    private:
-//        double m_planning_time;
-//        uint8_t m_max_trials;
-//        double m_max_velocity_scaling_factor;
-//
-//        tf2::Vector3 m_approach_direction;
-//        float m_approach_distance;
-//
-//};
+
 
 }
 }

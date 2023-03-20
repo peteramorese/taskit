@@ -17,6 +17,7 @@ ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::ManipulatorNode(const std::string& 
     , m_move_group(std::make_shared<moveit::planning_interface::MoveGroupInterface>(planning_group))
     , m_planning_interface(std::make_shared<moveit::planning_interface::PlanningSceneInterface>())
     , m_frame_id(frame_id)
+    , m_state(std::make_shared<ManipulatorNodeState>())
 {
 
     //if constexpr (std::is_default_constructible_v<OBJ_GROUP_T>) ROS_ASSERT_MSG(obj_group, "Must provide an object group when using a non-default-constructable object group type");
@@ -103,6 +104,7 @@ void ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::updateEnvironment(bool ignore_
 #define MI_GOAL_MARKER_B  221.0
 
 void ManipulatorNodeVisualizer::publishGoalMarker(const geometry_msgs::Pose& pose, const std::string& msg, float scale) {
+    removeAllMarkers();
     visualization_msgs::MarkerArray marker_array;
     marker_array.markers.resize(2);
     visualization_msgs::Marker& marker = marker_array.markers[0];
@@ -144,6 +146,7 @@ void ManipulatorNodeVisualizer::publishGoalMarker(const geometry_msgs::Pose& pos
 }
 
 void ManipulatorNodeVisualizer::publishGoalObjectMarker(const geometry_msgs::Pose& obj_pose, const geometry_msgs::Pose& goal_pose, const std::string& msg, float scale, uint32_t num_points) {
+    removeAllMarkers();
     visualization_msgs::MarkerArray marker_array;
     marker_array.markers.resize(3);
     
@@ -194,7 +197,7 @@ void ManipulatorNodeVisualizer::publishGoalObjectMarker(const geometry_msgs::Pos
     points.id = MarkerIds::ToObjLine;
     points.type = visualization_msgs::Marker::POINTS;
     points.action = visualization_msgs::Marker::ADD;
-    points.pose = geometry_msgs::Pose{};//goal_pose;
+    points.pose = geometry_msgs::Pose{};
     points.scale.x = scale * 0.007;
     points.scale.y = scale * 0.007;
     points.scale.z = scale * 0.007;
@@ -206,9 +209,6 @@ void ManipulatorNodeVisualizer::publishGoalObjectMarker(const geometry_msgs::Pos
     tf2::fromMsg(goal_pose.position, to_goal);
     tf2::fromMsg(obj_pose.position, to_obj_center);
     tf2::Vector3 along = to_obj_center - to_goal;
-    DEBUG("along.x: " << along[0]);
-    DEBUG("along.y: " << along[1]);
-    DEBUG("along.z: " << along[2]);
 
     for (uint32_t i=0; i<num_points; ++i) {
         float scale = static_cast<float>(i + 1) / static_cast<float>(num_points);
@@ -221,4 +221,12 @@ void ManipulatorNodeVisualizer::publishGoalObjectMarker(const geometry_msgs::Pos
 
     m_visualization_marker_pub.publish(marker_array);
 }
+
+void ManipulatorNodeVisualizer::removeAllMarkers() {
+    visualization_msgs::MarkerArray marker_array;
+    marker_array.markers.resize(1);
+    marker_array.markers[0].action = visualization_msgs::Marker::DELETEALL;
+    m_visualization_marker_pub.publish(marker_array);
+}
+
 }

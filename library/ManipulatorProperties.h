@@ -19,14 +19,14 @@ class ManipulatorProperties {
             nh.getParam(getParamName("eef_offset", arm_config_ns), s_values[planning_group].eef_offset);
         }
 
-        static const std::map<std::string, float>& getDefaultDownRPY(const std::string& planning_group) {return s_values.at(planning_group).default_down;}
-        static const std::vector<float>& getStowJointValues(const std::string& planning_group) {return s_values.at(planning_group).stow_joint_values;}
+        static const std::map<std::string, double>& getDefaultDownRPY(const std::string& planning_group) {return s_values.at(planning_group).default_down;}
+        static const std::vector<double>& getStowJointValues(const std::string& planning_group) {return s_values.at(planning_group).stow_joint_values;}
         static float getEndEffectorOffset(const std::string& planning_group) {return s_values.at(planning_group).eef_offset;}
 
     private:
         struct ManipulatorPropertiesValues {
-            std::map<std::string, float> default_down;
-            std::vector<float> stow_joint_values;
+            std::map<std::string, double> default_down;
+            std::vector<double> stow_joint_values;
             float eef_offset;
         };
     private:
