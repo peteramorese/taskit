@@ -155,7 +155,7 @@ class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
             }
 
             // Get the grasp pose options
-            std::vector<std::pair<geometry_msgs::Pose, Quaternions::RotationType>> eef_poses = getGraspGoalPoses(*obj_group, goal_pose_props);
+            std::vector<EndEffectorGoalPoseProperties> eef_poses = getGraspGoalPoses(*obj_group, goal_pose_props);
 
             response.plan_success = false;
             response.execution_success = false;
@@ -169,8 +169,8 @@ class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
 
                 for (const auto& eef_pose_props : eef_poses) {
 
-                    const auto& eef_pose = eef_pose_props.first;
-                    Quaternions::RotationType pose_rot_type = eef_pose_props.second;
+                    const auto& eef_pose = eef_pose_props.pose;
+                    Quaternions::RotationType pose_rot_type = eef_pose_props.rotation_type;
 
                     move_group->setPoseTarget(eef_pose);
                     ros::WallDuration(1.0).sleep();
@@ -196,7 +196,7 @@ class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
 
                         response.execution_success = move_group->execute(plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS;
                         if (response.execution_success) {
-                            updateState(*state, request.destination_location, goal_pose_props.moving_to_object, pose_rot_type);
+                            updateState(*state, request.destination_location, goal_pose_props.moving_to_object, pose_rot_type, eef_pose_props.placing_offset);
                         }
                         return true;
                     }
@@ -222,12 +222,25 @@ class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
             bool moving_to_object;
             std::string obj_id;
         };
+
+        struct EndEffectorGoalPoseProperties {
+            EndEffectorGoalPoseProperties(const geometry_msgs::Pose& pose_, Quaternions::RotationType rotation_type_, float placing_offset_)
+                : pose(pose_)
+                , rotation_type(rotation_type_)
+                , placing_offset(placing_offset_)
+            {}
+
+            geometry_msgs::Pose pose;
+            Quaternions::RotationType rotation_type;
+            float placing_offset;
+        };
     protected:
 
-        void updateState(ManipulatorNodeState& state, const std::string& curr_location_name, bool near_object, Quaternions::RotationType final_rotation_type) const {
+        void updateState(ManipulatorNodeState& state, const std::string& curr_location_name, bool near_object, Quaternions::RotationType final_rotation_type, double placing_offset) const {
             state.curr_location_name = curr_location_name;
             state.near_object = near_object;
             state.grasp_rotation_type = final_rotation_type;
+            state.placing_offset = placing_offset;
         }
 
         virtual std::vector<Quaternions::RotationType> getTransitRotationTypes() const {
@@ -258,19 +271,21 @@ class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
                 return GoalPoseProperties(predicate_handler.getLocationPose(request.destination_location), false, std::string());
         }
 
-        std::vector<std::pair<geometry_msgs::Pose, Quaternions::RotationType>> getGraspGoalPoses(const ObjectGroup& obj_group, const GoalPoseProperties& goal_pose_props, double distance_offset = 0.0) {
+        std::vector<EndEffectorGoalPoseProperties> getGraspGoalPoses(const ObjectGroup& obj_group, const GoalPoseProperties& goal_pose_props, double distance_offset = 0.0) {
             // Grab object along its 'height' axis
-            tf2::Vector3 relative_offset = tf2::Vector3(0.0, 0.0, 0.1);
+            tf2::Vector3 relative_offset = tf2::Vector3{};
 
             std::vector<Quaternions::RotationType> rotation_types = getTransitRotationTypes();
-            std::vector<std::pair<geometry_msgs::Pose, Quaternions::RotationType>> grasp_poses;
+            std::vector<EndEffectorGoalPoseProperties> grasp_poses;
             grasp_poses.reserve(rotation_types.size());
             
             for (auto rot_type : rotation_types) {
+                DEBUG("applying distance offset: " << distance_offset);
                 if (goal_pose_props.moving_to_object) {
-                    relative_offset[2] = getOffsetDimension(obj_group.getObject(goal_pose_props.obj_id), rot_type) + ManipulatorProperties::getEndEffectorOffset("panda_arm") + distance_offset;
+                    relative_offset[2] = getOffsetDimension(obj_group.getObject(goal_pose_props.obj_id), rot_type) + ManipulatorProperties::getEndEffectorOffset("panda_arm");
                 }
-                grasp_poses.emplace_back(Quaternions::getPointAlongPose("panda_arm", relative_offset, goal_pose_props.pose, rot_type), rot_type);
+                relative_offset[2] += distance_offset; // Apply distance offset regardless
+                grasp_poses.emplace_back(Quaternions::getPointAlongPose("panda_arm", relative_offset, goal_pose_props.pose, rot_type), rot_type, relative_offset[2]);
             }
             return grasp_poses;
         }
@@ -341,7 +356,7 @@ class Transport : public Transit {
             t_grasp_rotation_type = state->grasp_rotation_type;
 
             // Get the grasp pose options
-            std::vector<std::pair<geometry_msgs::Pose, Quaternions::RotationType>> eef_poses = getGraspGoalPoses(*obj_group, goal_pose_props);
+            std::vector<EndEffectorGoalPoseProperties> eef_poses = getGraspGoalPoses(*obj_group, goal_pose_props, state->placing_offset);
 
 
             move_group->setPlanningTime(m_planning_time);
@@ -353,10 +368,12 @@ class Transport : public Transit {
 
                 for (const auto& eef_pose_props : eef_poses) {
 
-                    const auto& eef_pose = eef_pose_props.first;
-                    Quaternions::RotationType pose_rot_type = eef_pose_props.second;
+                    const auto& eef_pose = eef_pose_props.pose;
 
                     move_group->setPoseTarget(eef_pose);
+                    DEBUG("set pose target x: " << eef_pose.position.x);
+                    DEBUG("set pose target y: " << eef_pose.position.y);
+                    DEBUG("set pose target z: " << eef_pose.position.z);
                     ros::WallDuration(1.0).sleep();
                     
                     // Visualize plan goal
@@ -380,7 +397,8 @@ class Transport : public Transit {
 
                         response.execution_success = move_group->execute(plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS;
                         if (response.execution_success) {
-                            updateState(*state, request.destination_location, goal_pose_props.moving_to_object, pose_rot_type);
+                            // Update destination location, must be near object (holding), keep rotation type, keep placing offset
+                            updateState(*state, request.destination_location, true, state->grasp_rotation_type, state->placing_offset);
                         }
                         return true;
                     }

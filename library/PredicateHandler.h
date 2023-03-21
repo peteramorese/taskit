@@ -69,6 +69,8 @@ class PredicateHandler {
 
         void createEnvironment(const ros::NodeHandle& nh, const std::string& environment_ns);
 
+        const std::map<std::string, Location>& getLocations() const {return m_locations;}
+
         void setObjectPosesToLocations(const ros::NodeHandle& nh, const std::string& objects_ns = "objects");
 
 		void addLocation(const std::string& name, const geometry_msgs::Point& position, Quaternions::Type orientation_type, float detection_radius) {

@@ -1,6 +1,7 @@
 add_library(ManipulationInterface 
     PredicateHandler.cpp
     Object.cpp
+    Visualizer.cpp
 )
 target_link_libraries(ManipulationInterface PUBLIC
     ${catkin_LIBRARIES} 

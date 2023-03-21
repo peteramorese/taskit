@@ -15,7 +15,7 @@ namespace ManipulationInterface {
 // Forward declarations
 class ObjectGroup;
 class PredicateHandler;
-class ManipulatorNodeVisualizer;
+class Visualizer;
 class ManipulatorNodeState;
 
 struct ManipulatorNodeInterface {
@@ -23,7 +23,7 @@ struct ManipulatorNodeInterface {
     std::weak_ptr<moveit::planning_interface::PlanningSceneInterface> planning_interface;
     std::weak_ptr<ObjectGroup> object_group;
     std::weak_ptr<PredicateHandler> predicate_handler;
-    std::weak_ptr<ManipulatorNodeVisualizer> visualizer;
+    std::weak_ptr<Visualizer> visualizer;
     std::weak_ptr<ManipulatorNodeState> state;
 
     ManipulatorNodeInterface(
@@ -31,7 +31,7 @@ struct ManipulatorNodeInterface {
         const std::shared_ptr<moveit::planning_interface::PlanningSceneInterface>& planning_interface_,
         const std::shared_ptr<ObjectGroup>& object_group_,
         const std::shared_ptr<PredicateHandler>& predicate_handler_,
-        const std::shared_ptr<ManipulatorNodeVisualizer>& visualizer_,
+        const std::shared_ptr<Visualizer>& visualizer_,
         const std::shared_ptr<ManipulatorNodeState>& state_)
         : move_group(move_group_)
         , planning_interface(planning_interface_)
@@ -49,7 +49,7 @@ struct ConstManipulatorNodeInterface {
     std::weak_ptr<const moveit::planning_interface::PlanningSceneInterface> planning_interface;
     std::weak_ptr<const ObjectGroup> object_group;
     std::weak_ptr<const PredicateHandler> predicate_handler;
-    std::weak_ptr<const ManipulatorNodeVisualizer> visualizer;
+    std::weak_ptr<const Visualizer> visualizer;
     std::weak_ptr<const ManipulatorNodeState> state;
 
     ConstManipulatorNodeInterface(
@@ -57,7 +57,7 @@ struct ConstManipulatorNodeInterface {
         const std::shared_ptr<moveit::planning_interface::PlanningSceneInterface>& planning_interface_,
         const std::shared_ptr<ObjectGroup>& object_group_,
         const std::shared_ptr<PredicateHandler>& predicate_handler_,
-        const std::shared_ptr<ManipulatorNodeVisualizer>& visualizer_,
+        const std::shared_ptr<Visualizer>& visualizer_,
         const std::shared_ptr<ManipulatorNodeState>& state_)
         : move_group(move_group_)
         , planning_interface(planning_interface_)

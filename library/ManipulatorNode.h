@@ -25,44 +25,23 @@
 #include "Object.h"
 #include "PredicateHandler.h"
 #include "Gripper.h"
+#include "Visualizer.h"
 
 namespace ManipulationInterface {
     
-class ManipulatorNodeVisualizer {
-    public:
-        ManipulatorNodeVisualizer(ros::NodeHandle& nh, const std::string& frame_id, const std::string& topic = "/rviz_visual_tools") 
-            : m_visualization_marker_pub(nh.advertise<visualization_msgs::MarkerArray>(topic, 0))
-            , m_frame_id(frame_id)
-        {}
-
-        void publishGoalMarker(const geometry_msgs::Pose& pose, const std::string& msg = "goal", float scale = 1.0f);
-        void publishGoalObjectMarker(const geometry_msgs::Pose& obj_pose, const geometry_msgs::Pose& goal_pose, const std::string& msg = "goal", float scale = 1.0f, uint32_t num_points = 20);
-        void removeAllMarkers();
-    private:
-
-        enum MarkerIds {
-            GoalMarker,
-            GoalMarkerText,
-            ToObjLine,
-            ApproachGoalMarker,
-            ApproachGoalMarkerText,
-        };
-    private:
-        ros::Publisher m_visualization_marker_pub;
-        std::string m_frame_id;
-};
-
 struct ManipulatorNodeState {
     public:
         std::string curr_location_name = std::string();
         bool near_object = false;
         Quaternions::RotationType grasp_rotation_type;
+        double placing_offset = 0.0;
     public:
         ManipulatorNodeState() {reset();}
         void reset() {
             curr_location_name = std::string();
             near_object = false;
             grasp_rotation_type = Quaternions::RotationType::None;
+            placing_offset = 0.0;
         }
 };
 
@@ -72,9 +51,15 @@ class ManipulatorNode {
     public:
         ManipulatorNode(const std::string& node_name, const std::string& planning_group, const std::string& frame_id, ACTION_PRIMITIVES_TYPES&&...action_primitives);
 
+        ~ManipulatorNode() {
+            m_visualizer->removeAllMarkers();
+        }
+
         static constexpr uint32_t numActionPrimitives() {return sizeof...(ACTION_PRIMITIVES_TYPES);}
 
         inline void setPlanner(const std::string& planner_id) { m_move_group->setPlannerId(planner_id); }
+
+        inline void toggleAutoVisualize(bool auto_visualize) {m_auto_visualize = auto_visualize;}
 
         //// Insert an object group that was manually created
         //void insertObjectGroup(const std::shared_ptr<ObjectGroup>& obj_group) {m_obj_group = obj_group;}
@@ -89,6 +74,7 @@ class ManipulatorNode {
             m_predicate_handler->createEnvironment(*m_node_handle, environment_ns);
             m_predicate_handler->setObjectPosesToLocations(*m_node_handle, objects_ns);
             updateEnvironment(false);
+            if (m_auto_visualize) m_visualizer->publishLocationMarkers(*m_predicate_handler);
         }
 
         void updateEnvironment(bool ignore_static = true);
@@ -114,25 +100,50 @@ class ManipulatorNode {
             }
         }
 
+        void setBeforeActionCallback(std::function<void()> beforeActionCall) {
+            m_beforeActionCall = [this, beforeActionCall]() -> void {
+                if (m_auto_visualize) m_visualizer->removeMarkers(Visualizer::MarkerType::Goal);
+                beforeActionCall();
+            };
+        }
+
+        void setAfterActionCallback(std::function<void()> afterActionCall) {
+            m_afterActionCall = [this, afterActionCall]() -> void {
+                afterActionCall();
+            };
+        }
+
         // Generic call types
         template <class ACTION_PRIMITIVE_T, typename...ARGS_T>
         bool callActionByType(ARGS_T&&...args) {
-            return std::get<getIndexByType<0, ACTION_PRIMITIVE_T>()>(m_action_primitives)(getInterface(), std::forward<ARGS_T>(args)...);
+            if (m_beforeActionCall) m_beforeActionCall();
+            bool ret = std::get<getIndexByType<0, ACTION_PRIMITIVE_T>()>(m_action_primitives)(getInterface(), std::forward<ARGS_T>(args)...);
+            if (m_afterActionCall) m_afterActionCall();
+            return ret;
         }
 
         template <class ACTION_PRIMITIVE_T, typename...ARGS_T>
         bool callActionByType(ARGS_T&&...args) const {
-            return std::get<getIndexByType<0, ACTION_PRIMITIVE_T>()>(m_action_primitives)(getInterface(), std::forward<ARGS_T>(args)...);
+            if (m_beforeActionCall) m_beforeActionCall();
+            bool ret = std::get<getIndexByType<0, ACTION_PRIMITIVE_T>()>(m_action_primitives)(getInterface(), std::forward<ARGS_T>(args)...);
+            if (m_afterActionCall) m_afterActionCall();
+            return ret;
         }
 
         template <uint32_t I, typename...ARGS_T>
         bool callActionByIndex(ARGS_T&&...args) {
-            return std::get<I>(m_action_primitives)(getInterface(), std::forward<ARGS_T>(args)...);
+            if (m_beforeActionCall) m_beforeActionCall();
+            bool ret = std::get<I>(m_action_primitives)(getInterface(), std::forward<ARGS_T>(args)...);
+            if (m_afterActionCall) m_afterActionCall();
+            return ret;
         }
 
         template <uint32_t I, typename...ARGS_T>
         bool callActionByIndex(ARGS_T&&...args) const {
-            return std::get<I>(m_action_primitives)(getInterface(), std::forward<ARGS_T>(args)...);
+            if (m_beforeActionCall) m_beforeActionCall();
+            bool ret = std::get<I>(m_action_primitives)(getInterface(), std::forward<ARGS_T>(args)...);
+            if (m_afterActionCall) m_afterActionCall();
+            return ret;
         }
 
         // Access important components
@@ -175,12 +186,14 @@ class ManipulatorNode {
         std::tuple<ACTION_PRIMITIVES_TYPES...> m_action_primitives;
         std::array<ros::ServiceServer, numActionPrimitives()> m_action_services;
 
-        std::shared_ptr<ObjectGroup> m_obj_group;
-        std::shared_ptr<PredicateHandler> m_predicate_handler;
+        // Interface classes
         std::shared_ptr<moveit::planning_interface::MoveGroupInterface> m_move_group;
         std::shared_ptr<moveit::planning_interface::PlanningSceneInterface> m_planning_interface;
+        std::shared_ptr<ObjectGroup> m_obj_group;
+        std::shared_ptr<PredicateHandler> m_predicate_handler;
+        std::shared_ptr<Visualizer> m_visualizer;
+        std::shared_ptr<ManipulatorNodeState> m_state;
 
-        //std::shared_ptr<moveit_visual_tools::MoveItVisualTools> m_visual_tools;
         std::shared_ptr<planning_scene::PlanningScene> m_planning_scene;
         std::string m_frame_id;
 
@@ -190,9 +203,11 @@ class ManipulatorNode {
         boost::scoped_ptr<pluginlib::ClassLoader<planning_interface::PlannerManager>> m_planner_plugin_loader;
         planning_interface::PlannerManagerPtr m_planner_instance;
 
-        std::shared_ptr<ManipulatorNodeVisualizer> m_visualizer;
+        // Action Callbacks
+        std::function<void()> m_beforeActionCall;
+        std::function<void()> m_afterActionCall;
 
-        std::shared_ptr<ManipulatorNodeState> m_state;
+        bool m_auto_visualize;
 
 };
 

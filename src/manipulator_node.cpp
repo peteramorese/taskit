@@ -575,14 +575,10 @@ int main(int argc, char **argv) {
 	std::cout<<"\n\n\n\n"<<planner_plugin_name<<std::endl;
 	if (!M_NH.getParam("planning_plugin", planner_plugin_name))
 		ROS_FATAL_STREAM("Could not find planner plugin name");
-	DEBUG("b4 load");
 	try
 	{
-		int a;
-		DEBUG("b4");
 		planner_plugin_loader.reset(new pluginlib::ClassLoader<planning_interface::PlannerManager>(
 					"moveit_core", "planning_interface::PlannerManager"));
-		DEBUG("af");
 	}
 	catch (pluginlib::PluginlibException& ex)
 	{

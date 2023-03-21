@@ -69,8 +69,8 @@ class LinearTransit : public Transit, public CartesianMover {
             }
 
             // Get the grasp pose options
-            std::vector<std::pair<geometry_msgs::Pose, Quaternions::RotationType>> eef_poses = getGraspGoalPoses(*obj_group, goal_pose_props);
-            std::vector<std::pair<geometry_msgs::Pose, Quaternions::RotationType>> approach_offset_eef_poses = getGraspGoalPoses(*obj_group, goal_pose_props, m_approach_distance);
+            std::vector<EndEffectorGoalPoseProperties> eef_poses = getGraspGoalPoses(*obj_group, goal_pose_props);
+            std::vector<EndEffectorGoalPoseProperties> approach_offset_eef_poses = getGraspGoalPoses(*obj_group, goal_pose_props, m_approach_distance);
 
             response.plan_success = false;
             response.execution_success = false;
@@ -101,10 +101,9 @@ class LinearTransit : public Transit, public CartesianMover {
 
                 for (uint32_t i=0; i<eef_poses.size(); ++i) {
 
-                    const auto& eef_pose = eef_poses[i].first;
-                    Quaternions::RotationType pose_rot_type = eef_poses[i].second;
+                    const auto& eef_pose = eef_poses[i].pose;
 
-                    const auto& approach_offset_eef_pose = approach_offset_eef_poses[i].first;
+                    const auto& approach_offset_eef_pose = approach_offset_eef_poses[i].pose;
 
                     move_group->setPoseTarget(approach_offset_eef_pose);
                     ros::WallDuration(1.0).sleep();
@@ -132,7 +131,7 @@ class LinearTransit : public Transit, public CartesianMover {
 
                         // If the execution succeeded, perform the cartesian approach
                         if (response.execution_success && cartesianMove(*move_group, eef_pose)) {
-                            updateState(*state, request.destination_location, goal_pose_props.moving_to_object, pose_rot_type);
+                            updateState(*state, request.destination_location, goal_pose_props.moving_to_object, eef_poses[i].rotation_type, eef_poses[i].placing_offset);
                         }
                         return true;
                     }
@@ -215,7 +214,7 @@ class LinearTransport : public Transport, public CartesianMover {
             t_grasp_rotation_type = state->grasp_rotation_type;
 
             // Get the grasp pose options
-            std::vector<std::pair<geometry_msgs::Pose, Quaternions::RotationType>> eef_poses = getGraspGoalPoses(*obj_group, goal_pose_props);
+            std::vector<EndEffectorGoalPoseProperties> eef_poses = getGraspGoalPoses(*obj_group, goal_pose_props, state->placing_offset);
 
 
             move_group->setPlanningTime(m_planning_time);
@@ -239,10 +238,10 @@ class LinearTransport : public Transport, public CartesianMover {
 
                 for (const auto& eef_pose_props : eef_poses) {
 
-                    const auto& eef_pose = eef_pose_props.first;
-                    Quaternions::RotationType pose_rot_type = eef_pose_props.second;
+                    const auto& eef_pose = eef_pose_props.pose;
 
                     geometry_msgs::Pose approach_offset_eef_pose = eef_pose;
+
                     approach_offset_eef_pose.position.x += m_approach_offset[0];
                     approach_offset_eef_pose.position.y += m_approach_offset[1];
                     approach_offset_eef_pose.position.z += m_approach_offset[2];
@@ -271,7 +270,8 @@ class LinearTransport : public Transport, public CartesianMover {
 
                         response.execution_success = move_group->execute(plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS;
                         if (response.execution_success && cartesianMove(*move_group, eef_pose)) {
-                            updateState(*state, request.destination_location, goal_pose_props.moving_to_object, pose_rot_type);
+                            // Update destination location, must be near object (holding), keep rotation type, keep placing offset
+                            updateState(*state, request.destination_location, true, state->grasp_rotation_type, state->placing_offset);
                         }
                         return true;
                     }
