@@ -1,36 +1,36 @@
 object_ids:
-  #- blueBox_1
-  - blueBox_2
-  #- pinkBox_1
-  #- pinkBox_2
-  #- greenBox_1
+  - box
+  - thick_cylinder
+  - thin_cylinder
 
 object_types:
-  #- "box"
   - "box"
-  #- "box"
-  #- "box"
-  #- "box"
+  - "cylinder"
+  - "cylinder"
 
-#blueBox_1: {
-#  x: 0.3,
-#  y: 0.3,
-#  z: 0.05,
-#  l: 0.05,
-#  w: 0.05,
-#  h: 0.1,
-#}
-
-blueBox_2: {
-  l: 0.05,
-  w: 0.05,
+box: {
+  l: 0.06,
+  w: 0.04,
   h: 0.20,
 }
 
+thick_cylinder: {
+  r: 0.03,
+  h: 0.30,
+}
+
+thin_cylinder: {
+  r: 0.01,
+  h: 0.30,
+}
+
 object_orientation_types:
-  #- up_x
+  - up_x
+  - up_x
   - up_x
 
 initial_locations: {
-  blueBox_2: "L2"
+  box: "side",
+  thick_cylinder: "left_base",
+  thin_cylinder: "right_base",
 }

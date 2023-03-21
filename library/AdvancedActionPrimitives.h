@@ -122,9 +122,9 @@ class LinearTransit : public Transit, public CartesianMover {
 
                         // Visualize actual goal
                         if (goal_pose_props.moving_to_object) {
-                            vis->publishGoalObjectMarker(approach_offset_eef_pose, goal_pose_props.pose, "Poal");
+                            vis->publishGoalObjectMarker(approach_offset_eef_pose, goal_pose_props.pose, "Goal");
                         } else {
-                            vis->publishGoalMarker(approach_offset_eef_pose, "Poal");
+                            vis->publishGoalMarker(approach_offset_eef_pose, "Goal");
                         }
 
                         response.execution_success = move_group->execute(plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS;
@@ -215,7 +215,6 @@ class LinearTransport : public Transport, public CartesianMover {
 
             // Get the grasp pose options
             std::vector<EndEffectorGoalPoseProperties> eef_poses = getGraspGoalPoses(*obj_group, goal_pose_props, state->placing_offset);
-
 
             move_group->setPlanningTime(m_planning_time);
 

@@ -253,7 +253,7 @@ class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
                 case Quaternions::RotationType::None:
                 case Quaternions::RotationType::Pitch180: return obj.spec->getHeightOffset();
                 case Quaternions::RotationType::Pitch90:
-                case Quaternions::RotationType::Pitch270: return obj.spec->getWidthOffset();
+                case Quaternions::RotationType::Pitch270: return obj.spec->getLengthOffset();
                 // length offset
             }
             ROS_ASSERT_MSG(false, "Unknown rotation type");
@@ -280,7 +280,6 @@ class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
             grasp_poses.reserve(rotation_types.size());
             
             for (auto rot_type : rotation_types) {
-                DEBUG("applying distance offset: " << distance_offset);
                 if (goal_pose_props.moving_to_object) {
                     relative_offset[2] = getOffsetDimension(obj_group.getObject(goal_pose_props.obj_id), rot_type) + ManipulatorProperties::getEndEffectorOffset("panda_arm");
                 }
@@ -371,9 +370,6 @@ class Transport : public Transit {
                     const auto& eef_pose = eef_pose_props.pose;
 
                     move_group->setPoseTarget(eef_pose);
-                    DEBUG("set pose target x: " << eef_pose.position.x);
-                    DEBUG("set pose target y: " << eef_pose.position.y);
-                    DEBUG("set pose target z: " << eef_pose.position.z);
                     ros::WallDuration(1.0).sleep();
                     
                     // Visualize plan goal

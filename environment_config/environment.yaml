@@ -1,35 +1,39 @@
 location_names: 
-  - L0
-  - L1
-  - L2
-  - L3
+  - "left_base"
+  - "right_base"
+  - "top"
+  - "side"
 
-L0: { 
-  x: 0.20,
-  y: 0.40,
-  z: .30, 
-  r: 0.08, 
-}
-L1: { 
-  x: 0.0,
-  y: 0.40,
-  z: .30,
-  r: 0.08, 
-}
-L2: { 
-  x: 0.50,
-  y: 0.40,
-  z: .30, 
-  r: 0.08, 
-}
-L3: { 
+left_base: { 
   x: 0.30,
-  y: -0.30,
-  z: .30, 
+  y: 0.10,
+  z: 0.15, 
   r: 0.08, 
 }
+
+right_base: { 
+  x: 0.30,
+  y: -0.10,
+  z: 0.15, 
+  r: 0.08, 
+}
+
+top: { 
+  x: 0.30,
+  y: 0.00,
+  z: 0.33, 
+  r: 0.08, 
+}
+
+side: { 
+  x: 0.00,
+  y: 0.50,
+  z: 0.10, 
+  r: 0.20, 
+}
+
 location_orientation_types:
   - up_x
   - up_x 
-  - up_x
-  - up_x
+  - side_y
+  - up_y

@@ -115,14 +115,15 @@ namespace ManipulationInterface {
                 tf2::Quaternion default_down = getDefaultDown(planning_group);
                 tf2::Quaternion q_to_match;
                 tf2::fromMsg(pose_to_match.orientation, q_to_match);
-                tf2::Quaternion rotate_by = getRotation(rotation_type) * q_to_match;
+                tf2::Quaternion rotate_by =  q_to_match * getRotation(rotation_type);
 
                 tf2::Vector3 disp_rotated = tf2::quatRotate(rotate_by, relative_displacement_vector);
                 pose.position.x = pose_to_match.position.x + disp_rotated[0]; 
                 pose.position.y = pose_to_match.position.y + disp_rotated[1];
                 pose.position.z = pose_to_match.position.z + disp_rotated[2];
 
-                tf2::Quaternion orientation = rotate_by * default_down;
+                //tf2::Quaternion orientation = rotate_by * default_down;
+                tf2::Quaternion orientation = q_to_match * getRotation(rotation_type) * default_down;
                 orientation.normalize();
                 pose.orientation = convert(orientation);
                 return pose;
