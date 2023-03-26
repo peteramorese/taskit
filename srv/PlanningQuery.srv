@@ -11,4 +11,7 @@ bool safe_config
 bool go_to_raised
 string to_loc
 ---
+bool is_obj_displaced
+string held_obj
+geometry_msgs/Point displacement
 bool success

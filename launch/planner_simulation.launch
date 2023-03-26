@@ -4,11 +4,24 @@
 
   <!-- Plan in open loop or closed loop (recieving Vicon Data) -->
   <arg name="open_loop" default="true" />
+  <arg name="use_safe_grasp" default="true" />
+  <arg name="read_model_from_file" default="false" />
+  <arg name="model_filename" default="model.txt" />
 
   <!-- By default, we are not in debug mode -->
   <arg name="debug" default="false" />
   <arg name="pipeline" default="ompl" />
 
+  <arg name="env_file" default="environment" />
+  <arg name="task_file" default="task_set" />
+  <arg name="ws_file" default="workspace" />
+
+  <!-- Load the planning environment and locations -->
+  <include file="$(find manipulation_interface)/launch/load_parameters.launch">
+    <arg name="env_file" value="$(arg env_file)"/>
+    <arg name="task_file" value="$(arg task_file)"/>
+    <arg name="ws_file" value="$(arg ws_file)"/>
+  </include>
   <!--
   By default, hide joint_state_publisher's GUI
 
@@ -55,14 +68,13 @@
     <arg name="pipeline" value="$(arg pipeline)"  />
   </include>
 
-  <!-- Load the planning environment and locations -->
-  <include file="$(find manipulation_interface)/launch/load_parameters.launch"/>
 
   <node name="manipulator_node" pkg="manipulation_interface" type="manipulator_node" respawn="false" output="screen">
     <rosparam command="load" file="$(find panda_moveit_config)/config/kinematics.yaml"/>
     <param name="/planning_plugin" value="ompl_interface/OMPLPlanner"/>
     <rosparam command="load" file="$(find panda_moveit_config)/config/ompl_planning.yaml"/>
     <param name="sim_only" value="true"/>
+    <param name="use_grasp" value="$(arg use_safe_grasp)"/>
     <param name="mock_observer" value="false"/>
   </node>
 
@@ -86,11 +98,15 @@
   </group>
 
   <!-- Run preference planner -->
-  <node name="ordered_planner_node" pkg="manipulation_interface" type="ordered_planner_node" respawn="false" output="screen" />
+  <node name="ordered_planner_node" pkg="manipulation_interface" type="ordered_planner_node" respawn="false" output="screen" >
+    <param name="open_loop" value="$(arg open_loop)"/>
+    <param name="read_model_from_file" value="$(arg read_model_from_file)"/>
+    <param name="model_filename" value="$(find manipulation_interface)/model_files/$(arg model_filename)"/>
+  </node>
 
   <!-- Start the pipeline -->
   <node name="pipeline_trigger_node" pkg="manipulation_interface" type="pipeline_trigger_node" respawn="false" output="screen">
-    <param name="discrete_environment/open_loop" value="$(arg open_loop)"/>
+    <param name="open_loop" value="$(arg open_loop)"/>
   </node>
 
 </launch>

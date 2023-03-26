@@ -220,17 +220,20 @@ class PredicateGenerator {
 			}
 		}
 
-		bool getPredicates(const std::vector<geometry_msgs::Pose>* obj_locs, std::vector<std::string>& ret_state) {
+		bool getPredicates(const std::vector<geometry_msgs::Pose>* obj_locs, std::vector<std::string>& ret_state, int ignore_obj_ind = -1) {
 			ret_state.clear();
 			ret_state.resize(obj_locs->size());
-			std::cout<<"ret_state in get pred: "<<ret_state.size()<<std::endl;
 			for (int i=0; i<obj_locs->size(); ++i) {
-				std::string temp_label;
-				if (getNearestLocLabel((*obj_locs)[i].position, temp_label)){
-					ret_state[i] = temp_label;
+				if (i != ignore_obj_ind) {
+					std::string temp_label;
+					if (getNearestLocLabel((*obj_locs)[i].position, temp_label)){
+						ret_state[i] = temp_label;
+					} else {
+						ROS_WARN("Cannot get predicates");
+						return false;
+					}
 				} else {
-					ROS_WARN("Cannot get predicates");
-					return false;
+					ret_state[i] = "ee";
 				}
 			}
 			return true;
@@ -262,7 +265,7 @@ class Kickoff {
 
 			ros::ServiceClient strategy_srv_client = com_NH.serviceClient<manipulation_interface::Strategy>("/com_node/strategy");
 			manipulation_interface::Strategy strategy_srv;
-			ros::ServiceClient plan_query_client = com_NH.serviceClient<manipulation_interface::PlanningQuery>("/planning_query");
+			ros::ServiceClient plan_query_client = com_NH.serviceClient<manipulation_interface::PlanningQuery>("/manipulation_planning_query");
 			manipulation_interface::PlanningQuery plan_query_srv;
 
 			std::vector<std::string> bag_domain_labels(obj_group.size());
@@ -274,12 +277,22 @@ class Kickoff {
 			int failed_retries = 0;
 			int max_failed_retries = 5;
 			ros::Rate rate_fail(.2);
+			std::string held_obj = "none";
 			while (ros::ok()) {
 				vicon_data.retrieve();
 				data = vicon_data.returnConfigArrPtr();
 
+				int ignore_obj_ind = -1;
+				if (held_obj != "none") {
+					for (int i=0; i<obj_group.size(); ++i) {
+						if (obj_group[i] == held_obj) {
+							ignore_obj_ind = i;
+							break;
+						}
+					}
+				}
 				std::vector<std::string> ret_state;
-				bool found = pred_gen.getPredicates(data, ret_state);
+				bool found = pred_gen.getPredicates(data, ret_state, ignore_obj_ind);
 				if (found) {
 					ROS_INFO("Found predicates");
 					failed_retries = 0;
@@ -303,10 +316,12 @@ class Kickoff {
 					int obj_ind = getObjInd(strategy_srv.response.to_grasp_obj);
 					std::string to_eeloc = strategy_srv.response.to_eeloc;
 					std::cout<<"\nAction received: "<<strategy_srv.response.action<<std::endl;
+					std::cout<<"to_grasp_obj received: "<<strategy_srv.response.to_grasp_obj<<std::endl;
 					std::cout<<"Obj Ind received: "<<obj_ind<<std::endl;
 					std::cout<<"To location received: "<<to_eeloc<<"\n"<<std::endl;
 
 					if (strategy_srv.response.action.find("transit_up") != std::string::npos) {
+						std::cout<<"IN TRANSIT UP!!!"<<std::endl;
 						plan_query_srv.request.manipulator_pose = (*data)[obj_ind];
 						std::cout<<"size: "<<data->size()<<std::endl;
 						for (int ii=0; ii<data->size(); ii++) {
@@ -344,7 +359,7 @@ class Kickoff {
 						// Setting the grasp type as "mode" uses the grasp type specified
 						// in the last 'trasit' aciton, or the current grasp
 						// mode of the system
-						plan_query_srv.request.grasp_type = "mode";
+						plan_query_srv.request.grasp_type = "current";
 						plan_query_srv.request.drop_object = "none";
 						plan_query_srv.request.planning_domain = "domain";
 						plan_query_srv.request.safe_config = false;
@@ -373,9 +388,10 @@ class Kickoff {
 						ROS_WARN("Unrecognized action");
 					}
 					if (plan_query_client.call(plan_query_srv)) {
+						held_obj = plan_query_srv.response.held_obj;
 						ROS_INFO("Completed action service");
 					} else {
-						ROS_WARN("Did not find plan query service");
+						ROS_ERROR("Did not find plan query service");
 					}
 				} else {
 					ROS_WARN("Did not find strategy service");
@@ -398,33 +414,34 @@ int main(int argc, char **argv) {
 		obj_topics[i] = "/vrpn_client_node/" + obj_group[i] + "/pose";
 	}
 	
-	//= {
-	//	"/vrpn_client_node/greenBox_1/pose",
-	//	"/vrpn_client_node/pinkBox_1/pose",
-	//	"/vrpn_client_node/blueBox_1/pose",
-	//	"/vrpn_client_node/pinkBox_2/pose",
-	//};
 
 	RetrieveData vicon_data(&com_NH, 30, obj_topics);
 	PredicateGenerator pred_gen; 
 
-	// Quaternion for downwards release:
-	tf2::Quaternion q_init, q_up, q_side, q_rot_down, q_rot_side;
+	// Quaternions:
+	tf2::Quaternion q_init, q_rot, q_res;
 	q_init[0] = 0;
 	q_init[1] = 0;
 	q_init[2] = 1;
 	q_init[3] = 0;
-	//q_rot_down.setRPY(0, M_PI, -M_PI/4);
-	//q_up = q_rot_down * q_init;
-	q_up = q_init;
-	geometry_msgs::Quaternion q_up_msg, q_side_msg;
-	tf2::convert(q_up, q_up_msg);
-	q_rot_side.setRPY(-M_PI, -M_PI/2, 0);
-	q_side = q_rot_side * q_init;
-	tf2::convert(q_side, q_side_msg);
-	q_up.normalize();
-	q_side.normalize();
+	geometry_msgs::Quaternion q_up_x, q_up_y, q_side_x, q_side_y;
+	// Up x
+	tf2::convert(q_init, q_up_x);
+	
+	// Up y
+	q_rot.setRPY(0, 0, M_PI/2);
+	q_res = q_rot * q_init;
+	tf2::convert(q_res, q_up_y);
 
+	// Side x
+	q_rot.setRPY(0, -M_PI/2, 0);
+	q_res = q_rot * q_init;
+	tf2::convert(q_res, q_side_x);
+
+	// Side y
+	q_rot.setRPY(-M_PI/2, M_PI/2, 0);
+	q_res = q_rot * q_init;
+	tf2::convert(q_res, q_side_y);
 
     std::vector<std::string> location_names;
     com_NH.getParam("/discrete_environment/location_names", location_names);
@@ -444,10 +461,14 @@ int main(int argc, char **argv) {
 		p.x = location_points[i].at("x");
 		p.y = location_points[i].at("y");
 		p.z = location_points[i].at("z");
-		if (location_orientation_types[i] == "up") {
-			pred_gen.addLocation(p, q_up_msg, location_names[i], location_points[i].at("r")); 
-		} else if (location_orientation_types[i] == "side") {
-			pred_gen.addLocation(p, q_side_msg, location_names[i], location_points[i].at("r")); 
+		if (location_orientation_types[i] == "up_x") {
+			pred_gen.addLocation(p, q_up_x, location_names[i], location_points[i].at("r")); 
+		} else if (location_orientation_types[i] == "up_y") {
+			pred_gen.addLocation(p, q_up_y, location_names[i], location_points[i].at("r")); 
+		} else if (location_orientation_types[i] == "side_x") {
+			pred_gen.addLocation(p, q_side_x, location_names[i], location_points[i].at("r")); 
+		} else if (location_orientation_types[i] == "side_y") {
+			pred_gen.addLocation(p, q_side_y, location_names[i], location_points[i].at("r")); 
 		} else {
 			std::string msg = "Did not find orientation preset:" + location_names[i];
 			ROS_ERROR_STREAM(msg.c_str());
