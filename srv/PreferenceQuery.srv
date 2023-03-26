@@ -1,5 +1,7 @@
 string[] formulas_ordered
 float32 flexibility
+string query_type
+uint32 pareto_point_index
 ---
 bool success
 float32 pathlength

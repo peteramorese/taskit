@@ -1,7 +1,9 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.12.1)
 project(manipulation_interface)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+add_compile_options(-lstdc++fs)
 find_package(catkin REQUIRED COMPONENTS
 	geometry_msgs
 	roscpp 
@@ -95,21 +97,34 @@ target_link_libraries(action_primitive_node ${catkin_LIBRARIES} ${Boost_LIBRARIE
 install(TARGETS action_primitive_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 add_dependencies(action_primitive_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-add_executable(planner_node src/planner_node.cpp)
-target_include_directories(planner_node PUBLIC task_planner/include/headers)
-target_link_libraries(planner_node 
+#add_executable(planner_node src/planner_node.cpp)
+#target_include_directories(planner_node PUBLIC task_planner/include/headers)
+#target_link_libraries(planner_node 
+#	${catkin_LIBRARIES} 
+#	${Boost_LIBRARIES}
+#	LexSetClass
+#	GraphClass
+#	ConditionClass
+#	StateClass
+#	SymbSearchClass
+#	TransitionSystemClass
+#	BenchmarkClass
+#	)
+#install(TARGETS planner_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+#add_dependencies(planner_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+add_executable(ordered_planner_node src/ordered_planner_node.cpp)
+target_include_directories(ordered_planner_node PUBLIC task_planner/include/headers)
+target_link_libraries(ordered_planner_node 
 	${catkin_LIBRARIES} 
 	${Boost_LIBRARIES}
-	LexSetClass
-	GraphClass
-	ConditionClass
-	StateClass
-	SymbSearchClass
 	TransitionSystemClass
+	OrderedPlannerClass
 	BenchmarkClass
+	WriteToFileClass
 	)
-install(TARGETS planner_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-add_dependencies(planner_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+install(TARGETS ordered_planner_node DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+add_dependencies(ordered_planner_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 add_executable(pipeline_trigger_node src/pipeline_trigger_node.cpp)
 target_link_libraries(pipeline_trigger_node ${catkin_LIBRARIES} ${Boost_LIBRARIES})
