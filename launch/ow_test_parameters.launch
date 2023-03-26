@@ -1,5 +1,0 @@
-<launch>
-  <group ns="ow_environment">
-    <rosparam file="$(find manipulation_interface)/environment_config/ow_environment.yaml" />
-  </group>
-</launch>

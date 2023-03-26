@@ -20,7 +20,7 @@ class TestPoseTracker {
 		}
 };
 
-static const std::string node_name = "simple_manipulator_node";
+static const std::string node_name = "basic_manipulator_node_sim";
 
 int main(int argc, char** argv) {
 	
@@ -35,33 +35,21 @@ int main(int argc, char** argv) {
 	ActionPrimitives::Stow stow("stow");
 	ActionPrimitives::SimpleGrasp<GripperUse::Simulation> grasp("grasp", gripper_handler, ee_link);
 	ActionPrimitives::SimpleRelease<GripperUse::Simulation> release("release", gripper_handler);
-	ActionPrimitives::TransitSide transit_side("transit_side", 5.0f, 1);
-	ActionPrimitives::TransitUp transit_up("transit_up", 5.0f, 1);
-	ActionPrimitives::LinearTransit linear_transit("linear_transit", 5.0f, 1, 0.05);
-	ActionPrimitives::LinearTransitSide linear_transit_side("linear_transit_side", 5.0f, 1, 0.05);
+	ActionPrimitives::TransitUp transit("transit", 5.0f, 1);
 	ActionPrimitives::Transport transport("transport", 5.0f, 1, 0.05);
-	ActionPrimitives::LinearTransport linear_transport("linear_transport", 5.0f, 1, 0.05);
 
 	ManipulatorNode<
 	 	ActionPrimitives::Stow,
 		ActionPrimitives::SimpleGrasp<GripperUse::Simulation>, 
 		ActionPrimitives::SimpleRelease<GripperUse::Simulation>, 
-		ActionPrimitives::TransitSide,
 		ActionPrimitives::TransitUp,
-		ActionPrimitives::LinearTransit,
-		ActionPrimitives::LinearTransitSide,
-		ActionPrimitives::Transport,
-		ActionPrimitives::LinearTransport
+		ActionPrimitives::Transport
 	> manipulator_node(node_name, "panda_arm", "panda_link0", 
 		std::move(stow), 
 		std::move(grasp), 
 		std::move(release), 
-		std::move(transit_side), 
-		std::move(transit_up), 
-		std::move(linear_transit), 
-		std::move(linear_transit_side),
-		std::move(transport),
-		std::move(linear_transport)
+		std::move(transit), 
+		std::move(transport)
 	);
 
 	ros::WallDuration(1.0).sleep();
@@ -73,8 +61,6 @@ int main(int argc, char** argv) {
 	manipulator_node.updateEnvironment();
 
 	manipulator_node.spawnAllActionServices();
-	//manipulator_node.template callActionByType<ActionPrimitives::SimpleGrasp>(req, res);
-	//manipulator_node.template callActionByIndex<0>(req, res);
 
 	ros::waitForShutdown();
 	return 0;
