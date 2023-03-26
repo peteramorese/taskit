@@ -1,8 +1,0 @@
-string[] obj_group
-string[] init_obj_locs
-string to_eeLoc
-string to_grasp_obj
-string release_obj
-string action
----
-bool success

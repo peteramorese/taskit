@@ -1,7 +1,7 @@
-obstacle_names:
+object_ids:
   - "ground"
 
-obstacle_types:
+object_types:
   - "box"
 
 ground: {
@@ -13,5 +13,5 @@ ground: {
   h: 0.1,
 }
 
-obstacle_orientation_types:
+object_orientation_types:
   - up_x

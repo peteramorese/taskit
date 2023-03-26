@@ -1,52 +1,39 @@
 location_names: 
-  - L0
-  - L1
-  - L2
-  - L3
+  - "left_base"
+  - "right_base"
+  - "top"
+  - "side"
 
-L0_point: { # Left 
-  x: 0.20,
-  y: 0.40,
-  z: .70, #0.08,
-  r: 0.08, 
-}
-L1_point: { # Middle
-  x: 0.0,
-  y: 0.40,
-  z: .70, #0.08,
-  r: 0.08, 
-}
-L2_point: { # Right
-  x: -0.20,
-  y: 0.40,
-  z: .70, #0.08,
-  r: 0.08, 
-}
-L3_point: { # xtra space L
+left_base: { 
   x: 0.30,
-  y: -0.30,
-  z: .70, #0.08,
+  y: 0.10,
+  z: 0.15, 
   r: 0.08, 
 }
-L4_point: { # xtra space R
-  x: -0.30,
-  y: -0.30,
-  z: .70, #0.08,
+
+right_base: { 
+  x: 0.30,
+  y: -0.10,
+  z: 0.15, 
   r: 0.08, 
 }
+
+top: { 
+  x: 0.30,
+  y: 0.00,
+  z: 0.33, 
+  r: 0.08, 
+}
+
+side: { 
+  x: 0.00,
+  y: 0.50,
+  z: 0.10, 
+  r: 0.20, 
+}
+
 location_orientation_types:
   - up_x
   - up_x 
-  - up_x
-  - up_x
-  - up_x
-obj_group:
-  - blueBox_1
-  #- blueBox_2
-  - pinkBox_1
-  #- pinkBox_2
-  - greenBox_1
-init_obj_locations:
-  - L0
-  - L1
-  - L2
+  - side_y
+  - up_y

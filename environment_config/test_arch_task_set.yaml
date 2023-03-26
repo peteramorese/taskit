@@ -1,9 +1,0 @@
-task_set: 
-  #- (!(pinkBox_1_T | blueBox_1_T) & (!blueBox_1_BL | !greenBox_1_BR)) U (pinkBox_1_san & (!(pinkBox_1_T | blueBox_1_T) & (!blueBox_1_BL | !greenBox_1_BR)))
-  - (pinkBox_1_T -> (blueBox_1_BL & greenBox_1_BR)) U (pinkBox_1_san)
-  #- F(pinkBox_1_L2 & F(blueBox_1_L1))
-  #- F(greenBox_1_L0 & F(blueBox_1_L0))
-query_type: "all"
-flexibility: 0.0
-pareto_point_index: 0 #TODO
-kickoff_delay: 5.0 # Specify custom time to wait for all utilities to load (s)
