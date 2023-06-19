@@ -34,7 +34,7 @@ class ActionPrimitive {
 
         const std::string& topic() const {return m_topic;}
 
-        virtual bool operator()(ManipulatorNodeInterface&& interface, msg_t::Request& request, msg_t::Response& response) = 0;
+        virtual bool operator()(ManipulatorNodeInterface&& interface, typename msg_t::Request& request, typename msg_t::Response& response) = 0;
 
     private:
         const std::string m_topic;
@@ -46,7 +46,7 @@ class Stow : public ActionPrimitive<manipulation_interface::StowSrv> {
             : ActionPrimitive<manipulation_interface::StowSrv>(topic)
             {}
 
-        virtual bool operator()(ManipulatorNodeInterface&& interface, msg_t::Request& request, msg_t::Response& response) override {
+        virtual bool operator()(ManipulatorNodeInterface&& interface, typename msg_t::Request& request, typename msg_t::Response& response) override {
             auto move_group = interface.move_group.lock();
             interface.state.lock()->reset();
             
@@ -67,7 +67,7 @@ class SimpleGrasp : public ActionPrimitive<manipulation_interface::GraspSrv> {
             , m_attachment_link(attachment_link)
             {}
 
-        virtual bool operator()(ManipulatorNodeInterface&& interface, msg_t::Request& request, msg_t::Response& response) override {
+        virtual bool operator()(ManipulatorNodeInterface&& interface, typename msg_t::Request& request, typename msg_t::Response& response) override {
             auto move_group = interface.move_group.lock();
             auto obj_group = interface.object_group.lock();
             auto predicate_handler = interface.predicate_handler.lock();
@@ -102,7 +102,7 @@ class SimpleRelease : public ActionPrimitive<manipulation_interface::ReleaseSrv>
             , m_gripper_handler(gripper_handler)
             {}
 
-        virtual bool operator()(ManipulatorNodeInterface&& interface, msg_t::Request& request, msg_t::Response& response) override {
+        virtual bool operator()(ManipulatorNodeInterface&& interface, typename msg_t::Request& request, typename msg_t::Response& response) override {
             auto move_group = interface.move_group.lock();
             auto obj_group = interface.object_group.lock();
             auto planning_interface = interface.planning_interface.lock();
@@ -137,7 +137,7 @@ class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
             , m_max_velocity_scaling_factor(max_velocity_scaling_factor)
         {}
 
-        virtual bool operator()(ManipulatorNodeInterface&& interface, msg_t::Request& request, msg_t::Response& response) override {
+        virtual bool operator()(ManipulatorNodeInterface&& interface, typename msg_t::Request& request, typename msg_t::Response& response) override {
 
             // Extract what we need
             auto move_group = interface.move_group.lock();
@@ -260,7 +260,7 @@ class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
             return 0.0f;
         }
 
-        static GoalPoseProperties getGoalPose(const PredicateHandler& predicate_handler, const ObjectGroup& obj_group, const msg_t::Request& request) {
+        static GoalPoseProperties getGoalPose(const PredicateHandler& predicate_handler, const ObjectGroup& obj_group, const typename msg_t::Request& request) {
 
 		    const PredicateHandler::PredicateSet predicate_set = predicate_handler.getPredicates();
             std::pair<bool, std::string> location_predicate = predicate_set.lookupLocationPredicate(request.destination_location);
@@ -324,7 +324,7 @@ class Transport : public Transit {
             : Transit(topic, planning_time, max_trials, max_velocity_scaling_factor)
         {}
 
-        virtual bool operator()(ManipulatorNodeInterface&& interface, msg_t::Request& request, msg_t::Response& response) override {
+        virtual bool operator()(ManipulatorNodeInterface&& interface, typename msg_t::Request& request, typename msg_t::Response& response) override {
 
             // Extract what we need
             auto move_group = interface.move_group.lock();

@@ -19,8 +19,8 @@ void ObjectGroup::createObjects(const ros::NodeHandle& nh, const std::string& ns
     std::vector<std::string> object_orientation_types;
     nh.getParam(getParamName("object_orientation_types", ns), object_orientation_types);
 
-    ROS_ASSERT_MSG(object_ids.size() != object_types.size(), "Each object name must correspond to a type");
-    ROS_ASSERT_MSG(object_ids.size() != object_orientation_types.size(), "Each object must have an orientation type");
+    ROS_ASSERT_MSG(object_ids.size() == object_types.size(), "Each object name must correspond to a type");
+    ROS_ASSERT_MSG(object_ids.size() == object_orientation_types.size(), "Each object must have an orientation type");
 
     for (uint32_t i=0; i<object_ids.size(); ++i) {
         ObjectConfig config;

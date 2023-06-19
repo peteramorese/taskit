@@ -36,7 +36,7 @@
 
   <!--
   Load the URDF, SRDF and other .yaml configuration files on the param server-->
-  <include file="$(find manipulation_interface)/launch/planning_context.launch">
+  <include file="$(find manipulation_interface)/launch/custom_planning_context.launch">
     <arg name="load_robot_description" value="true"/>
     <arg name="load_gripper" value="true"/>
   </include>
@@ -61,7 +61,7 @@
 
 
   <!-- Run the main MoveIt executable without trajectory execution (we do not have controllers configured by default) -->
-  <include file="$(find panda_moveit_config)/launch/move_group.launch">
+  <include file="$(find manipulation_interface)/launch/move_group.launch">
     <arg name="allow_trajectory_execution" value="true"/>
     <arg name="fake_execution" value="true"/>
     <arg name="info" value="true"/>
@@ -77,6 +77,8 @@
     <rosparam command="load" file="$(find panda_moveit_config)/config/kinematics.yaml"/>
     <param name="/planning_plugin" value="ompl_interface/OMPLPlanner"/>
     <rosparam command="load" file="$(find panda_moveit_config)/config/ompl_planning.yaml"/>
+    <param name="sim_only" value="true"/>
+    <param name="mock_observer" value="false"/>
   </node>
 
   <!-- Run Rviz -->

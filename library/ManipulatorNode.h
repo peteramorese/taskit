@@ -155,8 +155,8 @@ class ManipulatorNode {
 
         template <uint32_t I>
         inline bool actionServiceCallback(
-            std::tuple_element_t<I, std::tuple<ACTION_PRIMITIVES_TYPES...>>::msg_t::Request& request, 
-            std::tuple_element_t<I, std::tuple<ACTION_PRIMITIVES_TYPES...>>::msg_t::Response& response) {
+            typename std::tuple_element_t<I, std::tuple<ACTION_PRIMITIVES_TYPES...>>::msg_t::Request& request, 
+            typename std::tuple_element_t<I, std::tuple<ACTION_PRIMITIVES_TYPES...>>::msg_t::Response& response) {
             return callActionByIndex<I>(request, response);
         }
 

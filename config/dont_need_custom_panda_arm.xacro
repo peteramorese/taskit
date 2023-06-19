@@ -17,24 +17,24 @@
         </geometry>
       </visual>
       <collision>
-        <origin xyz="-0.075 0 0.07" rpy="0 0 0"/>
+        <origin xyz="-0.075 0 0.06" rpy="0 ${pi/2} 0"/>
         <geometry>
-          <!--cylinder radius="${0.006+safety_distance}" length="0.03" /-->
-          <box size=".16 .16 .14"/>
+          <!-- <cylinder radius="${0.06+safety_distance}" length="0.03" /> -->
+          <box size="0.16 .16 .14"/>
         </geometry>
       </collision>
-      <!--collision>
+      <!-- <collision>
         <origin xyz="-0.06 0 0.06" rpy="0 0 0"/>
         <geometry>
-          <sphere radius="${0.006+safety_distance}" />
+          <sphere radius="${0.06+safety_distance}" />
         </geometry>
-      </collision-->
-      <!--collision>
+      </collision>
+      <collision>
         <origin xyz="-0.09 0 0.06" rpy="0 0 0"/>
         <geometry>
           <sphere radius="${0.06+safety_distance}" />
         </geometry>
-      </collision-->
+      </collision> -->
     </link>
     <link name="${arm_id}_link1">
       <visual>
@@ -48,12 +48,12 @@
           <cylinder radius="${0.06+safety_distance}" length="0.2830" />
         </geometry>
       </collision>
-      <!--collision>
+      <!-- <collision>
         <origin xyz="0 0 -0.333" rpy="0 0 0"/>
         <geometry>
           <sphere radius="${0.06+safety_distance}" />
         </geometry>
-      </collision-->
+      </collision> -->
       <collision>
         <origin xyz="0 0 -0.05" rpy="0 0 0"/>
         <geometry>
@@ -62,6 +62,7 @@
       </collision>
     </link>
     <joint name="${arm_id}_joint1" type="revolute">
+      <!-- <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973" soft_upper_limit="2.8973"/> -->
 	    <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="${-2.8973 + soft_limit_offset}" soft_upper_limit="${2.8973 - soft_limit_offset}"/>
       <origin rpy="0 0 0" xyz="0 0 0.333"/>
       <parent link="${arm_id}_link0"/>
@@ -279,7 +280,7 @@
       </collision>
     </link>
     <joint name="${arm_id}_joint7" type="revolute">
-	    <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="${-2.8973 + soft_limit_offset}" soft_upper_limit="${2.8973 - soft_limit_offset}"/>
+      <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973" soft_upper_limit="2.8973"/>
       <origin rpy="${pi/2} 0 0" xyz="0.088 0 0"/>
       <parent link="${arm_id}_link6"/>
       <child link="${arm_id}_link7"/>

@@ -95,7 +95,7 @@ namespace ManipulationInterface {
 
             static tf2::Quaternion getDefaultDown(const std::string& planning_group) {
                 tf2::Quaternion to_default_down;
-                ROS_ASSERT_MSG(s_default_down.find(planning_group) != s_default_down.end(), "Default down quaternion not found for planning group");
+                //ROS_ASSERT_MSG(s_default_down.find(planning_group) != s_default_down.end(), "Default down quaternion not found for planning group");
                 auto planning_group_properties = ManipulatorProperties::getDefaultDownRPY(planning_group);
                 to_default_down.setRPY(
                     planning_group_properties.at("roll"), 

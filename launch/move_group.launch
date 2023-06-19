@@ -3,7 +3,7 @@
   <arg name="load_gripper" default="true" />
 
   <!-- Custom planning context contains custom collision file for franka -->
-  <include file="$(find manipulation_interface)/launch/planning_context.launch">
+  <include file="$(find manipulation_interface)/launch/custom_planning_context.launch">
     <arg name="load_gripper" value="$(arg load_gripper)" />
   </include>
 

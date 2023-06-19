@@ -64,7 +64,7 @@ const PredicateHandler::PredicateSet PredicateHandler::getPredicates(const std::
     PredicateSet predicate_set;
     for (const auto obj : m_obj_group->getObjects()) {
         const std::string& obj_id = obj->id;
-        if (ignore_obj_ids.empty() || ignore_obj_ids.find(obj_id) != ignore_obj_ids.end()) {
+        if (ignore_obj_ids.empty() || ignore_obj_ids.find(obj_id) == ignore_obj_ids.end()) {
             //const geometry_msgs::Pose& obj_pose = obj_loc.second;
             std::pair<bool, std::string> result = findPredicate(obj->pose.position);
             if (result.first) {
