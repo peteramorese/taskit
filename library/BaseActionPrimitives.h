@@ -272,18 +272,19 @@ class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
         }
 
         std::vector<EndEffectorGoalPoseProperties> getGraspGoalPoses(const ObjectGroup& obj_group, const GoalPoseProperties& goal_pose_props, double distance_offset = 0.0) {
-            // Grab object along its 'height' axis
-            tf2::Vector3 relative_offset = tf2::Vector3{};
 
             std::vector<Quaternions::RotationType> rotation_types = getTransitRotationTypes();
             std::vector<EndEffectorGoalPoseProperties> grasp_poses;
             grasp_poses.reserve(rotation_types.size());
             
             for (auto rot_type : rotation_types) {
+                // Grab object along its 'height' axis
+                tf2::Vector3 relative_offset(0.0, 0.0, 0.0);
                 if (goal_pose_props.moving_to_object) {
-                    relative_offset[2] = getOffsetDimension(obj_group.getObject(goal_pose_props.obj_id), rot_type) + ManipulatorProperties::getEndEffectorOffset("panda_arm");
+                    relative_offset[2] = getOffsetDimension(obj_group.getObject(goal_pose_props.obj_id), rot_type);
                 }
-                relative_offset[2] += distance_offset; // Apply distance offset regardless
+                relative_offset[2] += distance_offset + ManipulatorProperties::getEndEffectorOffset("panda_arm"); // Apply distance and eef offset regardless
+                std::cout<< "relative offset: " << relative_offset[0] << ", " << relative_offset[1] << ", " <<relative_offset[2] << std::endl;
                 grasp_poses.emplace_back(Quaternions::getPointAlongPose("panda_arm", relative_offset, goal_pose_props.pose, rot_type), rot_type, relative_offset[2]);
             }
             return grasp_poses;

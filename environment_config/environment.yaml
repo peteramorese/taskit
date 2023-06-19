@@ -35,5 +35,5 @@ side: {
 location_orientation_types:
   - up_x
   - up_x 
-  - side_y
+  - side_x
   - up_y
