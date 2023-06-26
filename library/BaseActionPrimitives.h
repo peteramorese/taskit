@@ -73,6 +73,16 @@ class SimpleGrasp : public ActionPrimitive<manipulation_interface::GraspSrv> {
             auto predicate_handler = interface.predicate_handler.lock();
             auto state = interface.state.lock();
 
+            std::cout<<"in operator()";
+            if (request.obj_id == "none") {
+                GripperSpecification spec;
+                spec.grip_force = 10.0f;
+                spec.grip_width_closed = 0.0f;
+                std::cout<<"b4 close???";
+                response.success = m_gripper_handler->close(spec);
+                return true;
+            }
+
             std::string obj_id;
             if (request.obj_id.empty()) {
                 std::pair<bool, std::string> curr_location_predicate = predicate_handler->getPredicates().lookupLocationPredicate(state->curr_location_name);
@@ -106,6 +116,15 @@ class SimpleRelease : public ActionPrimitive<manipulation_interface::ReleaseSrv>
             auto move_group = interface.move_group.lock();
             auto obj_group = interface.object_group.lock();
             auto planning_interface = interface.planning_interface.lock();
+
+            if (request.obj_id == "none") {
+                if (!planning_interface->getAttachedObjects().empty()) {
+                    move_group->detachObject();
+                }
+                response.success = m_gripper_handler->open(GripperSpecification{});
+                return true;
+            }
+
             ROS_ASSERT_MSG(obj_group->hasObject(request.obj_id), "Object not found");
 
             auto attached_objects = planning_interface->getAttachedObjects();

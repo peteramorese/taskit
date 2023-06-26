@@ -35,16 +35,17 @@ static ObjectPrimitive getObjectPrimitiveType(const std::string& str) {
     return ObjectPrimitive::None;
 }
 
-struct ObjectSpecification {
+struct GripperSpecification {
+    // Grip properties
+    double grip_force = 50.0;
+    double grip_speed = 0.1;
+    double grip_width_closed = 0.05;
+    double grip_epsilon_inner = 0.03;
+    double grip_epsilon_outter = 0.03;
+};
+
+struct ObjectSpecification : public GripperSpecification {
     public: 
-        // Grip properties
-        double grip_force = 50.0;
-        double grip_speed = 0.1;
-        double grip_width_closed = 0.05;
-        double grip_epsilon_inner = 0.03;
-        double grip_epsilon_outter = 0.03;
-
-
         double placement_safety_distance = 0.01;
 
     public:
