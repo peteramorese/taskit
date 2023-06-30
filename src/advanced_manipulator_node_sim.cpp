@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
 	ActionPrimitives::SimpleGrasp<GripperUse::Simulation> grasp("grasp", gripper_handler, ee_link);
 	ActionPrimitives::SimpleRelease<GripperUse::Simulation> release("release", gripper_handler);
 	ActionPrimitives::TransitSide transit_side("transit_side", 5.0f, 1);
-	ActionPrimitives::TransitUp transit_up("transit_up", 5.0f, 1);
+	ActionPrimitives::TransitUp transit_up("transit", 5.0f, 1);
 	ActionPrimitives::LinearTransit linear_transit("linear_transit", 5.0f, 1, 0.05);
 	ActionPrimitives::LinearTransitSide linear_transit_side("linear_transit_side", 5.0f, 1, 0.05);
 	ActionPrimitives::Transport transport("transport", 5.0f, 1, 0.05);

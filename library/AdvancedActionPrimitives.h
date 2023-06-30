@@ -43,7 +43,7 @@ class CartesianMover {
 
 class LinearTransit : public Transit, public CartesianMover {
     public:
-        LinearTransit(const std::string& topic, double planning_time, uint8_t max_trials, double distance, double max_velocity_scaling_factor = 1.0, double eef_step = 0.1, double jump_thresh = 0.0, double max_acceleration_scale = 0.1)
+        LinearTransit(const std::string& topic, double planning_time, uint8_t max_trials, double distance, double max_velocity_scaling_factor = 0.5, double eef_step = 0.1, double jump_thresh = 0.0, double max_acceleration_scale = 0.05)
             : Transit(topic, planning_time, max_trials, max_velocity_scaling_factor)
             , CartesianMover(max_velocity_scaling_factor, eef_step, jump_thresh, max_acceleration_scale)
             , m_approach_distance(distance)
@@ -151,7 +151,7 @@ class LinearTransit : public Transit, public CartesianMover {
 
 class LinearTransitUp : public LinearTransit {
     public:
-        LinearTransitUp(const std::string& topic, double planning_time, uint8_t max_trials, double distance, double max_velocity_scaling_factor = 1.0, double eef_step = 0.1, double jump_thresh = 0.0, double max_acceleration_scale = 0.1)
+        LinearTransitUp(const std::string& topic, double planning_time, uint8_t max_trials, double distance, double max_velocity_scaling_factor = 0.5, double eef_step = 0.1, double jump_thresh = 0.0, double max_acceleration_scale = 0.05)
             : LinearTransit(topic, planning_time, max_trials, distance, max_velocity_scaling_factor, eef_step, jump_thresh, max_acceleration_scale) {}
 
         virtual std::vector<Quaternions::RotationType> getTransitRotationTypes() const override {
@@ -162,7 +162,7 @@ class LinearTransitUp : public LinearTransit {
 
 class LinearTransitSide : public LinearTransit {
     public:
-        LinearTransitSide(const std::string& topic, double planning_time, uint8_t max_trials, double distance, double max_velocity_scaling_factor = 1.0, double eef_step = 0.1, double jump_thresh = 0.0, double max_acceleration_scale = 0.1)
+        LinearTransitSide(const std::string& topic, double planning_time, uint8_t max_trials, double distance, double max_velocity_scaling_factor = 0.5, double eef_step = 0.1, double jump_thresh = 0.0, double max_acceleration_scale = 0.05)
             : LinearTransit(topic, planning_time, max_trials, distance, max_velocity_scaling_factor, eef_step, jump_thresh, max_acceleration_scale) {}
 
         virtual std::vector<Quaternions::RotationType> getTransitRotationTypes() const override {
@@ -173,7 +173,7 @@ class LinearTransitSide : public LinearTransit {
 
 class LinearTransport : public Transport, public CartesianMover {
     public:
-        LinearTransport(const std::string& topic, double planning_time, uint8_t max_trials, double distance, double max_velocity_scaling_factor = 1.0, double eef_step = 0.1, double jump_thresh = 0.0, double max_acceleration_scale = 0.1)
+        LinearTransport(const std::string& topic, double planning_time, uint8_t max_trials, double distance, double max_velocity_scaling_factor = 0.5, double eef_step = 0.1, double jump_thresh = 0.0, double max_acceleration_scale = 0.05)
             : Transport(topic, planning_time, max_trials, max_velocity_scaling_factor)
             , CartesianMover(max_velocity_scaling_factor, eef_step, jump_thresh, max_acceleration_scale)
             , m_approach_offset(0.0, 0.0, distance)
