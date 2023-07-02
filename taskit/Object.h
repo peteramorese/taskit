@@ -13,7 +13,7 @@
 #include "Quaternions.h"
 #include "PoseTracker.h"
 
-namespace ManipulationInterface {
+namespace TaskIt {
 
 
 using ObjectConfig = std::map<std::string, float>;

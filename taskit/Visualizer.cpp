@@ -9,7 +9,7 @@
 #define MI_LOCATION_MARKER_B  135.0
 #define MI_DETECTION_RADIUS_ALPHA 0.4
 
-namespace ManipulationInterface {
+namespace TaskIt {
 
 void Visualizer::publishGoalMarker(const geometry_msgs::Pose& pose, const std::string& msg, float scale, bool keep_existing) {
     if (!keep_existing) removeMarkers(MarkerType::Goal);

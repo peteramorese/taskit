@@ -1,6 +1,6 @@
 #include "PredicateHandler.h"
 
-namespace ManipulationInterface {
+namespace TaskIt {
 
 void PredicateHandler::createEnvironment(const ros::NodeHandle& nh, const std::string& environment_ns) {
     std::vector<std::string> location_names;

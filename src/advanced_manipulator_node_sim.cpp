@@ -1,24 +1,7 @@
-// System
-
-// ROS
 #include "ros/ros.h"
+#include "TaskIt.h"
 
-// ManipulationInterface
-#include "ManipulatorNode.h"
-#include "BaseActionPrimitives.h"
-#include "AdvancedActionPrimitives.h"
-#include "Object.h"
-#include "PoseTracker.h"
-#include "Gripper.h"
-
-using namespace ManipulationInterface;
-
-class TestPoseTracker {
-	public:
-		static void update(const std::string& id, const geometry_msgs::Pose& pose) {
-
-		}
-};
+using namespace TaskIt;
 
 static const std::string node_name = "advanced_manipulator_node_sim";
 

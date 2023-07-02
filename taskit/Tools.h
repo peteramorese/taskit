@@ -13,7 +13,7 @@
     #define DEBUG(msg) 
 #endif
 
-namespace ManipulationInterface {
+namespace TaskIt {
 
 static std::string getParamName(const std::string& param_name, std::string ns = std::string()) {
     if (ns.empty()) return "/" + param_name;

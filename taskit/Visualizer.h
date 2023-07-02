@@ -5,7 +5,7 @@
 
 #include "PredicateHandler.h"
 
-namespace ManipulationInterface {
+namespace TaskIt {
 
 class Visualizer {
     public:

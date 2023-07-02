@@ -4,7 +4,7 @@
 
 #include "BaseActionPrimitives.h"
 
-namespace ManipulationInterface {
+namespace TaskIt {
 namespace ActionPrimitives {
 
 class CartesianMover {
@@ -84,9 +84,6 @@ class LinearTransit : public Transit, public CartesianMover {
                 if (state->near_object) {
                     geometry_msgs::Pose dst_retreat_pose = move_group->getCurrentPose().pose;
                     tf2::Vector3 retreat_direction = Quaternions::getEndEffectorHeading(Quaternions::convert(dst_retreat_pose.orientation));
-                    //DEBUG("retreat direction x: " << retreat_direction[0]);
-                    //DEBUG("retreat direction y: " << retreat_direction[1]);
-                    //DEBUG("retreat direction z: " << retreat_direction[2]);
                     dst_retreat_pose.position.x -= m_retreat_distance * retreat_direction[0];
                     dst_retreat_pose.position.y -= m_retreat_distance * retreat_direction[1];
                     dst_retreat_pose.position.z -= m_retreat_distance * retreat_direction[2];

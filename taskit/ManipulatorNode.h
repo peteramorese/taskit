@@ -27,7 +27,7 @@
 #include "Gripper.h"
 #include "Visualizer.h"
 
-namespace ManipulationInterface {
+namespace TaskIt {
     
 struct ManipulatorNodeState {
     public:
@@ -94,8 +94,8 @@ class ManipulatorNode {
             static_assert(FINAL_ACTION_INDEX <= numActionPrimitives(), "Final action index out of range");
             if constexpr (INIT_ACTION_INDEX < FINAL_ACTION_INDEX) {
                 auto action = std::get<INIT_ACTION_INDEX>(m_action_primitives);
-                ROS_INFO_STREAM_NAMED(m_node_name, "Spawning action service on topic: " << action.topic());
-                m_action_services[INIT_ACTION_INDEX] = m_node_handle->advertiseService(action.topic(), &ManipulatorNode::actionServiceCallback<INIT_ACTION_INDEX>, this);
+                ROS_INFO_STREAM_NAMED(m_node_name, "Spawning action service on topic: " << "action_primitive/" + action.topic());
+                m_action_services[INIT_ACTION_INDEX] = m_node_handle->advertiseService("action_primitive/" + action.topic(), &ManipulatorNode::actionServiceCallback<INIT_ACTION_INDEX>, this);
                 spawnActionServices<INIT_ACTION_INDEX + 1, FINAL_ACTION_INDEX>();
             }
         }

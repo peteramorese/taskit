@@ -5,16 +5,16 @@
   <arg name="obj_file" default="objects" />
   <arg name="arm_cfg_file" default="panda_arm_config" />
   <group ns="environment">
-    <rosparam file="$(find manipulation_interface)/environment_config/$(arg env_file).yaml" />
-    <!-- <rosparam file="$(find manipulation_interface)/environment_config/$(arg task_file).yaml" /> -->
+    <rosparam file="$(find taskit)/environment_config/$(arg env_file).yaml" />
+    <!-- <rosparam file="$(find taskit)/environment_config/$(arg task_file).yaml" /> -->
   </group>
   <group ns="workspace">
-    <rosparam file="$(find manipulation_interface)/environment_config/$(arg ws_file).yaml" />
+    <rosparam file="$(find taskit)/environment_config/$(arg ws_file).yaml" />
   </group>
   <group ns="objects">
-    <rosparam file="$(find manipulation_interface)/environment_config/$(arg obj_file).yaml" />
+    <rosparam file="$(find taskit)/environment_config/$(arg obj_file).yaml" />
   </group>
   <group ns="arm_config">
-    <rosparam file="$(find manipulation_interface)/environment_config/$(arg arm_cfg_file).yaml" />
+    <rosparam file="$(find taskit)/environment_config/$(arg arm_cfg_file).yaml" />
   </group>
 </launch>

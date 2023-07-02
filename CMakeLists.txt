@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12.1)
-project(manipulation_interface)
+project(taskit)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -8,17 +8,12 @@ find_package(catkin REQUIRED COMPONENTS
 	geometry_msgs
 	roscpp 
 	#vrpn_client_ros
-	#interactive_markers
 	moveit_core
 	moveit_visual_tools
 	moveit_ros_planning
 	moveit_ros_planning_interface
-	#moveit_ros_perception
 	pluginlib
 	geometric_shapes
-	#pcl_ros
-	#pcl_conversions
-	#rosbag
 	tf2_ros
 	tf2_eigen
 	tf2_geometry_msgs
@@ -47,7 +42,6 @@ generate_messages(
 )
 
 catkin_package(
-	#  LIBRARIES vicon_franka_integration
 	CATKIN_DEPENDS 
 		#vrpn_client_ros 
 		geometry_msgs 
@@ -63,13 +57,7 @@ catkin_package(
 	#  DEPENDS system_lib
 )
 
-#include_directories(
-#	${catkin_INCLUDE_DIRS}
-#	${Boost_INCLUDE_DIRS}
-#	${EIGEN3_INCLUDE_DIRS}
-#	)
+set(TASKIT_LIBRARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/taskit)
 
-set(MANIPULATION_INTERFACE_LIBRARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/library)
-
-add_subdirectory(library)
+add_subdirectory(taskit)
 add_subdirectory(src)

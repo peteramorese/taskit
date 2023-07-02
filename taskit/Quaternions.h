@@ -10,7 +10,7 @@
 #include "Tools.h"
 #include "ManipulatorProperties.h"
 
-namespace ManipulationInterface {
+namespace TaskIt {
     class Quaternions {
         public:
             enum class Type {

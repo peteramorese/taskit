@@ -9,7 +9,7 @@
 
 #include "Tools.h"
 
-namespace ManipulationInterface {
+namespace TaskIt {
 
 class ManipulatorProperties {
     public:

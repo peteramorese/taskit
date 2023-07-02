@@ -10,7 +10,7 @@
 #include "Quaternions.h"
 #include "Object.h"
 
-namespace ManipulationInterface {
+namespace TaskIt {
 
 class PredicateHandler {
     public:

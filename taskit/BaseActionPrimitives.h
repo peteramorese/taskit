@@ -4,23 +4,26 @@
 #include <string>
 #include <vector>
 
-// Srv types
-#include "manipulation_interface/StowSrv.h"
-#include "manipulation_interface/GraspSrv.h"
-#include "manipulation_interface/ReleaseSrv.h"
-#include "manipulation_interface/TransitSrv.h"
-
+// ROS
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 // MoveIt
 #include <moveit/planning_interface/planning_interface.h>
 
+// TaskIt
+#include "ManipulatorNode.h"
 #include "ManipulatorNodeInterface.h"
 #include "PredicateHandler.h"
 #include "Gripper.h"
 #include "Tools.h"
 
-namespace ManipulationInterface {
+// Srv types
+#include "taskit/StowSrv.h"
+#include "taskit/GraspSrv.h"
+#include "taskit/ReleaseSrv.h"
+#include "taskit/TransitSrv.h"
+
+namespace TaskIt {
 namespace ActionPrimitives {
 
 
@@ -40,10 +43,10 @@ class ActionPrimitive {
         const std::string m_topic;
 };
 
-class Stow : public ActionPrimitive<manipulation_interface::StowSrv> {
+class Stow : public ActionPrimitive<taskit::StowSrv> {
     public:
         Stow(const std::string& topic)
-            : ActionPrimitive<manipulation_interface::StowSrv>(topic)
+            : ActionPrimitive<taskit::StowSrv>(topic)
             {}
 
         virtual bool operator()(ManipulatorNodeInterface&& interface, typename msg_t::Request& request, typename msg_t::Response& response) override {
@@ -59,10 +62,10 @@ class Stow : public ActionPrimitive<manipulation_interface::StowSrv> {
 };
 
 template <GripperUse GRIPPER_USE_T>
-class SimpleGrasp : public ActionPrimitive<manipulation_interface::GraspSrv> {
+class SimpleGrasp : public ActionPrimitive<taskit::GraspSrv> {
     public: 
         SimpleGrasp(const std::string& topic, const std::shared_ptr<GripperHandler<GRIPPER_USE_T>>& gripper_handler, const std::string& attachment_link) 
-            : ActionPrimitive<manipulation_interface::GraspSrv>(topic)
+            : ActionPrimitive<taskit::GraspSrv>(topic)
             , m_gripper_handler(gripper_handler)
             , m_attachment_link(attachment_link)
             {}
@@ -105,10 +108,10 @@ class SimpleGrasp : public ActionPrimitive<manipulation_interface::GraspSrv> {
 };
 
 template <GripperUse GRIPPER_USE_T>
-class SimpleRelease : public ActionPrimitive<manipulation_interface::ReleaseSrv> {
+class SimpleRelease : public ActionPrimitive<taskit::ReleaseSrv> {
     public: 
         SimpleRelease(const std::string& topic, const std::shared_ptr<GripperHandler<GRIPPER_USE_T>>& gripper_handler) 
-            : ActionPrimitive<manipulation_interface::ReleaseSrv>(topic)
+            : ActionPrimitive<taskit::ReleaseSrv>(topic)
             , m_gripper_handler(gripper_handler)
             {}
 
@@ -147,10 +150,10 @@ class SimpleRelease : public ActionPrimitive<manipulation_interface::ReleaseSrv>
         std::shared_ptr<GripperHandler<GRIPPER_USE_T>> m_gripper_handler;
 };
 
-class Transit : public ActionPrimitive<manipulation_interface::TransitSrv> {
+class Transit : public ActionPrimitive<taskit::TransitSrv> {
     public:
         Transit(const std::string& topic, double planning_time, uint8_t max_trials, double max_velocity_scaling_factor = 1.0)
-            : ActionPrimitive<manipulation_interface::TransitSrv>(topic)
+            : ActionPrimitive<taskit::TransitSrv>(topic)
             , m_planning_time(planning_time)
             , m_max_trials(max_trials)
             , m_max_velocity_scaling_factor(max_velocity_scaling_factor)

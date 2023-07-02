@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ManipulationInterface {
+namespace TaskIt {
 
 // Forward declarations
 class Object;

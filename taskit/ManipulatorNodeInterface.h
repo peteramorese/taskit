@@ -10,7 +10,7 @@
 
 #include "Gripper.h"
 
-namespace ManipulationInterface {
+namespace TaskIt {
 
 // Forward declarations
 class ObjectGroup;

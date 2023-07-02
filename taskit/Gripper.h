@@ -16,7 +16,7 @@
 #include "Object.h"
 
 
-namespace ManipulationInterface {
+namespace TaskIt {
 
 enum class GripperUse {
     Simulation,
@@ -55,7 +55,6 @@ class GripperHandler<GripperUse::FrankaHand> {
             grip_goal.goal.epsilon.inner = grip_spec.grip_epsilon_inner;
             grip_goal.goal.epsilon.outer = grip_spec.grip_epsilon_outter;
             m_gripper_action.sendGoal(grip_goal.goal);
-            std::cout<<"HELLO!!!";
             return m_gripper_action.waitForResult(ros::Duration(m_timeout));
         }
         bool open(const GripperSpecification& grip_spec) {

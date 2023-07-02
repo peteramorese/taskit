@@ -2,7 +2,7 @@
 #include "Tools.h"
 
 
-namespace ManipulationInterface {
+namespace TaskIt {
 
 
 void ObjectGroup::createObjects(const ros::NodeHandle& nh, const std::string& ns, const std::string& frame_id, const std::shared_ptr<PoseTracker>& pose_tracker) {

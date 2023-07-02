@@ -1,6 +1,8 @@
-# Manipulation Interface
+# TaskIt
 
-ROS package for abstracting a robotic manipulation domain and manipulation action primitives.
+ROS package for abstracting a robotic manipulation domain and manipulation action primitives for discrete task planning. Currently supports only the Franka Emika Panda manipulator, however the C++ library is abstracted to support any manipulator.
+
+**NOTE:** Not affiliated with MoveIt, however this package heavily utilizes MoveIt for low-level motion planning and visualization. 
 
 ## Built-In Features
 

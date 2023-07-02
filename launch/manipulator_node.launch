@@ -13,13 +13,13 @@
 
 
   <!-- Load the URDF, SRDF and other .yaml configuration files on the param server-->
-  <include file="$(find manipulation_interface)/launch/custom_planning_context.launch">
+  <include file="$(find taskit)/launch/custom_planning_context.launch">
     <arg name="load_robot_description" value="true"/>
     <arg name="load_gripper" value="true"/>
   </include>
 
   <!-- Run the main MoveIt executable without trajectory execution (we do not have controllers configured by default) -->
-  <include file="$(find manipulation_interface)/launch/move_group.launch">
+  <include file="$(find taskit)/launch/move_group.launch">
     <arg name="allow_trajectory_execution" value="true"/>
     <arg name="fake_execution" value="$(arg sim)"/>
     <arg name="info" value="true"/>
@@ -27,7 +27,7 @@
     <arg name="pipeline" value="$(arg pipeline)"  />
   </include>
 
-  <include file="$(find manipulation_interface)/launch/load_parameters.launch">
+  <include file="$(find taskit)/launch/load_parameters.launch">
   </include>
 
 
@@ -43,7 +43,7 @@
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" output="screen" />
     <arg unless="$(arg advanced)" name="node_handle" value="basic_manipulator_node_sim" />
     <arg     if="$(arg advanced)" name="node_handle" value="advanced_manipulator_node_sim" />
-    <node name="$(arg node_handle)" pkg="manipulation_interface" type="$(arg node_handle)" respawn="false" output="screen">
+    <node name="manipulator_node" pkg="taskit" type="$(arg node_handle)" respawn="false" output="screen">
       <rosparam command="load" file="$(find panda_moveit_config)/config/kinematics.yaml"/>
       <param name="/planning_plugin" value="ompl_interface/OMPLPlanner"/>
       <rosparam command="load" file="$(find panda_moveit_config)/config/ompl_planning.yaml"/>
@@ -91,7 +91,7 @@
 
     <arg unless="$(arg advanced)" name="node_handle" value="basic_manipulator_node_real" />
     <arg     if="$(arg advanced)" name="node_handle" value="advanced_manipulator_node_real" />
-    <node name="$(arg node_handle)" pkg="manipulation_interface" type="$(arg node_handle)" respawn="false" output="screen">
+    <node name="manipulator_node" pkg="taskit" type="$(arg node_handle)" respawn="false" output="screen">
       <rosparam command="load" file="$(find panda_moveit_config)/config/kinematics.yaml"/>
       <param name="/planning_plugin" value="ompl_interface/OMPLPlanner"/>
       <rosparam command="load" file="$(find panda_moveit_config)/config/ompl_planning.yaml"/>

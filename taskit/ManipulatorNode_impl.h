@@ -8,7 +8,7 @@
 #include "Tools.h"
 #include "ManipulatorProperties.h"
 
-namespace ManipulationInterface {
+namespace TaskIt {
 
 template <class...ACTION_PRIMITIVES_TYPES>
 ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::ManipulatorNode(const std::string& node_name, const std::string& planning_group, const std::string& frame_id, ACTION_PRIMITIVES_TYPES&&...action_primitives)
