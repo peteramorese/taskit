@@ -2,6 +2,7 @@ add_library(TaskIt
     PredicateHandler.cpp
     Object.cpp
     Visualizer.cpp
+    PoseTracker.cpp
 )
 target_link_libraries(TaskIt PUBLIC
     ${catkin_LIBRARIES} 

@@ -8,6 +8,7 @@ static const std::string node_name = "basic_manipulator_node_sim";
 int main(int argc, char** argv) {
 	
     ros::init(argc, argv, node_name);
+    std::shared_ptr<ros::NodeHandle> node_handle = std::make_shared<ros::NodeHandle>("~");
 
 	const std::string ee_link = "panda_link8";
 	
@@ -27,7 +28,7 @@ int main(int argc, char** argv) {
 		ActionPrimitives::SimpleRelease<GripperUse::Simulation>, 
 		ActionPrimitives::TransitUp,
 		ActionPrimitives::Transport
-	> manipulator_node(node_name, "panda_arm", "panda_link0", 
+	> manipulator_node(node_handle, node_name, "panda_arm", "panda_link0", 
 		std::move(stow), 
 		std::move(grasp), 
 		std::move(release), 
@@ -38,7 +39,8 @@ int main(int argc, char** argv) {
 	ros::WallDuration(1.0).sleep();
 
 	// Pose tracker
-	std::shared_ptr<SimulationPoseTracker> pose_tracker = std::make_shared<SimulationPoseTracker>();
+	//std::shared_ptr<SimulationPoseTracker> pose_tracker = std::make_shared<SimulationPoseTracker>();
+	std::shared_ptr<VRPNPoseTracker> pose_tracker = std::make_shared<VRPNPoseTracker>(node_handle);
 
 	manipulator_node.createScene(pose_tracker);
 	manipulator_node.updateEnvironment();

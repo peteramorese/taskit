@@ -8,6 +8,7 @@ static const std::string node_name = "advanced_manipulator_node_sim";
 int main(int argc, char** argv) {
 	
     ros::init(argc, argv, node_name);
+    std::shared_ptr<ros::NodeHandle> node_handle = std::make_shared<ros::NodeHandle>("~");
 
 	const std::string ee_link = "panda_link8";
 	
@@ -26,16 +27,16 @@ int main(int argc, char** argv) {
 	ActionPrimitives::LinearTransport linear_transport("linear_transport", 5.0f, 1, 0.05);
 
 	ManipulatorNode<
-	 	ActionPrimitives::Stow,
-		ActionPrimitives::SimpleGrasp<GripperUse::Simulation>, 
-		ActionPrimitives::SimpleRelease<GripperUse::Simulation>, 
-		ActionPrimitives::TransitSide,
-		ActionPrimitives::TransitUp,
-		ActionPrimitives::LinearTransit,
-		ActionPrimitives::LinearTransitSide,
-		ActionPrimitives::Transport,
-		ActionPrimitives::LinearTransport
-	> manipulator_node(node_name, "panda_arm", "panda_link0", 
+	 	decltype(stow),
+		decltype(grasp), 
+		decltype(release), 
+		decltype(transit_side),
+		decltype(transit_up),
+		decltype(linear_transit),
+		decltype(linear_transit_side),
+		decltype(transport),
+		decltype(linear_transport)
+	> manipulator_node(node_handle, node_name, "panda_arm", "panda_link0", 
 		std::move(stow), 
 		std::move(grasp), 
 		std::move(release), 

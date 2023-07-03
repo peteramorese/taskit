@@ -244,8 +244,20 @@ class ObjectGroup {
 
         inline std::size_t size() const {return m_objects.size();}
 
-        inline Object& getObject(const std::string& id) {return m_objects.at(id);}
-        inline const Object& getObject(const std::string& id) const {return m_objects.at(id);}
+        //inline Object& getObject(const std::string& id) {return m_objects.at(id);}
+        //inline const Object& getObject(const std::string& id) const {return m_objects.at(id);}
+        inline Object& getObject(const std::string& id) {
+            std::cout<<"b4 id: " << id <<std::endl;
+            m_objects.at(id);
+            std::cout<<"af" << std::endl;
+            return m_objects.at(id);
+            }
+        inline const Object& getObject(const std::string& id) const {
+            std::cout<<"b4 id: " << id <<std::endl;
+            m_objects.at(id);
+            std::cout<<"af" << std::endl;
+            return m_objects.at(id);}
+
         inline std::vector<const Object*> getObjects() const {
             std::vector<const Object*> objects(m_objects.size());
             auto it = objects.begin();

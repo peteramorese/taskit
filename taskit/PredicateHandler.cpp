@@ -28,12 +28,11 @@ void PredicateHandler::createEnvironment(const ros::NodeHandle& nh, const std::s
 
 void PredicateHandler::setObjectPosesToLocations(const ros::NodeHandle& nh, const std::string& objects_ns) {
     std::map<std::string, std::string> initial_locations;
-    nh.getParam(getParamName("initial_locations", objects_ns), initial_locations);
-
-    for (const auto& v_type : initial_locations) {
-        m_obj_group->getObject(v_type.first).pose = getLocationPose(v_type.second);
+    if (nh.getParam(getParamName("initial_locations", objects_ns), initial_locations)) {
+        for (const auto& v_type : initial_locations) {
+            m_obj_group->getObject(v_type.first).pose = getLocationPose(v_type.second);
+        }
     }
-
 }
 
 double PredicateHandler::distance(const geometry_msgs::Point& lhs, const geometry_msgs::Point& rhs) {

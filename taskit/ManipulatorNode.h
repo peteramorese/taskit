@@ -49,16 +49,25 @@ struct ManipulatorNodeState {
 template <class...ACTION_PRIMITIVES_TYPES>
 class ManipulatorNode {
     public:
-        ManipulatorNode(const std::string& node_name, const std::string& planning_group, const std::string& frame_id, ACTION_PRIMITIVES_TYPES&&...action_primitives);
+        ManipulatorNode(const std::shared_ptr<ros::NodeHandle>& node_handle, const std::string& node_name, const std::string& planning_group, const std::string& frame_id, ACTION_PRIMITIVES_TYPES&&...action_primitives);
 
         ~ManipulatorNode() {
             m_visualizer->removeAllMarkers();
         }
 
+        // Get the number of action primitives
         static constexpr uint32_t numActionPrimitives() {return sizeof...(ACTION_PRIMITIVES_TYPES);}
 
+        // Get the async spinner created on construction
+        const std::shared_ptr<ros::AsyncSpinner>& getSpinner() {return m_spinner;}
+
+        // Set the motion planner ID. Default is RRTConnectkConfigDefault
         inline void setPlanner(const std::string& planner_id) { m_move_group->setPlannerId(planner_id); }
 
+        // Set a custom end effector link.
+        inline void setEndEffectorLink(const std::string& ee_link) { m_move_group->setEndEffectorLink(ee_link); }
+
+        // Visualize the goal markers. True by default
         inline void toggleAutoVisualize(bool auto_visualize) {m_auto_visualize = auto_visualize;}
 
         //// Insert an object group that was manually created
@@ -77,10 +86,10 @@ class ManipulatorNode {
             if (m_auto_visualize) m_visualizer->publishLocationMarkers(*m_predicate_handler);
         }
 
+        // Update all of the collision objects based on the current object poses
         void updateEnvironment(bool ignore_static = true);
 
-        inline void setEndEffectorLink(const std::string& ee_link) { m_move_group->setEndEffectorLink(ee_link); }
-
+        // Reference node handle.
         inline ros::NodeHandle& getNodeHandle() {return *m_node_handle;}
         inline const ros::NodeHandle& getNodeHandle() const {return *m_node_handle;}
 
@@ -89,6 +98,8 @@ class ManipulatorNode {
             spawnActionServices<0, numActionPrimitives()>();
         }
 
+        // Spawn a specific set of action primitives. INIT_ACTION_INDEX is the starting template argument
+        // index, and FINAL_ACTION_INDEX is the ending template argument index
         template <uint32_t INIT_ACTION_INDEX, uint32_t FINAL_ACTION_INDEX = INIT_ACTION_INDEX + 1>
         void spawnActionServices() {
             static_assert(FINAL_ACTION_INDEX <= numActionPrimitives(), "Final action index out of range");
@@ -100,6 +111,7 @@ class ManipulatorNode {
             }
         }
 
+        // Specify a function that is called before an action is executed
         void setBeforeActionCallback(std::function<void()> beforeActionCall) {
             m_beforeActionCall = [this, beforeActionCall]() -> void {
                 if (m_auto_visualize) m_visualizer->removeMarkers(Visualizer::MarkerType::Goal);
@@ -107,6 +119,7 @@ class ManipulatorNode {
             };
         }
 
+        // Specify a function that is called after an action has finished
         void setAfterActionCallback(std::function<void()> afterActionCall) {
             m_afterActionCall = [this, afterActionCall]() -> void {
                 afterActionCall();
@@ -180,8 +193,8 @@ class ManipulatorNode {
     private:
         const std::string m_node_name;
 
-        std::unique_ptr<ros::NodeHandle> m_node_handle;
-        std::unique_ptr<ros::AsyncSpinner> m_spinner;
+        std::shared_ptr<ros::NodeHandle> m_node_handle;
+        std::shared_ptr<ros::AsyncSpinner> m_spinner;
 
         std::tuple<ACTION_PRIMITIVES_TYPES...> m_action_primitives;
         std::array<ros::ServiceServer, numActionPrimitives()> m_action_services;

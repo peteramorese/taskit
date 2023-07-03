@@ -71,6 +71,8 @@ class PredicateHandler {
 
         const std::map<std::string, Location>& getLocations() const {return m_locations;}
 
+        // Set the poses for each object to the discrete location defined under `initial_locations` param. Does nothing
+        // if `initial_locations` is not found
         void setObjectPosesToLocations(const ros::NodeHandle& nh, const std::string& objects_ns = "objects");
 
 		void addLocation(const std::string& name, const geometry_msgs::Point& position, Quaternions::Type orientation_type, float detection_radius) {

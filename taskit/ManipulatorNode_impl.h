@@ -11,8 +11,9 @@
 namespace TaskIt {
 
 template <class...ACTION_PRIMITIVES_TYPES>
-ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::ManipulatorNode(const std::string& node_name, const std::string& planning_group, const std::string& frame_id, ACTION_PRIMITIVES_TYPES&&...action_primitives)
+ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::ManipulatorNode(const std::shared_ptr<ros::NodeHandle>& node_handle, const std::string& node_name, const std::string& planning_group, const std::string& frame_id, ACTION_PRIMITIVES_TYPES&&...action_primitives)
     : m_node_name(node_name)
+    , m_node_handle(node_handle)
     , m_action_primitives(std::forward<ACTION_PRIMITIVES_TYPES>(action_primitives)...)
     , m_move_group(std::make_shared<moveit::planning_interface::MoveGroupInterface>(planning_group))
     , m_planning_interface(std::make_shared<moveit::planning_interface::PlanningSceneInterface>())
@@ -24,8 +25,7 @@ ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::ManipulatorNode(const std::string& 
     //if constexpr (std::is_default_constructible_v<OBJ_GROUP_T>) ROS_ASSERT_MSG(obj_group, "Must provide an object group when using a non-default-constructable object group type");
     
     // Init ros items
-    m_node_handle = std::make_unique<ros::NodeHandle>("~");
-    m_spinner = std::make_unique<ros::AsyncSpinner>(2);
+    m_spinner = std::make_shared<ros::AsyncSpinner>(2);
     m_spinner->start();
 
     // Init MoveIt items

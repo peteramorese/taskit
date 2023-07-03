@@ -15,8 +15,8 @@ Action primitives:
  - Linear Transit [All/Up/Side] (Transit with a safe linear approach and retreat)
  - Linear Transport (Transport with a safe linear approach and retreat)
 
-ROS Param Config file abstraction for:
+Config file abstraction for:
  - Discrete locations
  - Workspace collision objects
- - Dynamic manipulatable objects
+ - Manipulatable objects
  - Other relevant properties for the working manipulator
