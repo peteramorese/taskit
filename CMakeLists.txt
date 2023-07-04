@@ -33,6 +33,7 @@ add_service_files(
 	GraspSrv.srv
 	ReleaseSrv.srv
 	TransitSrv.srv
+	UpdateEnvSrv.srv
 )
 
 generate_messages(

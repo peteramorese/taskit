@@ -11,13 +11,12 @@
 namespace TaskIt {
 
 template <class...ACTION_PRIMITIVES_TYPES>
-ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::ManipulatorNode(const std::shared_ptr<ros::NodeHandle>& node_handle, const std::string& node_name, const std::string& planning_group, const std::string& frame_id, ACTION_PRIMITIVES_TYPES&&...action_primitives)
+ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::ManipulatorNode(const std::shared_ptr<ros::NodeHandle>& node_handle, const std::string& node_name, const std::string& planning_group, const std::string& planning_frame_id, ACTION_PRIMITIVES_TYPES&&...action_primitives)
     : m_node_name(node_name)
     , m_node_handle(node_handle)
     , m_action_primitives(std::forward<ACTION_PRIMITIVES_TYPES>(action_primitives)...)
     , m_move_group(std::make_shared<moveit::planning_interface::MoveGroupInterface>(planning_group))
-    , m_planning_interface(std::make_shared<moveit::planning_interface::PlanningSceneInterface>())
-    , m_frame_id(frame_id)
+    , m_planning_scene_interface(std::make_shared<moveit::planning_interface::PlanningSceneInterface>())
     , m_state(std::make_shared<ManipulatorNodeState>())
     , m_auto_visualize(true)
 {
@@ -66,7 +65,7 @@ ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::ManipulatorNode(const std::shared_p
     setPlanner("RRTConnectkConfigDefault");
 
     // Setup the marker publisher
-    m_visualizer.reset(new Visualizer(*m_node_handle, m_frame_id, "/rviz_visual_tools"));
+    m_visualizer.reset(new Visualizer(*m_node_handle, planning_frame_id, "/rviz_visual_tools"));
 
     // Set the pre action call back
     m_beforeActionCall = [this]() -> void {
@@ -77,32 +76,8 @@ ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::ManipulatorNode(const std::shared_p
 
 
 template <class...ACTION_PRIMITIVES_TYPES>
-void ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::updateEnvironment(bool ignore_static) {
-    auto attached_objects = m_planning_interface->getAttachedObjects();
-
-    CollisionObjectVector collision_objects;
-    collision_objects.reserve(m_obj_group->size());
-
-    for (auto obj : m_obj_group->getObjects()) {
-        const auto& id = obj->id;
-
-        // Do not update if the object is attached
-        auto it = attached_objects.find(id);
-        if (it != attached_objects.end()) continue;
-
-        // Do not update if the object is static
-        if (ignore_static && obj->isStatic()) continue;
-
-        obj->updatePose();
-        moveit_msgs::CollisionObject col_obj = obj->getCollisionObject(m_frame_id);
-
-        col_obj.operation = col_obj.ADD;
-
-        collision_objects.push_back(std::move(col_obj));
-    }
-
-    m_planning_interface->applyCollisionObjects(collision_objects);
-
+void ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::updatePlanningScene(bool ignore_static) {
+    m_obj_group->updatePosesWithPlanningScene(*m_planning_scene_interface, m_move_group->getPlanningFrame(), ignore_static);
 }
 
 

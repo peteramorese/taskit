@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
 	std::shared_ptr<SimulationPoseTracker> pose_tracker = std::make_shared<SimulationPoseTracker>();
 
 	manipulator_node.createScene(pose_tracker);
-	manipulator_node.updateEnvironment();
+	manipulator_node.updatePlanningScene();
 
 	manipulator_node.spawnAllActionServices();
 

@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
 	std::shared_ptr<VRPNPoseTracker> pose_tracker = std::make_shared<VRPNPoseTracker>(node_handle);
 
 	manipulator_node.createScene(pose_tracker);
-	manipulator_node.updateEnvironment();
+	manipulator_node.updatePlanningScene();
 
 	manipulator_node.spawnAllActionServices();
 

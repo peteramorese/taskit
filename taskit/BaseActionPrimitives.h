@@ -22,6 +22,7 @@
 #include "taskit/GraspSrv.h"
 #include "taskit/ReleaseSrv.h"
 #include "taskit/TransitSrv.h"
+#include "taskit/UpdateEnvSrv.h"
 
 namespace TaskIt {
 namespace ActionPrimitives {
@@ -59,6 +60,22 @@ class Stow : public ActionPrimitive<taskit::StowSrv> {
             response.execution_success = move_group->move() == moveit::planning_interface::MoveItErrorCode::SUCCESS;
             return true;
         }
+};
+
+class UpdateEnvironment : public ActionPrimitive<taskit::UpdateEnvSrv> {
+    public:
+        UpdateEnvironment(const std::string& topic)
+            : ActionPrimitive<taskit::UpdateEnvSrv>(topic)
+            {}
+
+        virtual bool operator()(ManipulatorNodeInterface&& interface, typename msg_t::Request& request, typename msg_t::Response& response) override {
+            auto move_group = interface.move_group.lock();
+            auto obj_group = interface.object_group.lock();
+            auto pci = interface.planning_scene_interface.lock();
+            obj_group->updatePosesWithPlanningScene(*pci, move_group->getPlanningFrame(), true);
+            return true;
+        }
+        
 };
 
 template <GripperUse GRIPPER_USE_T>
@@ -118,10 +135,10 @@ class SimpleRelease : public ActionPrimitive<taskit::ReleaseSrv> {
         virtual bool operator()(ManipulatorNodeInterface&& interface, typename msg_t::Request& request, typename msg_t::Response& response) override {
             auto move_group = interface.move_group.lock();
             auto obj_group = interface.object_group.lock();
-            auto planning_interface = interface.planning_interface.lock();
+            auto planning_scene_interface = interface.planning_scene_interface.lock();
 
             if (request.obj_id == "none") {
-                if (!planning_interface->getAttachedObjects().empty()) {
+                if (!planning_scene_interface->getAttachedObjects().empty()) {
                     move_group->detachObject();
                 }
                 response.success = m_gripper_handler->open(GripperSpecification{});
@@ -130,7 +147,7 @@ class SimpleRelease : public ActionPrimitive<taskit::ReleaseSrv> {
 
             ROS_ASSERT_MSG(obj_group->hasObject(request.obj_id), "Object not found");
 
-            auto attached_objects = planning_interface->getAttachedObjects();
+            auto attached_objects = planning_scene_interface->getAttachedObjects();
             std::string obj_id;
             if (!request.obj_id.empty()) {
                 auto it = attached_objects.find(request.obj_id);
@@ -360,7 +377,7 @@ class Transport : public Transit {
             response.execution_success = false;
 
             // Make sure at least one object is attached
-            if (!interface.planning_interface.lock()->getAttachedObjects().size()) {
+            if (!interface.planning_scene_interface.lock()->getAttachedObjects().size()) {
                 ROS_WARN_STREAM("Did not find attached object (is the manipulator grasping?), not executing");
                 return false;
             }

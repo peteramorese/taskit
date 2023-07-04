@@ -193,7 +193,7 @@ class LinearTransport : public Transport, public CartesianMover {
             response.execution_success = false;
 
             // Make sure at least one object is attached
-            if (!interface.planning_interface.lock()->getAttachedObjects().size()) {
+            if (!interface.planning_scene_interface.lock()->getAttachedObjects().size()) {
                 ROS_WARN_STREAM("Did not find attached object (is the manipulator grasping?), not executing");
                 return false;
             }

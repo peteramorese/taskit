@@ -49,7 +49,7 @@ struct ManipulatorNodeState {
 template <class...ACTION_PRIMITIVES_TYPES>
 class ManipulatorNode {
     public:
-        ManipulatorNode(const std::shared_ptr<ros::NodeHandle>& node_handle, const std::string& node_name, const std::string& planning_group, const std::string& frame_id, ACTION_PRIMITIVES_TYPES&&...action_primitives);
+        ManipulatorNode(const std::shared_ptr<ros::NodeHandle>& node_handle, const std::string& node_name, const std::string& planning_group, const std::string& planning_frame_id, ACTION_PRIMITIVES_TYPES&&...action_primitives);
 
         ~ManipulatorNode() {
             m_visualizer->removeAllMarkers();
@@ -76,18 +76,18 @@ class ManipulatorNode {
         // Automatically create the objects based off the parameter server (workspace_ns: param namespace for static obstacles, objects_ns: namespace for dynamic objects and predicates)
         void createScene(const std::shared_ptr<PoseTracker>& pose_tracker, const std::string& environment_ns = "environment", const std::string& workspace_ns = "workspace", const std::string& objects_ns = "objects") {
             m_obj_group.reset(new ObjectGroup);
-            m_obj_group->createObjects(*m_node_handle, workspace_ns, m_frame_id);
-            m_obj_group->createObjects(*m_node_handle, objects_ns, m_frame_id, pose_tracker);
+            m_obj_group->createObjects(*m_node_handle, workspace_ns);
+            m_obj_group->createObjects(*m_node_handle, objects_ns, pose_tracker);
 
             m_predicate_handler.reset(new PredicateHandler(m_obj_group));
             m_predicate_handler->createEnvironment(*m_node_handle, environment_ns);
             m_predicate_handler->setObjectPosesToLocations(*m_node_handle, objects_ns);
-            updateEnvironment(false);
+            updatePlanningScene(false);
             if (m_auto_visualize) m_visualizer->publishLocationMarkers(*m_predicate_handler);
         }
 
-        // Update all of the collision objects based on the current object poses
-        void updateEnvironment(bool ignore_static = true);
+        // Update all of the object poses, and update the collision objects in the planning scene
+        void updatePlanningScene(bool ignore_static = true);
 
         // Reference node handle.
         inline ros::NodeHandle& getNodeHandle() {return *m_node_handle;}
@@ -160,8 +160,8 @@ class ManipulatorNode {
         }
 
         // Access important components
-        ManipulatorNodeInterface getInterface() {return ManipulatorNodeInterface(m_move_group, m_planning_interface, m_obj_group, m_predicate_handler, m_visualizer, m_state);}
-        ConstManipulatorNodeInterface getInterface() const {return ConstManipulatorNodeInterface(m_move_group, m_planning_interface, m_obj_group, m_predicate_handler, m_visualizer, m_state);}
+        ManipulatorNodeInterface getInterface() {return ManipulatorNodeInterface(m_move_group, m_planning_scene_interface, m_obj_group, m_predicate_handler, m_visualizer, m_state);}
+        ConstManipulatorNodeInterface getInterface() const {return ConstManipulatorNodeInterface(m_move_group, m_planning_scene_interface, m_obj_group, m_predicate_handler, m_visualizer, m_state);}
 
     private:
 
@@ -201,14 +201,13 @@ class ManipulatorNode {
 
         // Interface classes
         std::shared_ptr<moveit::planning_interface::MoveGroupInterface> m_move_group;
-        std::shared_ptr<moveit::planning_interface::PlanningSceneInterface> m_planning_interface;
+        std::shared_ptr<moveit::planning_interface::PlanningSceneInterface> m_planning_scene_interface;
         std::shared_ptr<ObjectGroup> m_obj_group;
         std::shared_ptr<PredicateHandler> m_predicate_handler;
         std::shared_ptr<Visualizer> m_visualizer;
         std::shared_ptr<ManipulatorNodeState> m_state;
 
         std::shared_ptr<planning_scene::PlanningScene> m_planning_scene;
-        std::string m_frame_id;
 
         // Things that just need to exist
         robot_model::RobotModelPtr m_robot_model;

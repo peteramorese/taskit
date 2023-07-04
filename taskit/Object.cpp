@@ -5,7 +5,7 @@
 namespace TaskIt {
 
 
-void ObjectGroup::createObjects(const ros::NodeHandle& nh, const std::string& ns, const std::string& frame_id, const std::shared_ptr<PoseTracker>& pose_tracker) {
+void ObjectGroup::createObjects(const ros::NodeHandle& nh, const std::string& ns, const std::shared_ptr<PoseTracker>& pose_tracker) {
 
     std::vector<std::string> object_ids;
     nh.getParam(getParamName("object_ids", ns), object_ids);
@@ -35,6 +35,34 @@ void ObjectGroup::createObjects(const ros::NodeHandle& nh, const std::string& ns
         insertObject(std::move(object));
     }
 
+}
+
+void ObjectGroup::updatePosesWithPlanningScene(moveit::planning_interface::PlanningSceneInterface& pci, const std::string& planning_frame_id, bool ignore_static) {
+    auto attached_objects = pci.getAttachedObjects();
+
+    CollisionObjectVector collision_objects;
+    collision_objects.reserve(size());
+
+    for (auto v_type : m_objects) {
+        const auto& id = v_type.first;
+        auto& obj = v_type.second;
+
+        // Do not update if the object is attached
+        auto it = attached_objects.find(id);
+        if (it != attached_objects.end()) continue;
+
+        // Do not update if the object is static
+        if (ignore_static && obj.isStatic()) continue;
+
+        obj.updatePose();
+        moveit_msgs::CollisionObject col_obj = obj.getCollisionObject(planning_frame_id);
+
+        col_obj.operation = col_obj.ADD;
+
+        collision_objects.push_back(std::move(col_obj));
+    }
+
+    pci.applyCollisionObjects(collision_objects);
 }
 
 

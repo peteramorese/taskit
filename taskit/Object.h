@@ -9,6 +9,7 @@
 #include <ros/ros.h>
 #include <geometry_msgs/Pose.h>
 #include <moveit_msgs/CollisionObject.h>
+#include <moveit/planning_scene_interface/planning_scene_interface.h>
 
 #include "Quaternions.h"
 #include "PoseTracker.h"
@@ -234,7 +235,7 @@ class ObjectGroup {
     public:
         ObjectGroup() = default;
 
-        void createObjects(const ros::NodeHandle& nh, const std::string& ns, const std::string& frame_id, const std::shared_ptr<PoseTracker>& pose_tracker = nullptr);
+        void createObjects(const ros::NodeHandle& nh, const std::string& ns, const std::shared_ptr<PoseTracker>& pose_tracker = nullptr);
 
         std::set<std::string> getIds() const {
             std::set<std::string> ids;
@@ -246,17 +247,8 @@ class ObjectGroup {
 
         //inline Object& getObject(const std::string& id) {return m_objects.at(id);}
         //inline const Object& getObject(const std::string& id) const {return m_objects.at(id);}
-        inline Object& getObject(const std::string& id) {
-            std::cout<<"b4 id: " << id <<std::endl;
-            m_objects.at(id);
-            std::cout<<"af" << std::endl;
-            return m_objects.at(id);
-            }
-        inline const Object& getObject(const std::string& id) const {
-            std::cout<<"b4 id: " << id <<std::endl;
-            m_objects.at(id);
-            std::cout<<"af" << std::endl;
-            return m_objects.at(id);}
+        inline Object& getObject(const std::string& id) { return m_objects.at(id); }
+        inline const Object& getObject(const std::string& id) const { return m_objects.at(id);}
 
         inline std::vector<const Object*> getObjects() const {
             std::vector<const Object*> objects(m_objects.size());
@@ -298,6 +290,8 @@ class ObjectGroup {
         void updatePoses() {
             for (auto& v_type : m_objects) v_type.second.updatePose();
         }
+
+        void updatePosesWithPlanningScene(moveit::planning_interface::PlanningSceneInterface& pci, const std::string& planning_frame_id, bool ignore_static = true);
 
         bool hasObject(const std::string& obj_id) const {return m_objects.find(obj_id) != m_objects.end();}
     protected:
