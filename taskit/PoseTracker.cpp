@@ -36,11 +36,16 @@ void VRPNPoseTracker::update(Object& object) const {
         ++n_msgs;
     };
 
-    // Create an empty scope so that the subscriber is destroyed after the duration
+    // Create subscriber in scope so that the subscriber is destroyed after the duration
     ros::WallDuration duration(m_sampling_duration);
-    {
+    for (uint16_t i = 0; i < 5; ++i) {
         ros::Subscriber pose_sub = m_node_handle->subscribe<geometry_msgs::PoseStamped>(topic, 10, onMsg);
         duration.sleep();
+        if (position.length() == 0.0f)
+            ROS_WARN_STREAM("VRPN Data for object '" << object.id.c_str() << "' may not be found on topic, retrying (" << i + 1 << "/5 attempts)...");
+        else {
+            break;
+        }
     }
 
     position /= static_cast<float>(n_msgs);

@@ -41,14 +41,14 @@ green_box_1: {
 #}
 
 object_orientation_types:
-  - up_x
-  - up_x
-  - up_x
-  - up_x
+  - up_y
+  - up_y
+  - up_y
+  - up_y
 
 initial_locations: {
-  blue_box_1: "side",
-  blue_box_2: "left_base",
-  pink_box_1: "right_base",
-  green_box_1: "top",
+  blue_box_1: "L1",
+  blue_box_2: "L2",
+  pink_box_1: "L3",
+  green_box_1: "L4",
 }

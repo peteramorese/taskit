@@ -245,8 +245,6 @@ class ObjectGroup {
 
         inline std::size_t size() const {return m_objects.size();}
 
-        //inline Object& getObject(const std::string& id) {return m_objects.at(id);}
-        //inline const Object& getObject(const std::string& id) const {return m_objects.at(id);}
         inline Object& getObject(const std::string& id) { return m_objects.at(id); }
         inline const Object& getObject(const std::string& id) const { return m_objects.at(id);}
 

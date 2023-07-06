@@ -31,7 +31,6 @@ void ObjectGroup::createObjects(const ros::NodeHandle& nh, const std::string& ns
         std::shared_ptr<ObjectSpecification> spec = makeObjectSpecification(object_types[i], config);
         Object object(object_ids[i], spec, config, object_orientation_types[i], pose_tracker);
 
-        //insertObject(std::move(object));
         insertObject(std::move(object));
     }
 
@@ -43,7 +42,7 @@ void ObjectGroup::updatePosesWithPlanningScene(moveit::planning_interface::Plann
     CollisionObjectVector collision_objects;
     collision_objects.reserve(size());
 
-    for (auto v_type : m_objects) {
+    for (auto& v_type : m_objects) {
         const auto& id = v_type.first;
         auto& obj = v_type.second;
 

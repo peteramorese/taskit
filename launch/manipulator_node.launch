@@ -3,7 +3,8 @@
 
   <arg name="sim" default="true" />
   <arg name="advanced" default="false" />
-  <arg name="pose_tracker" default="vicon_vrpn" />
+  <arg name="pose_tracker" default="simulation" />
+  <arg name="pose_tracker_sampling_duration" default="0.2" />
   <arg name="pipeline" default="ompl" />
   <arg name="robot_ip" default="franka-aria.colorado.edu" />
 
@@ -30,6 +31,10 @@
   <include file="$(find taskit)/launch/load_parameters.launch">
   </include>
 
+  <!-- If pose_tracker is vrpn, launch the vrpn node -->
+  <group if="$(eval pose_tracker == 'vrpn')">
+    <include file="$(find taskit)/launch/vicon_franka_vrpn.launch"/>
+  </group>
 
   <!-- If in simulation, use the _sim binaries and publish fake joint states -->
   <group if="$(arg sim)">
@@ -47,6 +52,8 @@
       <rosparam command="load" file="$(find panda_moveit_config)/config/kinematics.yaml"/>
       <param name="/planning_plugin" value="ompl_interface/OMPLPlanner"/>
       <rosparam command="load" file="$(find panda_moveit_config)/config/ompl_planning.yaml"/>
+      <param name="pose_tracker/type" value="$(arg pose_tracker)"/>
+      <param name="pose_tracker/sampling_duration" value="$(arg pose_tracker_sampling_duration)"/>
     </node>
   </group>
 
@@ -95,6 +102,8 @@
       <rosparam command="load" file="$(find panda_moveit_config)/config/kinematics.yaml"/>
       <param name="/planning_plugin" value="ompl_interface/OMPLPlanner"/>
       <rosparam command="load" file="$(find panda_moveit_config)/config/ompl_planning.yaml"/>
+      <param name="pose_tracker/type" value="$(arg pose_tracker)"/>
+      <param name="pose_tracker/sampling_duration" value="$(arg pose_tracker_sampling_duration)"/>
     </node>
   </group>
 
