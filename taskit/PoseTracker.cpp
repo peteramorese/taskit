@@ -52,8 +52,10 @@ void VRPNPoseTracker::update(Object& object) const {
     orientation /= static_cast<float>(n_msgs);
     orientation.normalize();
 
-    tf2::toMsg(position, object.pose.position);
-    tf2::convert(orientation, object.pose.orientation);
+    geometry_msgs::Pose object_pose;
+    tf2::toMsg(position, object_pose.position);
+    tf2::convert(orientation, object_pose.orientation);
+    object.setPose(object_pose);
 }
 
 }

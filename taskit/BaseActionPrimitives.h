@@ -305,7 +305,7 @@ class Transit : public ActionPrimitive<taskit::TransitSrv> {
             std::pair<bool, std::string> location_predicate = predicate_set.lookupLocationPredicate(request.destination_location);
 
             if (location_predicate.first) // Object is in location
-                return GoalPoseProperties(obj_group.getObject(location_predicate.second).pose, true, location_predicate.second);
+                return GoalPoseProperties(obj_group.getObject(location_predicate.second).pose(), true, location_predicate.second);
             else // No object, just to the location
                 return GoalPoseProperties(predicate_handler.getLocationPose(request.destination_location), false, std::string());
         }

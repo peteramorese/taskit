@@ -16,6 +16,7 @@ int main(int argc, char** argv) {
 	std::shared_ptr<GripperHandler<GripperUse::Simulation>> gripper_handler = std::make_shared<GripperHandler<GripperUse::Simulation>>(MI_FRANKA_GRIPPER_TOPIC, 5.0);
 
 	// Construct action primitives
+	ActionPrimitives::UpdateEnvironment update_environment("update_environment");
 	ActionPrimitives::Stow stow("stow");
 	ActionPrimitives::SimpleGrasp<GripperUse::Simulation> grasp("grasp", gripper_handler, ee_link);
 	ActionPrimitives::SimpleRelease<GripperUse::Simulation> release("release", gripper_handler);
@@ -27,6 +28,7 @@ int main(int argc, char** argv) {
 	ActionPrimitives::LinearTransport linear_transport("linear_transport", 5.0f, 1, 0.05);
 
 	ManipulatorNode<
+	 	decltype(update_environment),
 	 	decltype(stow),
 		decltype(grasp), 
 		decltype(release), 
@@ -37,6 +39,7 @@ int main(int argc, char** argv) {
 		decltype(transport),
 		decltype(linear_transport)
 	> manipulator_node(node_handle, node_name, "panda_arm", "panda_link0", 
+		std::move(update_environment), 
 		std::move(stow), 
 		std::move(grasp), 
 		std::move(release), 

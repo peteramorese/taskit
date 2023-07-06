@@ -182,30 +182,44 @@ struct Object {
         std::string id;
         std::shared_ptr<ObjectSpecification> spec;
         std::shared_ptr<PoseTracker> tracker;
-        geometry_msgs::Pose pose;
+
+    private:
+        geometry_msgs::Pose m_pose;
+        Quaternions::Type m_orientation_type;
 
     public:
         Object() = delete;
 
-        Object(const std::string& id_, const std::shared_ptr<ObjectSpecification>& spec_, const ObjectConfig& config, const std::string& orientation_type, const std::shared_ptr<PoseTracker>& tracker_ = nullptr)  
+        Object(const std::string& id_, const std::shared_ptr<ObjectSpecification>& spec_, const ObjectConfig& config, Quaternions::Type orientation_type, const std::shared_ptr<PoseTracker>& tracker_ = nullptr)  
             : id(id_)
             , spec(spec_)
             , tracker(tracker_)
+            , m_orientation_type(orientation_type)
         {
-            setPoseFromConfig(config, orientation_type);
+            setPoseFromConfig(config);
         }
 
-        Object(const std::string& id_, const std::shared_ptr<ObjectSpecification>& spec_, const geometry_msgs::Pose& pose_, const std::shared_ptr<PoseTracker>& tracker_ = nullptr)  
+        Object(const std::string& id_, const std::shared_ptr<ObjectSpecification>& spec_, const geometry_msgs::Pose& pose_, Quaternions::Type orientation_type, const std::shared_ptr<PoseTracker>& tracker_ = nullptr)  
             : id(id_)
             , spec(spec_)
             , tracker(tracker_)
-            , pose(pose_)
-            {}
+            , m_orientation_type(orientation_type)
+        {
+            setPose(pose_);
+        }
 
         bool isStatic() const {return !tracker;}
         void updatePose() {if (tracker) tracker->update(*this);}
 
-        void setPoseFromConfig(const ObjectConfig& config, const std::string& orientation_type) {
+        void setPose(const geometry_msgs::Pose& pose) {
+            m_pose = pose;
+            m_pose.orientation = Quaternions::convert(Quaternions::get(m_orientation_type) * Quaternions::convert(m_pose.orientation));
+        }
+
+        const geometry_msgs::Pose& pose() const {return m_pose;}
+
+        void setPoseFromConfig(const ObjectConfig& config) {
+            geometry_msgs::Pose pose;
             if (config.find("x") != config.end()) {
                 pose.position.x = config.at("x"); 
                 pose.position.y = config.at("y");
@@ -217,12 +231,16 @@ struct Object {
                 pose.position.y = 0.0f;
                 pose.position.z = 0.0f;
             }
-            pose.orientation = Quaternions::convert(Quaternions::get(orientation_type));
+            pose.orientation.x = 0.0f;
+            pose.orientation.y = 0.0f;
+            pose.orientation.z = 0.0f;
+            pose.orientation.w = 1.0f;
+            setPose(pose);
         }
 
 
         moveit_msgs::CollisionObject getCollisionObject(const std::string& frame_id) const {
-            moveit_msgs::CollisionObject col_obj = spec->getCollisionObject(pose);
+            moveit_msgs::CollisionObject col_obj = spec->getCollisionObject(m_pose);
             col_obj.header.frame_id = frame_id;
             col_obj.id = id;
             return col_obj;
@@ -270,11 +288,11 @@ class ObjectGroup {
         }
 
         void addObject(const std::string& id, const std::shared_ptr<ObjectSpecification>& spec) {
-            this->m_objects.emplace(std::piecewise_construct, std::forward_as_tuple(id), std::forward_as_tuple(id, spec, geometry_msgs::Pose{}));
+            this->m_objects.emplace(std::piecewise_construct, std::forward_as_tuple(id), std::forward_as_tuple(id, spec, geometry_msgs::Pose{}, Quaternions::Type::UpX));
         }
 
-        void addObject(const std::string& id, const std::shared_ptr<ObjectSpecification>& spec, const geometry_msgs::Pose& pose) {
-            this->m_objects.emplace(std::piecewise_construct, std::forward_as_tuple(id), std::forward_as_tuple(id, spec, pose));
+        void addObject(const std::string& id, const std::shared_ptr<ObjectSpecification>& spec, const geometry_msgs::Pose& pose, Quaternions::Type orientation_type) {
+            this->m_objects.emplace(std::piecewise_construct, std::forward_as_tuple(id), std::forward_as_tuple(id, spec, pose, orientation_type));
         }
 
         void insertObject(const Object& obj) {

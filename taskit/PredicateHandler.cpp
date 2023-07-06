@@ -30,7 +30,7 @@ void PredicateHandler::setObjectPosesToLocations(const ros::NodeHandle& nh, cons
     std::map<std::string, std::string> initial_locations;
     if (nh.getParam(getParamName("initial_locations", objects_ns), initial_locations)) {
         for (const auto& v_type : initial_locations) {
-            m_obj_group->getObject(v_type.first).pose = getLocationPose(v_type.second);
+            m_obj_group->getObject(v_type.first).setPose(getLocationPose(v_type.second));
         }
     }
 }
@@ -64,7 +64,7 @@ const PredicateHandler::PredicateSet PredicateHandler::getPredicates(const std::
     for (const auto obj : m_obj_group->getObjects()) {
         const std::string& obj_id = obj->id;
         if (ignore_obj_ids.empty() || ignore_obj_ids.find(obj_id) == ignore_obj_ids.end()) {
-            std::pair<bool, std::string> result = findPredicate(obj->pose.position);
+            std::pair<bool, std::string> result = findPredicate(obj->pose().position);
             if (result.first) {
                 predicate_set.setObjectPredicate(obj_id, result.second);
             } else {

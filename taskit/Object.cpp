@@ -29,7 +29,7 @@ void ObjectGroup::createObjects(const ros::NodeHandle& nh, const std::string& ns
         ROS_INFO_STREAM("Loaded object: " << object_ids[i]);
 
         std::shared_ptr<ObjectSpecification> spec = makeObjectSpecification(object_types[i], config);
-        Object object(object_ids[i], spec, config, object_orientation_types[i], pose_tracker);
+        Object object(object_ids[i], spec, config, Quaternions::toType(object_orientation_types[i]), pose_tracker);
 
         insertObject(std::move(object));
     }
