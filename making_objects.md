@@ -6,6 +6,8 @@
         width:500px;
         height:500px" />
 
+Text hello there
+
 <img src="./vicon_tutorial_imgs/box_2.jpg"
      alt="Test image"
      style="float: left;
@@ -14,8 +16,12 @@
         width:500px;
         height:500px" />
 
-<img src="./vicon_tutorial_imgs/box_2.jpg"
+Text hello there
+
+<img src="./vicon_tutorial_imgs/step_1.jpg"
      alt="Test image"
-     style="object-fit:contain;
+     style="float: left;
+        margin-right: 100px;
+        object-fit:contain;
         width:500px;
         height:500px" />
