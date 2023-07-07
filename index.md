@@ -33,5 +33,7 @@ ROS package for abstracting a robotic manipulation domain and manipulation actio
 
 ---
 
- #### Contact
+#### Contact
+If you find any issues, want more documentation, or have any questions, please reach out!
+
 Peter Amorese | peter.amorese@colorado.edu
