@@ -2,9 +2,12 @@
 
 ROS package for abstracting a robotic manipulation domain and manipulation action primitives for discrete task planning. Currently supports only the Franka Emika Panda manipulator, however the C++ library is abstracted to support any manipulator.
 
-**NOTE:** Not affiliated with MoveIt, however this package heavily utilizes MoveIt for low-level motion planning and visualization. 
+**NOTE:** Not affiliated with MoveIt, however this package utilizes MoveIt for low-level motion planning and visualization. 
 
-[Code Examples](./examples.html) | [Making Objects in Vicon Tracker](./making_objects.html)
+[**Code Examples**](./examples.html) 
+
+#### Vicon tutorials for ARIA Lab
+[Making Objects in Vicon Tracker](./making_objects.html) | [Calibrating the Vicon System](./vicon_calibration.html)
 
 
 

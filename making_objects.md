@@ -5,7 +5,7 @@ A step-by-step walkthrough for how to create an object in Vicon Tracker.
 
 Prepare your object by determining the reference point (centerpoint) along two dimensions. For our object, the “cross” in the middle is centered along the width and height.
 
-<img src="./vicon_tutorial_imgs/box_1.jpg"
+<img src="./assets/vicon_object/box_1.jpg"
      alt="Test image"
      style="object-fit:contain;
         width:500px;
@@ -15,7 +15,7 @@ Prepare your object by determining the reference point (centerpoint) along two d
 
 Attach a marker on top of the reference point. This is our **reference marker**.
 
-<img src="./vicon_tutorial_imgs/box_2.jpg"
+<img src="./assets/vicon_object/box_2.jpg"
      alt="Test image"
      style="object-fit:contain;
         width:500px;
@@ -25,7 +25,7 @@ Attach a marker on top of the reference point. This is our **reference marker**.
 
 Attach more markers in some unique arrangement. If the arrangement is very similar to another object, the tracker may confuse the object it is looking at, so try to make sure the arrangement is someone unique to each object. Make sure at least one marker is 180 degrees about the vertical axis from the reference marker. We will call this the **secondary reference marker**. 
 
-<img src="./vicon_tutorial_imgs/box_3.jpg"
+<img src="./assets/vicon_object/box_3.jpg"
      alt="Test image"
      style="object-fit:contain;
         width:500px;
@@ -36,7 +36,7 @@ Generally, 6 markers per object will give good results for finding the object. Y
 
 Open Vicon Tracker, and remove any unnecessary markers from the environment (you should see two markers on either side of Franka, disregard those). In the “Objects” pane, make sure all objects are unchecked, so that the visible markers show up as white dots. Align your object with one of the global coordinate axes and make sure you can see all markers on your object.
 
-<img src="./vicon_tutorial_imgs/step_1.PNG"
+<img src="./assets/vicon_object/step_1.PNG"
      alt="Test image"
      style="object-fit:contain;
         width:900px;
@@ -46,7 +46,7 @@ Open Vicon Tracker, and remove any unnecessary markers from the environment (you
 
 Select all of the markers on your object using “ctrl + left click”.
 
-<img src="./vicon_tutorial_imgs/step_2.PNG"
+<img src="./assets/vicon_object/step_2.PNG"
      alt="Test image"
      style="object-fit:contain;
         width:900px;
@@ -56,7 +56,7 @@ Select all of the markers on your object using “ctrl + left click”.
 
 In the lower left, name and “create” your object. Using the VRPN client with ROS, the topic will be named according to the name you provide in this field.
 
-<img src="./vicon_tutorial_imgs/step_3.PNG"
+<img src="./assets/vicon_object/step_3.PNG"
      alt="Test image"
      style="object-fit:contain;
         width:500px;
@@ -64,7 +64,7 @@ In the lower left, name and “create” your object. Using the VRPN client with
 
 After creating the object, you should see something like this, with a gray cube and local frame axes.
 
-<img src="./vicon_tutorial_imgs/step_4.PNG"
+<img src="./assets/vicon_object/step_4.PNG"
      alt="Test image"
      style="object-fit:contain;
         width:500px;
@@ -74,7 +74,7 @@ After creating the object, you should see something like this, with a gray cube 
 
 Make sure your object is checked, then pause the tracker using the small green pause button shown.
 
-<img src="./vicon_tutorial_imgs/step_5.PNG"
+<img src="./assets/vicon_object/step_5.PNG"
      alt="Test image"
      style="object-fit:contain;
         width:500px;
@@ -84,7 +84,7 @@ Make sure your object is checked, then pause the tracker using the small green p
 
 We now have to align the local frame of the object to something that is interpretable, in this case the **reference marker**. Select the **reference marker** in Vicon Tracker, as shown. Click and drag the colored coordinate axes until they “snap” into alignment with the selected marker. For this example, our **reference marker** was placed at the center point along the width and height axes, so we will center the red and blue coordinate axes. Don’t worry about the green one yet.
 
-<img src="./vicon_tutorial_imgs/step_6.PNG"
+<img src="./assets/vicon_object/step_6.PNG"
      alt="Test image"
      style="object-fit:contain;
         width:500px;
@@ -94,7 +94,7 @@ We now have to align the local frame of the object to something that is interpre
 
 Finally, to align the remaining axis, select both the reference marker and the **secondary reference marker**. Tracker will automatically create a fake “centroid” point (dark gray sphere). In this case, the centroid is the midpoint between our **reference** and **secondary reference** (180 degrees about the center). Drag the remaining green axis so that the local origin snaps to the centroid marker.
 
-<img src="./vicon_tutorial_imgs/step_7.PNG"
+<img src="./assets/vicon_object/step_7.PNG"
      alt="Test image"
      style="object-fit:contain;
         width:500px;
