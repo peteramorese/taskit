@@ -51,6 +51,7 @@ class Stow : public ActionPrimitive<taskit::StowSrv> {
             {}
 
         virtual bool operator()(ManipulatorNodeInterface&& interface, typename msg_t::Request& request, typename msg_t::Response& response) override {
+            ros::Time begin = ros::Time::now();
             auto move_group = interface.move_group.lock();
             interface.state.lock()->reset();
             
@@ -58,6 +59,7 @@ class Stow : public ActionPrimitive<taskit::StowSrv> {
             move_group->setStartStateToCurrentState();
             move_group->setJointValueTarget(ManipulatorProperties::getStowJointValues("panda_arm"));
             response.execution_success = move_group->move() == moveit::planning_interface::MoveItErrorCode::SUCCESS;
+            response.execution_time = (ros::Time::now() - begin).toSec();
             return true;
         }
 };
@@ -88,6 +90,7 @@ class SimpleGrasp : public ActionPrimitive<taskit::GraspSrv> {
             {}
 
         virtual bool operator()(ManipulatorNodeInterface&& interface, typename msg_t::Request& request, typename msg_t::Response& response) override {
+            ros::Time begin = ros::Time::now();
             auto move_group = interface.move_group.lock();
             auto obj_group = interface.object_group.lock();
             auto predicate_handler = interface.predicate_handler.lock();
@@ -116,6 +119,7 @@ class SimpleGrasp : public ActionPrimitive<taskit::GraspSrv> {
             response.success = m_gripper_handler->close(*(obj_group->getObject(obj_id).spec));
             move_group->attachObject(obj_id, m_attachment_link);
 
+            response.execution_time = (ros::Time::now() - begin).toSec();
             return true;
         }
 
@@ -133,6 +137,7 @@ class SimpleRelease : public ActionPrimitive<taskit::ReleaseSrv> {
             {}
 
         virtual bool operator()(ManipulatorNodeInterface&& interface, typename msg_t::Request& request, typename msg_t::Response& response) override {
+            ros::Time begin = ros::Time::now();
             auto move_group = interface.move_group.lock();
             auto obj_group = interface.object_group.lock();
             auto planning_scene_interface = interface.planning_scene_interface.lock();
@@ -160,6 +165,8 @@ class SimpleRelease : public ActionPrimitive<taskit::ReleaseSrv> {
 
             response.success = m_gripper_handler->open(*(obj_group->getObject(obj_id).spec));
             move_group->detachObject(obj_id);
+
+            response.execution_time = (ros::Time::now() - begin).toSec();
             return true;
         }
 
@@ -177,6 +184,7 @@ class Transit : public ActionPrimitive<taskit::TransitSrv> {
         {}
 
         virtual bool operator()(ManipulatorNodeInterface&& interface, typename msg_t::Request& request, typename msg_t::Response& response) override {
+            ros::Time begin = ros::Time::now();
 
             // Extract what we need
             auto move_group = interface.move_group.lock();
@@ -237,12 +245,14 @@ class Transit : public ActionPrimitive<taskit::TransitSrv> {
                         if (response.execution_success) {
                             updateState(*state, request.destination_location, goal_pose_props.moving_to_object, pose_rot_type, eef_pose_props.placing_offset);
                         }
+                        response.execution_time = (ros::Time::now() - begin).toSec();
                         return true;
                     }
                 }
 
                 ++trial;        
                 if (trial >= m_max_trials) {
+                    response.execution_time = (ros::Time::now() - begin).toSec();
                     return true;
                 }
             }
@@ -365,6 +375,7 @@ class Transport : public Transit {
         {}
 
         virtual bool operator()(ManipulatorNodeInterface&& interface, typename msg_t::Request& request, typename msg_t::Response& response) override {
+            ros::Time begin = ros::Time::now();
 
             // Extract what we need
             auto move_group = interface.move_group.lock();
@@ -436,12 +447,14 @@ class Transport : public Transit {
                             // Update destination location, must be near object (holding), keep rotation type, keep placing offset
                             updateState(*state, request.destination_location, true, state->grasp_rotation_type, state->placing_offset);
                         }
+                        response.execution_time = (ros::Time::now() - begin).toSec();
                         return true;
                     }
                 }
 
                 ++trial;        
                 if (trial >= m_max_trials) {
+                    response.execution_time = (ros::Time::now() - begin).toSec();
                     return true;
                 }
             }

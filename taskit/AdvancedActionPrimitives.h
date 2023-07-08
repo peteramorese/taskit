@@ -52,6 +52,7 @@ class LinearTransit : public Transit, public CartesianMover {
 
 
         virtual bool operator()(ManipulatorNodeInterface&& interface, msg_t::Request& request, msg_t::Response& response) override {
+            ros::Time begin = ros::Time::now();
 
             // Extract what we need
             auto move_group = interface.move_group.lock();
@@ -130,12 +131,14 @@ class LinearTransit : public Transit, public CartesianMover {
                         if (response.execution_success && cartesianMove(*move_group, eef_pose)) {
                             updateState(*state, request.destination_location, goal_pose_props.moving_to_object, eef_poses[i].rotation_type, eef_poses[i].placing_offset);
                         }
+                        response.execution_time = (ros::Time::now() - begin).toSec();
                         return true;
                     }
                 }
 
                 ++trial;        
                 if (trial >= m_max_trials) {
+                    response.execution_time = (ros::Time::now() - begin).toSec();
                     return true;
                 }
             }
@@ -181,6 +184,7 @@ class LinearTransport : public Transport, public CartesianMover {
         inline void setRetreatOffset(const tf2::Vector3& retreat_offset) {m_retreat_offset = retreat_offset;}
 
         virtual bool operator()(ManipulatorNodeInterface&& interface, msg_t::Request& request, msg_t::Response& response) override {
+            ros::Time begin = ros::Time::now();
 
             // Extract what we need
             auto move_group = interface.move_group.lock();
@@ -269,12 +273,14 @@ class LinearTransport : public Transport, public CartesianMover {
                             // Update destination location, must be near object (holding), keep rotation type, keep placing offset
                             updateState(*state, request.destination_location, true, state->grasp_rotation_type, state->placing_offset);
                         }
+                        response.execution_time = (ros::Time::now() - begin).toSec();
                         return true;
                     }
                 }
 
                 ++trial;        
                 if (trial >= m_max_trials) {
+                    response.execution_time = (ros::Time::now() - begin).toSec();
                     return true;
                 }
             }
