@@ -1,9 +1,10 @@
 add_library(TaskIt 
     PredicateHandler.cpp
     Object.cpp
-    Visualizer.cpp
     PoseTracker.cpp
+    Visualizer.cpp
 )
+set_property(TARGET TaskIt PROPERTY CXX_STANDARD 14)
 target_link_libraries(TaskIt PUBLIC
     ${catkin_LIBRARIES} 
     ${Boost_LIBRARIES}
