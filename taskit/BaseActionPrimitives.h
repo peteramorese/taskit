@@ -58,7 +58,7 @@ class Stow : public ActionPrimitive<taskit::StowSrv> {
             move_group->clearPoseTargets();
             move_group->setStartStateToCurrentState();
             move_group->setJointValueTarget(ManipulatorProperties::getStowJointValues("panda_arm"));
-            response.execution_success = move_group->move() == moveit::planning_interface::MoveItErrorCode::SUCCESS;
+            response.execution_success = move_group->move() == moveit::core::MoveItErrorCode::SUCCESS;
             response.execution_time = (ros::Time::now() - begin).toSec();
             return true;
         }
@@ -229,7 +229,7 @@ class Transit : public ActionPrimitive<taskit::TransitSrv> {
                         vis->publishGoalMarker(eef_pose, "Planning...");
                     }
 
-                    response.plan_success = move_group->plan(plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS;
+                    response.plan_success = move_group->plan(plan) == moveit::core::MoveItErrorCode::SUCCESS;
                     ros::WallDuration(1.0).sleep();
                     if (response.plan_success) {
                         move_group->setMaxVelocityScalingFactor(m_max_velocity_scaling_factor);
@@ -241,7 +241,7 @@ class Transit : public ActionPrimitive<taskit::TransitSrv> {
                             vis->publishGoalMarker(eef_pose, "Goal");
                         }
 
-                        response.execution_success = move_group->execute(plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS;
+                        response.execution_success = move_group->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
                         if (response.execution_success) {
                             updateState(*state, request.destination_location, goal_pose_props.moving_to_object, pose_rot_type, eef_pose_props.placing_offset);
                         }
@@ -430,7 +430,7 @@ class Transport : public Transit {
                         vis->publishGoalMarker(eef_pose, "Planning...");
                     }
 
-                    response.plan_success = move_group->plan(plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS;
+                    response.plan_success = move_group->plan(plan) == moveit::core::MoveItErrorCode::SUCCESS;
                     ros::WallDuration(1.0).sleep();
                     if (response.plan_success) {
                         move_group->setMaxVelocityScalingFactor(m_max_velocity_scaling_factor);
@@ -442,7 +442,7 @@ class Transport : public Transit {
                             vis->publishGoalMarker(eef_pose, "Goal");
                         }
 
-                        response.execution_success = move_group->execute(plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS;
+                        response.execution_success = move_group->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
                         if (response.execution_success) {
                             // Update destination location, must be near object (holding), keep rotation type, keep placing offset
                             updateState(*state, request.destination_location, true, state->grasp_rotation_type, state->placing_offset);

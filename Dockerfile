@@ -12,7 +12,9 @@ RUN apt-get update && apt-get install -y \
     lsb-release \
     wget \
     build-essential \
-    vim
+    vim \
+    apt-utils flex bison mona \
+    libeigen3-dev
 
 # Add the ROS GPG key and repository
 RUN wget https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc && \
@@ -45,6 +47,15 @@ RUN apt-get install -y gcc-10 g++-10 && \
 # Clean up unnecessary files
 RUN rm -rf ros.asc cmake-3.20.0-linux-x86_64.tar.gz cmake-3.20.0-linux-x86_64
 
+# Install spot using apt
+RUN wget -q -O - https://www.lrde.epita.fr/repo/debian.gpg | apt-key add -
+SHELL ["/bin/bash", "-c"] 
+RUN pip3 install pyyaml numpy bidict networkx graphviz ply pybullet pyperplan==1.3 cython IPython svgwrite matplotlib imageio lark-parser==0.9.0 sympy==1.6.1
+RUN echo 'deb http://www.lrde.epita.fr/repo/debian/ stable/' >> /etc/apt/sources.list
+RUN apt-get -y update && apt -y install spot \
+    libspot-dev \
+    spot-doc
+
 # Set environment variables
 ENV PATH="/usr/local/bin:${PATH}"
 ENV ROS_DISTRO noetic
@@ -60,12 +71,6 @@ RUN rosdep update && apt update && apt dist-upgrade
 
 RUN apt install -y python3-wstool python3-catkin-tools python3-rosdep
 RUN /bin/bash -c "source /opt/ros/noetic/setup.bash"
-
-#RUN wstool init src
-#RUN wstool merge -t src https://raw.githubusercontent.com/ros-planning/moveit/master/moveit.rosinstall
-#RUN wstool update -t src
-#RUN rosdep install -y --from-paths src --ignore-src --rosdistro ${ROS_DISTRO}
-#RUN catkin config --extend /opt/ros/${ROS_DISTRO} --cmake-args -DCMAKE_BUILD_TYPE=Release
 
 # Install compiler cache
 RUN apt install ccache
@@ -84,9 +89,16 @@ RUN apt-get update && apt-get install -y \
     ros-noetic-vrpn-client-ros \
     ros-noetic-franka-control
 
+# Install grapefruit_ros
+RUN git clone https://github.com/peteramorese/grapefruit_ros.git /root/ws/src/grapefruit_ros
+
+WORKDIR /root/ws/src/grapefruit_ros
+RUN git submodule update --init --recursive
+WORKDIR /root/ws
+
 COPY . /root/ws/src/taskit/
 
 RUN catkin config --extend /opt/ros/${ROS_DISTRO} --cmake-args -DCMAKE_BUILD_TYPE=Release
-
-# Build the workspace
-RUN catkin build 
+#
+## Build the workspace
+#RUN catkin build 

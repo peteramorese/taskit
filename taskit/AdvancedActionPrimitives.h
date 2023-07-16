@@ -30,7 +30,7 @@ class CartesianMover {
             moveit_msgs::RobotTrajectory robot_trajectory_msg;
             robot_trajectory.getRobotTrajectoryMsg(robot_trajectory_msg);
             move_group.setMaxVelocityScalingFactor(m_max_velocity_scale);
-            return move_group.execute(robot_trajectory_msg) == moveit::planning_interface::MoveItErrorCode::SUCCESS;
+            return move_group.execute(robot_trajectory_msg) == moveit::core::MoveItErrorCode::SUCCESS;
         }
     private:
         double m_eef_step;
@@ -113,7 +113,7 @@ class LinearTransit : public Transit, public CartesianMover {
                         vis->publishGoalMarker(approach_offset_eef_pose, "Planning...");
                     }
 
-                    response.plan_success = move_group->plan(plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS;
+                    response.plan_success = move_group->plan(plan) == moveit::core::MoveItErrorCode::SUCCESS;
                     ros::WallDuration(1.0).sleep();
                     if (response.plan_success) {
                         move_group->setMaxVelocityScalingFactor(m_max_velocity_scaling_factor);
@@ -125,7 +125,7 @@ class LinearTransit : public Transit, public CartesianMover {
                             vis->publishGoalMarker(approach_offset_eef_pose, "Goal");
                         }
 
-                        response.execution_success = move_group->execute(plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS;
+                        response.execution_success = move_group->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
 
                         // If the execution succeeded, perform the cartesian approach
                         if (response.execution_success && cartesianMove(*move_group, eef_pose)) {
@@ -256,7 +256,7 @@ class LinearTransport : public Transport, public CartesianMover {
                         vis->publishGoalMarker(approach_offset_eef_pose, "Planning...");
                     }
 
-                    response.plan_success = move_group->plan(plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS;
+                    response.plan_success = move_group->plan(plan) == moveit::core::MoveItErrorCode::SUCCESS;
                     ros::WallDuration(1.0).sleep();
                     if (response.plan_success) {
                         move_group->setMaxVelocityScalingFactor(m_max_velocity_scaling_factor);
@@ -268,7 +268,7 @@ class LinearTransport : public Transport, public CartesianMover {
                             vis->publishGoalMarker(approach_offset_eef_pose, "Goal");
                         }
 
-                        response.execution_success = move_group->execute(plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS;
+                        response.execution_success = move_group->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
                         if (response.execution_success && cartesianMove(*move_group, eef_pose)) {
                             // Update destination location, must be near object (holding), keep rotation type, keep placing offset
                             updateState(*state, request.destination_location, true, state->grasp_rotation_type, state->placing_offset);
