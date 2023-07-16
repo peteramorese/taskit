@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y \
     wget \
     build-essential \
     vim \
+    python3-pip \
     apt-utils flex bison mona \
     libeigen3-dev
 
