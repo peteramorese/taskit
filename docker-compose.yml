@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  ros_ws:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    cap_add:
+      - SYS_NICE
+    ulimits:
+      rtprio: 99
+      rttime: -1
+      memlock: 8428281856
+    network_mode: host
