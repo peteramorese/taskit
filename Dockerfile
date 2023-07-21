@@ -90,6 +90,13 @@ RUN apt-get update && apt-get install -y \
     ros-noetic-vrpn-client-ros \
     ros-noetic-franka-control
 
+# Install required libraries for Qt X11
+RUN apt-get update && apt-get install -y \
+    libxcb-xinerama0 \
+    libqt5gui5 \
+    libqt5widgets5 \
+    x11-apps
+
 # Install grapefruit_ros
 RUN git clone https://github.com/peteramorese/grapefruit_ros.git /root/ws/src/grapefruit_ros
 
@@ -100,6 +107,5 @@ WORKDIR /root/ws
 COPY . /root/ws/src/taskit/
 
 RUN catkin config --extend /opt/ros/${ROS_DISTRO} --cmake-args -DCMAKE_BUILD_TYPE=Release
-#
-## Build the workspace
-#RUN catkin build 
+
+#RUN /bin/bash -c "source ~/ws/devel/setup.bash"
