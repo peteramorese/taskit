@@ -18,5 +18,5 @@ services:
       - QT_X11_NO_MITSHM=1
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:ro
-      #- ~/temp:/root/temp
+      - ~/temp:/root/temp
     command: tail -f /dev/null  # Temporary command to keep the container running

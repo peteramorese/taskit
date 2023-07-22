@@ -1,48 +1,48 @@
 joint1:
   limit:
-    lower:     -2.7973
-    upper:      2.7973
+    lower:     -2.8973
+    upper:      2.8973
     velocity:   2.1750
     effort:    87.0
 
 joint2:
   limit:
-    lower:     -1.6628
-    upper:      1.6628
+    lower:     -1.7628
+    upper:      1.7628
     velocity:   2.1750
     effort:    87.0
 
 joint3:
   limit:
-    lower:     -2.7973
-    upper:      2.7973
+    lower:     -2.8973
+    upper:      2.8973
     velocity:   2.1750
     effort:    87.0
 
 joint4:
   limit:
-    lower:     -2.9718
-    upper:     -0.1698
+    lower:     -3.0718
+    upper:     -0.0698
     velocity:   2.1750
     effort:    87.0
 
 joint5:
   limit:
-    lower:     -2.7973
-    upper:      2.7973
+    lower:     -2.8973
+    upper:      2.8973
     velocity:   2.6100
     effort:    12.0
 
 joint6:
   limit:
-    lower:      0.1175
-    upper:      3.6525
+    lower:     -0.0175
+    upper:      3.7525
     velocity:   2.6100
     effort:    12.0
 
 joint7:
   limit:
-    lower:     -2.7973
-    upper:      2.7973
+    lower:     -2.8973
+    upper:      2.8973
     velocity:   2.6100
     effort:    12.0

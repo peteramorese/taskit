@@ -3,13 +3,14 @@
   <arg name="arm_id" default="panda" />
 
   <arg name="sim" default="true" />
-  <arg name="advanced" default="false" />
+  <arg name="advanced" default="true" />
   <arg name="pose_tracker" default="simulation" />
   <arg name="pose_tracker_sampling_duration" default="0.2" />
-  <arg name="pipeline" default="ompl" />
-  <arg name="robot_ip" default="franka-aria.colorado.edu" />
   <arg name="use_rviz" default="true" />
   <arg name="use_gui" default="false" />
+  <arg name="robot_ip" default="franka-aria.colorado.edu" />
+
+  <arg name="pipeline" default="ompl" />
 
   <!-- By default we will load the gripper -->
   <arg name="load_gripper" default="true" />
@@ -17,8 +18,8 @@
   <!-- By default, we will load or override the robot_description -->
   <arg name="load_robot_description" default="true"/>
 
-  <!-- Choose controller manager: fake, simple, or ros_control -->
-  <arg unless="$(arg sim)" name="moveit_controller_manager" value="simple" />
+  <!-- Choose controller manager: fake if in sim, or ros_control if connected to Franka -->
+  <arg unless="$(arg sim)" name="moveit_controller_manager" value="ros_control" />
   <arg     if="$(arg sim)" name="moveit_controller_manager" value="fake" />
 
   <!-- Set execution mode for fake execution controllers -->
@@ -78,9 +79,7 @@
 
     <!-- Contents of the franka_control.launch file, without the default xacro loading-->
 
-    <arg name="load_gripper" value="true" />
-
-    <include file="$(find franka_gripper)/launch/franka_gripper.launch" if="$(arg load_gripper)">
+    <!-- <include file="$(find franka_gripper)/launch/franka_gripper.launch" if="$(arg load_gripper)">
       <arg name="robot_ip" value="$(arg robot_ip)" />
     </include>
 
@@ -103,12 +102,12 @@
       <rosparam unless="$(arg load_gripper)" param="source_list">[franka_state_controller/joint_states_desired] </rosparam>
       <param name="rate" value="30"/>
       <remap from="/joint_states" to="/joint_states_desired" />
-    </node>
+    </node> -->
 
-    <!-- <include file="$(find franka_control)/launch/franka_control.launch">
+    <include file="$(find franka_control)/launch/franka_control.launch">
       <arg name="robot_ip" value="$(arg robot_ip)" />
-      <arg name="load_gripper" value="true" />
-    </include> -->
+      <arg name="load_gripper" value="$(arg load_gripper)" />
+    </include> 
 
     <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="position_joint_trajectory_controller"/>
 

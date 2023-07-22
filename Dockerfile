@@ -68,7 +68,7 @@ RUN apt-get install -y python3-rosinstall python3-rosinstall-generator python3-w
 RUN mkdir -p /root/ws/src
 WORKDIR /root/ws
 
-RUN rosdep update && apt update && apt dist-upgrade
+RUN rosdep update && apt update && apt dist-upgrade -y
 
 RUN apt install -y python3-wstool python3-catkin-tools python3-rosdep
 RUN /bin/bash -c "source /opt/ros/noetic/setup.bash"
@@ -111,5 +111,7 @@ RUN catkin config --extend /opt/ros/${ROS_DISTRO} --cmake-args -DCMAKE_BUILD_TYP
 
 # Temporary
 RUN touch ./src/grapefruit_ros/CATKIN_IGNORE
+
+# Build the workspace
 RUN catkin build
-RUN /bin/bash -c "source ~/ws/devel/setup.bash"
+RUN echo 'source ~/ws/devel/setup.bash' >> ~/.bashrc

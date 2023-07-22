@@ -1,14 +1,14 @@
 object_ids:
-  - blue_box_1
-  - blue_box_2
   - pink_box_1
-  - green_box_1
+  #- blue_box_1
+  #- blue_box_2
+  #- green_box_1
 
 object_types:
   - "box"
-  - "box"
-  - "box"
-  - "box"
+  #- "box"
+  #- "box"
+  #- "box"
 
 blue_box_1: {
   l: 0.064,
@@ -42,13 +42,13 @@ green_box_1: {
 
 object_orientation_types:
   - up_y
-  - up_y
-  - up_y
-  - up_y
+  #- up_y
+  #- up_y
+  #- up_y
 
 initial_locations: {
-  blue_box_1: "L1",
-  blue_box_2: "L2",
   pink_box_1: "L3",
-  green_box_1: "L4",
+  #blue_box_1: "L1",
+  #blue_box_2: "L2",
+  #green_box_1: "L4",
 }
