@@ -88,7 +88,8 @@ RUN apt-get update && apt-get install -y \
     ros-noetic-moveit-ros-control-interface \
     ros-noetic-moveit-ros-visualization \
     ros-noetic-vrpn-client-ros \
-    ros-noetic-franka-control
+    ros-noetic-franka-control \
+    ros-noetic-panda-moveit-config
 
 # Install required libraries for Qt X11
 RUN apt-get update && apt-get install -y \
@@ -108,4 +109,7 @@ COPY . /root/ws/src/taskit/
 
 RUN catkin config --extend /opt/ros/${ROS_DISTRO} --cmake-args -DCMAKE_BUILD_TYPE=Release
 
-#RUN /bin/bash -c "source ~/ws/devel/setup.bash"
+# Temporary
+RUN touch ./src/grapefruit_ros/CATKIN_IGNORE
+RUN catkin build
+RUN /bin/bash -c "source ~/ws/devel/setup.bash"

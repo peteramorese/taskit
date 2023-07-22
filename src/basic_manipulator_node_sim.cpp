@@ -59,6 +59,8 @@ int main(int argc, char** argv) {
 		pose_tracker = std::make_shared<SimulationPoseTracker>();
 	}
 
+	// Wait for rviz topic to come up before creating scene
+	ros::WallDuration(5.0).sleep();
 
 	manipulator_node.createScene(pose_tracker);
 	manipulator_node.updatePlanningScene();
