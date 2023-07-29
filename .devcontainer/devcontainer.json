@@ -10,7 +10,27 @@
 	},
 
 	// Develop in the ROS workspace
-	"workspaceFolder": "/root/ws/src/"
+	"workspaceFolder": "/root/ws/src/",
+
+	// Extensions and other settings
+	"customizations": {
+		"vscode": {
+			"files.autoSave": "onFocusChange",
+			"extensions": [
+				"ms-vscode.cpptools",
+				"ms-vscode.cpptools-extension-pack",
+				"ms-vscode.cpptools-themes",
+				"twxs.cmake",
+				"ms-python.python",
+				"vscodevim.vim"
+			] 
+		}
+	},
+
+	// Mount local package
+	"mounts": [
+		"source=${localWorkspaceFolder},target=/root/ws/src/taskit,type=bind,consistency=cached"
+	]
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},

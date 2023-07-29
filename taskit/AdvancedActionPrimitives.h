@@ -9,17 +9,20 @@ namespace ActionPrimitives {
 
 class CartesianMover {
     public:
-        CartesianMover(double max_velocity_scale, double eef_step, double jump_thresh, double max_acceleration_scale)
+        CartesianMover(double max_velocity_scale)
             : m_max_velocity_scale(max_velocity_scale)
-            , m_eef_step(eef_step)
-            , m_jump_thresh(jump_thresh)
-            , m_max_acceleration_scale(max_acceleration_scale)
-        {}
+        {
+            m_eef_step = ManipulatorProperties::getLinearEEFStepSize("panda_arm");
+            m_jump_thresh = ManipulatorProperties::getLinearJumpThreshold("panda_arm");
+            m_max_acceleration_scale = ManipulatorProperties::getLinearMaxAccelerationScale("panda_arm");
+        }
 
         bool cartesianMove(moveit::planning_interface::MoveGroupInterface& move_group, const geometry_msgs::Pose& dst_pose) {
             std::vector<geometry_msgs::Pose> waypts(2);
             waypts[0] = move_group.getCurrentPose().pose;
             waypts[1] = dst_pose;
+            DEBUG_VEC("current pose: ", waypts[0].position);
+            DEBUG_VEC("dst pose: ", waypts[1].position);
 
             moveit_msgs::RobotTrajectory trajectory;
             double fraction = move_group.computeCartesianPath(waypts, m_eef_step, m_jump_thresh, trajectory);
@@ -56,9 +59,9 @@ class CartesianMover {
 
 class LinearTransit : public Transit, public CartesianMover {
     public:
-        LinearTransit(const std::string& topic, double planning_time, uint8_t max_trials, double distance, double max_velocity_scaling_factor = 0.5, double eef_step = 0.01, double jump_thresh = 0.005, double max_acceleration_scale = 0.05)
+        LinearTransit(const std::string& topic, double planning_time, uint8_t max_trials, double distance, double max_velocity_scaling_factor = 0.5)
             : Transit(topic, planning_time, max_trials, max_velocity_scaling_factor)
-            , CartesianMover(max_velocity_scaling_factor, eef_step, jump_thresh, max_acceleration_scale)
+            , CartesianMover(max_velocity_scaling_factor)
             , m_approach_distance(distance)
             , m_retreat_distance(distance)
         {}
@@ -164,8 +167,8 @@ class LinearTransit : public Transit, public CartesianMover {
 
 class LinearTransitUp : public LinearTransit {
     public:
-        LinearTransitUp(const std::string& topic, double planning_time, uint8_t max_trials, double distance, double max_velocity_scaling_factor = 0.5, double eef_step = 0.01, double jump_thresh = 0.005, double max_acceleration_scale = 0.05)
-            : LinearTransit(topic, planning_time, max_trials, distance, max_velocity_scaling_factor, eef_step, jump_thresh, max_acceleration_scale) {}
+        LinearTransitUp(const std::string& topic, double planning_time, uint8_t max_trials, double distance, double max_velocity_scaling_factor = 0.5)
+            : LinearTransit(topic, planning_time, max_trials, distance, max_velocity_scaling_factor) {}
 
         virtual std::vector<Quaternions::RotationType> getTransitRotationTypes() const override {
             // Use only None and pitch 180 (up or down)
@@ -175,8 +178,8 @@ class LinearTransitUp : public LinearTransit {
 
 class LinearTransitSide : public LinearTransit {
     public:
-        LinearTransitSide(const std::string& topic, double planning_time, uint8_t max_trials, double distance, double max_velocity_scaling_factor = 0.5, double eef_step = 0.01, double jump_thresh = 0.005, double max_acceleration_scale = 0.05)
-            : LinearTransit(topic, planning_time, max_trials, distance, max_velocity_scaling_factor, eef_step, jump_thresh, max_acceleration_scale) {}
+        LinearTransitSide(const std::string& topic, double planning_time, uint8_t max_trials, double distance, double max_velocity_scaling_factor = 0.5)
+            : LinearTransit(topic, planning_time, max_trials, distance, max_velocity_scaling_factor) {}
 
         virtual std::vector<Quaternions::RotationType> getTransitRotationTypes() const override {
             // Use only pitch 90 and pitch 270 (side left or side right)
@@ -186,9 +189,9 @@ class LinearTransitSide : public LinearTransit {
 
 class LinearTransport : public Transport, public CartesianMover {
     public:
-        LinearTransport(const std::string& topic, double planning_time, uint8_t max_trials, double distance, double max_velocity_scaling_factor = 0.5, double eef_step = 0.01, double jump_thresh = 0.005, double max_acceleration_scale = 0.05)
+        LinearTransport(const std::string& topic, double planning_time, uint8_t max_trials, double distance, double max_velocity_scaling_factor = 0.5)
             : Transport(topic, planning_time, max_trials, max_velocity_scaling_factor)
-            , CartesianMover(max_velocity_scaling_factor, eef_step, jump_thresh, max_acceleration_scale)
+            , CartesianMover(max_velocity_scaling_factor)
             , m_approach_offset(0.0, 0.0, distance)
             , m_retreat_offset(0.0, 0.0, distance)
         {}

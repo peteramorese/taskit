@@ -18,12 +18,18 @@ class ManipulatorProperties {
             nh.getParam(getParamName("stow_joint_values", arm_config_ns), s_values[planning_group].stow_joint_values);
             nh.getParam(getParamName("eef_offset", arm_config_ns), s_values[planning_group].eef_offset);
             nh.param(getParamName("safe_linear", arm_config_ns), s_values[planning_group].safe_linear, true);
+            nh.param(getParamName("linear_eef_step_size", arm_config_ns), s_values[planning_group].linear_eef_step_size, 0.0001);
+            nh.param(getParamName("linear_jump_threshold", arm_config_ns), s_values[planning_group].linear_jump_threshold, 0.0001);
+            nh.param(getParamName("linear_max_acceleration_scale", arm_config_ns), s_values[planning_group].linear_max_acceleration_scale, 0.05);
         }
 
         static const std::map<std::string, double>& getDefaultDownRPY(const std::string& planning_group) {return s_values.at(planning_group).default_down;}
         static const std::vector<double>& getStowJointValues(const std::string& planning_group) {return s_values.at(planning_group).stow_joint_values;}
         static float getEndEffectorOffset(const std::string& planning_group) {return s_values.at(planning_group).eef_offset;}
         static bool enforceSafeLinearMovement(const std::string& planning_group) {return s_values.at(planning_group).safe_linear;}
+        static float getLinearEEFStepSize(const std::string& planning_group) {return s_values.at(planning_group).linear_eef_step_size;}
+        static float getLinearJumpThreshold(const std::string& planning_group) {return s_values.at(planning_group).linear_jump_threshold;}
+        static float getLinearMaxAccelerationScale(const std::string& planning_group) {return s_values.at(planning_group).linear_max_acceleration_scale;}
 
     private:
         struct ManipulatorPropertiesValues {
@@ -31,6 +37,9 @@ class ManipulatorProperties {
             std::vector<double> stow_joint_values;
             float eef_offset;
             bool safe_linear;
+            double linear_eef_step_size;
+            double linear_jump_threshold;
+            double linear_max_acceleration_scale;
         };
     private:
         inline static std::map<std::string, ManipulatorPropertiesValues> s_values;

@@ -34,9 +34,6 @@ ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::ManipulatorNode(const std::shared_p
     const robot_state::JointModelGroup* joint_model_group = m_robot_state->getJointModelGroup(planning_group);
     m_planning_scene = std::make_shared<planning_scene::PlanningScene>(m_robot_model);
     m_planning_scene->getCurrentStateNonConst().setToDefaultValues(joint_model_group, "ready");
-    
-    // Read in the manipulator properties
-    ManipulatorProperties::load(*m_node_handle, planning_group, "arm_config");
 
     // Load planning plugin
     std::string planner_plugin_name;

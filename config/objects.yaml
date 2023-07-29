@@ -1,12 +1,12 @@
 object_ids:
   - pink_box_1
-  #- blue_box_1
+  - blue_box_1
   #- blue_box_2
   #- green_box_1
 
 object_types:
   - "box"
-  #- "box"
+  - "box"
   #- "box"
   #- "box"
 
@@ -34,21 +34,15 @@ green_box_1: {
   h: 0.16,
 }
 
-
-#thin_cylinder: {
-#  r: 0.01,
-#  h: 0.30,
-#}
-
 object_orientation_types:
   - up_y
-  #- up_y
+  - up_y
   #- up_y
   #- up_y
 
 initial_locations: {
   pink_box_1: "L3",
-  #blue_box_1: "L1",
+  blue_box_1: "L1",
   #blue_box_2: "L2",
   #green_box_1: "L4",
 }

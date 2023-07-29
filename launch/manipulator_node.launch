@@ -63,9 +63,7 @@
   <!-- If in simulation, use the _sim binaries and publish fake joint states -->
   <group if="$(arg sim)">
 
-    <arg unless="$(arg advanced)" name="node_handle" value="basic_manipulator_node_sim" />
-    <arg     if="$(arg advanced)" name="node_handle" value="advanced_manipulator_node_sim" />
-    <node name="manipulator_node" pkg="taskit" type="$(arg node_handle)" respawn="false" output="screen">
+    <node name="manipulator_node" pkg="taskit" type="manipulator_node_sim" respawn="false" output="screen">
       <rosparam command="load" file="$(find panda_moveit_config)/config/kinematics.yaml"/>
       <param name="/planning_plugin" value="ompl_interface/OMPLPlanner"/>
       <rosparam command="load" file="$(find panda_moveit_config)/config/ompl_planning.yaml"/>
@@ -111,9 +109,7 @@
 
     <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="position_joint_trajectory_controller"/>
 
-    <arg unless="$(arg advanced)" name="node_handle" value="basic_manipulator_node_real" />
-    <arg     if="$(arg advanced)" name="node_handle" value="advanced_manipulator_node_real" />
-    <node name="manipulator_node" pkg="taskit" type="$(arg node_handle)" respawn="false" output="screen">
+    <node name="manipulator_node" pkg="taskit" type="manipulator_node_real" respawn="false" output="screen">
       <rosparam command="load" file="$(find panda_moveit_config)/config/kinematics.yaml"/>
       <param name="/planning_plugin" value="ompl_interface/OMPLPlanner"/>
       <rosparam command="load" file="$(find panda_moveit_config)/config/ompl_planning.yaml"/>

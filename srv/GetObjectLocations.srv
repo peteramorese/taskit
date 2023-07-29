@@ -1,0 +1,4 @@
+string[] object_ids
+---
+string[] object_locations
+bool eef_holding
