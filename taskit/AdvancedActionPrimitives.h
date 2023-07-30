@@ -18,7 +18,12 @@ class CartesianMover {
         }
 
         bool cartesianMove(moveit::planning_interface::MoveGroupInterface& move_group, const geometry_msgs::Pose& dst_pose) {
-            std::vector<geometry_msgs::Pose> waypts(2);
+            uint32_t n_waypoints = ManipulatorProperties::getLinearNumWaypoints("panda_arm");
+            std::vector<geometry_msgs::Pose> waypts(n_waypoints);
+
+            for (uint32_t i = 0; i < n_waypoints; ++i) {
+
+            }
             waypts[0] = move_group.getCurrentPose().pose;
             waypts[1] = dst_pose;
             DEBUG_VEC("current pose: ", waypts[0].position);

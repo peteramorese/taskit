@@ -20,4 +20,4 @@ safe_linear: false
 linear_eef_step_size: 0.1
 linear_jump_threshold: 0.0001
 linear_max_acceleration_scale: 0.05
-
+linear_n_waypoints: 5
