@@ -58,6 +58,8 @@ catkin_package(
 	#  DEPENDS system_lib
 )
 
+catkin_install_python(PROGRAMS python_srv_node/robot_srv_client.py DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
 set(TASKIT_LIBRARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/taskit)
 
 add_subdirectory(taskit)
