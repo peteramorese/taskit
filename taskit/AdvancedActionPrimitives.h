@@ -17,17 +17,27 @@ class CartesianMover {
             m_max_acceleration_scale = ManipulatorProperties::getLinearMaxAccelerationScale("panda_arm");
         }
 
-        bool cartesianMove(moveit::planning_interface::MoveGroupInterface& move_group, const geometry_msgs::Pose& dst_pose) {
+        bool cartesianMove(moveit::planning_interface::MoveGroupInterface& move_group, const geometry_msgs::Point& dst_point) {
+            const geometry_msgs::Pose& curr_pose = move_group.getCurrentPose().pose;
+
             uint32_t n_waypoints = ManipulatorProperties::getLinearNumWaypoints("panda_arm");
+            ROS_ASSERT_MSG(n_waypoints > 1, "Number of linear waypoints must be greater than 1, check the arm config file");
             std::vector<geometry_msgs::Pose> waypts(n_waypoints);
 
-            for (uint32_t i = 0; i < n_waypoints; ++i) {
+            // Convert to tf2
+            tf2::Vector3 dst_position, curr_position;
+            tf2::fromMsg(dst_point, dst_position);
+            tf2::fromMsg(curr_pose.position, curr_position);
 
+            tf2::Vector3 diff = dst_position - curr_position;
+            for (uint32_t i = 0; i < n_waypoints; ++i) {
+                waypts[i] = curr_pose;
+                tf2::toMsg(curr_position + static_cast<float>(i) / static_cast<float>(n_waypoints - 1) * diff, waypts[i].position);
+                //DEBUG_VEC("Waypoint " << i << " position: ", waypts[i].position);
             }
-            waypts[0] = move_group.getCurrentPose().pose;
-            waypts[1] = dst_pose;
-            DEBUG_VEC("current pose: ", waypts[0].position);
-            DEBUG_VEC("dst pose: ", waypts[1].position);
+            //waypts[0] = move_group.getCurrentPose().pose;
+            //waypts[1] = dst_pose;
+            //DEBUG_VEC("dst pose: ", waypts[1].position);
 
             moveit_msgs::RobotTrajectory trajectory;
             double fraction = move_group.computeCartesianPath(waypts, m_eef_step, m_jump_thresh, trajectory);
@@ -104,12 +114,12 @@ class LinearTransit : public Transit, public CartesianMover {
 
                 // If the eef is near an object, perform the retreat
                 if (state->near_object) {
-                    geometry_msgs::Pose dst_retreat_pose = move_group->getCurrentPose().pose;
-                    tf2::Vector3 retreat_direction = Quaternions::getEndEffectorHeading(Quaternions::convert(dst_retreat_pose.orientation));
-                    dst_retreat_pose.position.x -= m_retreat_distance * retreat_direction[0];
-                    dst_retreat_pose.position.y -= m_retreat_distance * retreat_direction[1];
-                    dst_retreat_pose.position.z -= m_retreat_distance * retreat_direction[2];
-                    if (!cartesianMove(*move_group, dst_retreat_pose)) {
+                    geometry_msgs::Point dst_retreat_point = move_group->getCurrentPose().pose.position;
+                    tf2::Vector3 retreat_direction = Quaternions::getEndEffectorHeading(Quaternions::convert(move_group->getCurrentPose().pose.orientation));
+                    dst_retreat_point.x -= m_retreat_distance * retreat_direction[0];
+                    dst_retreat_point.y -= m_retreat_distance * retreat_direction[1];
+                    dst_retreat_point.z -= m_retreat_distance * retreat_direction[2];
+                    if (!cartesianMove(*move_group, dst_retreat_point)) {
                         // Failure
                         return true;
                     }
@@ -149,7 +159,7 @@ class LinearTransit : public Transit, public CartesianMover {
                         response.execution_success = move_group->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
 
                         // If the execution succeeded, perform the cartesian approach
-                        if (response.execution_success && cartesianMove(*move_group, eef_pose)) {
+                        if (response.execution_success && cartesianMove(*move_group, eef_pose.position)) {
                             updateState(*state, request.destination_location, goal_pose_props.moving_to_object, eef_poses[i].rotation_type, eef_poses[i].placing_offset);
                         }
                         response.execution_time = (ros::Time::now() - begin).toSec();
@@ -247,12 +257,11 @@ class LinearTransport : public Transport, public CartesianMover {
 
                 // If the eef is near an object, perform the retreat
                 if (state->near_object) {
-                    geometry_msgs::Pose dst_retreat_pose = move_group->getCurrentPose().pose;
-                    dst_retreat_pose.position.x += m_retreat_offset[0];
-                    dst_retreat_pose.position.y += m_retreat_offset[1];
-                    dst_retreat_pose.position.z += m_retreat_offset[2];
-                    std::cout<<"dst retreat pose: " << dst_retreat_pose.position.x << ", " << dst_retreat_pose.position.y << ", " << dst_retreat_pose.position.z <<std::endl;
-                    if (!cartesianMove(*move_group, dst_retreat_pose)) {
+                    geometry_msgs::Point dst_retreat_point = move_group->getCurrentPose().pose.position;
+                    dst_retreat_point.x += m_retreat_offset[0];
+                    dst_retreat_point.y += m_retreat_offset[1];
+                    dst_retreat_point.z += m_retreat_offset[2];
+                    if (!cartesianMove(*move_group, dst_retreat_point)) {
                         // Failure
                         return true;
                     }
@@ -291,7 +300,7 @@ class LinearTransport : public Transport, public CartesianMover {
                         }
 
                         response.execution_success = move_group->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
-                        if (response.execution_success && cartesianMove(*move_group, eef_pose)) {
+                        if (response.execution_success && cartesianMove(*move_group, eef_pose.position)) {
                             // Update destination location, must be near object (holding), keep rotation type, keep placing offset
                             updateState(*state, request.destination_location, true, state->grasp_rotation_type, state->placing_offset);
                         }

@@ -21,7 +21,7 @@ class ManipulatorProperties {
             nh.param(getParamName("linear_eef_step_size", arm_config_ns), s_values[planning_group].linear_eef_step_size, 0.0001);
             nh.param(getParamName("linear_jump_threshold", arm_config_ns), s_values[planning_group].linear_jump_threshold, 0.0001);
             nh.param(getParamName("linear_max_acceleration_scale", arm_config_ns), s_values[planning_group].linear_max_acceleration_scale, 0.05);
-            nh.param(getParamName("linear_n_waypoints", arm_config_ns), s_values[planning_group].linear_n_waypoints, 5u);
+            nh.param(getParamName("linear_n_waypoints", arm_config_ns), s_values[planning_group].linear_n_waypoints, 5);
         }
 
         static const std::map<std::string, double>& getDefaultDownRPY(const std::string& planning_group) {return s_values.at(planning_group).default_down;}
@@ -31,7 +31,7 @@ class ManipulatorProperties {
         static float getLinearEEFStepSize(const std::string& planning_group) {return s_values.at(planning_group).linear_eef_step_size;}
         static float getLinearJumpThreshold(const std::string& planning_group) {return s_values.at(planning_group).linear_jump_threshold;}
         static float getLinearMaxAccelerationScale(const std::string& planning_group) {return s_values.at(planning_group).linear_max_acceleration_scale;}
-        static uint32_t getLinearNumWaypoints(const std::string& planning_group) {return s_values.at(planning_group).n_waypoints;}
+        static uint32_t getLinearNumWaypoints(const std::string& planning_group) {return s_values.at(planning_group).linear_n_waypoints;}
 
     private:
         struct ManipulatorPropertiesValues {
@@ -42,7 +42,7 @@ class ManipulatorProperties {
             double linear_eef_step_size;
             double linear_jump_threshold;
             double linear_max_acceleration_scale;
-            uint32_t n_waypoints;
+            int linear_n_waypoints;
         };
     private:
         inline static std::map<std::string, ManipulatorPropertiesValues> s_values;
