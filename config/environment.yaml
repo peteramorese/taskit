@@ -1,49 +1,65 @@
 location_names: 
+  - "Else_1"
+  - "Else_2"
+  - "Else_3"
   - "L1"
   - "L2"
   - "L3"
-  - "L4"
-  - "L5"
+
+### else location where A1 and A3 are placed and I_1 is placed
+
+Else_1: { 
+  x: 0.39,
+  y: 0.10,
+  z: 0.03, 
+  r: 0.10, 
+}
+
+
+Else_2: { 
+  x: 0.54,
+  y: 0.10,
+  z: 0.03, 
+  r: 0.10, 
+}
+
+
+Else_3: { 
+  x: 0.43,
+  y: 0.30,
+  z: 0.03, 
+  r: 0.10, 
+}
+
+
+# These are locations where the robot can build
 
 L1: { 
-  x: 0.30,
-  y: 0.20,
-  z: 0.09, 
-  r: 0.20, 
+  x: 0.10,
+  y: 0.38,
+  z: 0.03, 
+  r: 0.10, 
 }
 
 L2: { 
-  x: 0.30,
-  y: -0.20,
-  z: 0.09, 
-  r: 0.20, 
+  x: -0.07,
+  y: 0.38,
+  z: 0.03, 
+  r: 0.10, 
 }
 
 L3: { 
-  x: -0.30,
-  y: 0.20,
-  z: 0.09, 
-  r: 0.20, 
-}
-
-L4: { 
-  x: -0.30,
-  y: -0.20,
-  z: 0.09, 
-  r: 0.20, 
-}
-
-L5: { 
-  x: 0.30,
-  y: 0.00,
-  z: 0.09, 
-  r: 0.20, 
+  x: -0.20,
+  y: 0.38,
+  z: 0.03, 
+  r: 0.10, 
 }
 
 
 location_orientation_types:
   - up_x
-  - up_x 
   - up_x
-  - up_x 
+  - up_x
+  - up_x
+  - up_x
   - up_x

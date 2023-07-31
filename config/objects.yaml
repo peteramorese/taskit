@@ -1,54 +1,48 @@
 object_ids:
-  - pink_box_1
-  #- blue_box_1
-  #- blue_box_2
-  #- green_box_1
+  # - A_1
+  - A_2
+  - A_3
+  #- I_1
+  #- B_1
+  #- L_1
+  #- R_1
+  #- R_2
+
 
 object_types:
+  - "box"
   - "box"
   #- "box"
   #- "box"
   #- "box"
+  #- "box"
+  #- "box"
+  #- "box"
 
-blue_box_1: {
-  l: 0.064,
-  w: 0.044,
-  h: 0.16,
-}
-
-blue_box_2: {
-  l: 0.064,
-  w: 0.044,
-  h: 0.16,
-}
-
-pink_box_1: {
-  l: 0.064,
-  w: 0.044,
-  h: 0.16,
-}
-
-green_box_1: {
-  l: 0.064,
-  w: 0.044,
-  h: 0.16,
+A_1: {
+  l: 0.06,
+  w: 0.06,
+  h: 0.06,
 }
 
 
-#thin_cylinder: {
-#  r: 0.01,
-#  h: 0.30,
-#}
+A_2: {
+  l: 0.06,
+  w: 0.06,
+  h: 0.06,
+}
+
 
 object_orientation_types:
   - up_y
-  #- up_y
+  - up_y
   #- up_y
   #- up_y
 
 initial_locations: {
-  pink_box_1: "L3",
-  #blue_box_1: "L1",
+  A_3: "Else_2",
+  A_2: "Else_1",
+  #A_1: "L1",
   #blue_box_2: "L2",
   #green_box_1: "L4",
 }
