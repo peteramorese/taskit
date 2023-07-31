@@ -2,14 +2,18 @@ location_names:
   - "Else_1"
   - "Else_2"
   - "Else_3"
+  - "L0"
   - "L1"
   - "L2"
   - "L3"
+  - "HL1"
+  - "HL2"
+  - "HL3"
 
 ### else location where A1 and A3 are placed and I_1 is placed
 
 Else_1: { 
-  x: 0.39,
+  x: 0.40,
   y: 0.10,
   z: 0.03, 
   r: 0.10, 
@@ -17,7 +21,7 @@ Else_1: {
 
 
 Else_2: { 
-  x: 0.54,
+  x: 0.60,
   y: 0.10,
   z: 0.03, 
   r: 0.10, 
@@ -25,38 +29,74 @@ Else_2: {
 
 
 Else_3: { 
-  x: 0.43,
+  x: 0.50,
   y: 0.30,
   z: 0.03, 
   r: 0.10, 
 }
 
 
-# These are locations where the robot can build
+# These are locations where the robot can build - Keeping a distance 15 cm between 
+
+L0: { 
+  x: 0.25,
+  y: 0.40,
+  z: 0.05, 
+  r: 0.05, 
+}
+
 
 L1: { 
   x: 0.10,
-  y: 0.38,
-  z: 0.03, 
-  r: 0.10, 
+  y: 0.40,
+  z: 0.05, 
+  r: 0.05, 
 }
 
 L2: { 
-  x: -0.07,
-  y: 0.38,
-  z: 0.03, 
-  r: 0.10, 
+  x: -0.05,
+  y: 0.40,
+  z: 0.05, 
+  r: 0.05, 
 }
 
 L3: { 
   x: -0.20,
-  y: 0.38,
-  z: 0.03, 
-  r: 0.10, 
+  y: 0.40,
+  z: 0.05, 
+  r: 0.05, 
+}
+
+
+HL1: { 
+  x: -0.50,
+  y: 0.40,
+  z: 0.05, 
+  r: 0.05, 
+}
+
+
+HL2: { 
+  x: -0.50,
+  y: 0.25,
+  z: 0.05, 
+  r: 0.05, 
+}
+
+
+HL3: { 
+  x: -0.50,
+  y: -0.05,
+  z: 0.05, 
+  r: 0.05, 
 }
 
 
 location_orientation_types:
+  - up_x
+  - up_x
+  - up_x
+  - up_x
   - up_x
   - up_x
   - up_x
