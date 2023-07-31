@@ -115,5 +115,3 @@ RUN touch ./src/grapefruit_ros/CATKIN_IGNORE
 # Build the workspace
 RUN catkin build
 RUN echo 'source ~/ws/devel/setup.bash' >> ~/.bashrc
-
-ENTRYPOINT "/bin/bash" 
