@@ -1,10 +1,10 @@
 version: '3.8'
 
 services:
-  ros_ws:
+  karan_ros_ws:
     build:
       context: ./
-      dockerfile: Dockerfile
+      dockerfile: Karan_Dockerfile
     cap_add:
       - SYS_NICE
     ulimits:
@@ -19,4 +19,5 @@ services:
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:ro
       - ~/temp:/root/temp
+      - ./:/root/ws/src/taskit/
     command: tail -f /dev/null  # Temporary command to keep the container running
