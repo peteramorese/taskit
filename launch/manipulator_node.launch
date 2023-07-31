@@ -3,12 +3,12 @@
   <arg name="arm_id" default="panda" />
 
   <arg name="sim" default="true" />
-  <arg name="advanced" default="true" />
   <arg name="pose_tracker" default="simulation" />
   <arg name="pose_tracker_sampling_duration" default="0.2" />
   <arg name="use_rviz" default="true" />
   <arg name="use_gui" default="false" />
   <arg name="robot_ip" default="franka-aria.colorado.edu" />
+  <arg name="config_directory" default="$(find taskit)/config" />
 
   <arg name="pipeline" default="ompl" />
 
@@ -53,6 +53,7 @@
   </include>
 
   <include file="$(find taskit)/launch/load_parameters.launch">
+    <arg name="config_directory" value="$(arg config_directory)"/>
   </include>
 
   <!-- If pose_tracker is vrpn, launch the vrpn node -->
@@ -63,9 +64,7 @@
   <!-- If in simulation, use the _sim binaries and publish fake joint states -->
   <group if="$(arg sim)">
 
-    <arg unless="$(arg advanced)" name="node_handle" value="basic_manipulator_node_sim" />
-    <arg     if="$(arg advanced)" name="node_handle" value="advanced_manipulator_node_sim" />
-    <node name="manipulator_node" pkg="taskit" type="$(arg node_handle)" respawn="false" output="screen">
+    <node name="manipulator_node" pkg="taskit" type="manipulator_node_sim" respawn="false" output="screen">
       <rosparam command="load" file="$(find panda_moveit_config)/config/kinematics.yaml"/>
       <param name="/planning_plugin" value="ompl_interface/OMPLPlanner"/>
       <rosparam command="load" file="$(find panda_moveit_config)/config/ompl_planning.yaml"/>
@@ -111,9 +110,7 @@
 
     <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="position_joint_trajectory_controller"/>
 
-    <arg unless="$(arg advanced)" name="node_handle" value="basic_manipulator_node_real" />
-    <arg     if="$(arg advanced)" name="node_handle" value="advanced_manipulator_node_real" />
-    <node name="manipulator_node" pkg="taskit" type="$(arg node_handle)" respawn="false" output="screen">
+    <node name="manipulator_node" pkg="taskit" type="manipulator_node_real" respawn="false" output="screen">
       <rosparam command="load" file="$(find panda_moveit_config)/config/kinematics.yaml"/>
       <param name="/planning_plugin" value="ompl_interface/OMPLPlanner"/>
       <rosparam command="load" file="$(find panda_moveit_config)/config/ompl_planning.yaml"/>

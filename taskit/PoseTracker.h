@@ -12,7 +12,7 @@ class Object;
 
 class PoseTracker {
     public:
-        virtual void update(Object& object) const = 0;
+        virtual bool update(Object& object) const = 0;
 
     protected:
         PoseTracker() {}
@@ -20,7 +20,7 @@ class PoseTracker {
 
 class SimulationPoseTracker : public PoseTracker {
     public:
-        virtual void update(Object& object) const override {}
+        virtual bool update(Object& object) const override {return true;}
 };
 
 class VRPNPoseTracker : public PoseTracker {
@@ -29,7 +29,7 @@ class VRPNPoseTracker : public PoseTracker {
 
         VRPNPoseTracker(const std::shared_ptr<ros::NodeHandle>& node_handle, const std::string& vrpn_client_topic, double sampling_duration = 1.0);
 
-        virtual void update(Object& object) const override;
+        virtual bool update(Object& object) const override;
 
     private:
         double m_sampling_duration;

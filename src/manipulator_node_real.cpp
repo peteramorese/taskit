@@ -3,40 +3,64 @@
 
 using namespace TaskIt;
 
-static const std::string node_name = "basic_manipulator_node_sim";
+static const std::string node_name = "advanced_manipulator_node_real";
 
 int main(int argc, char** argv) {
 	
     ros::init(argc, argv, node_name);
     std::shared_ptr<ros::NodeHandle> node_handle = std::make_shared<ros::NodeHandle>("~");
 
+    // Read in the manipulator properties
+    ManipulatorProperties::load(*node_handle, "panda_arm", "arm_config");
+
 	const std::string ee_link = "panda_link8";
 	
 	// Make the simulation gripper handler
-	std::shared_ptr<GripperHandler<GripperUse::Simulation>> gripper_handler = std::make_shared<GripperHandler<GripperUse::Simulation>>(MI_FRANKA_GRIPPER_TOPIC, 5.0);
+	std::shared_ptr<GripperHandler<GripperUse::FrankaHand>> gripper_handler = std::make_shared<GripperHandler<GripperUse::FrankaHand>>(MI_FRANKA_GRIPPER_TOPIC, 5.0);
 
 	// Construct action primitives
 	ActionPrimitives::UpdateEnvironment update_environment("update_environment");
+	ActionPrimitives::GetObjectLocations get_object_locations("get_object_locations");
 	ActionPrimitives::Stow stow("stow");
-	ActionPrimitives::SimpleGrasp<GripperUse::Simulation> grasp("grasp", gripper_handler, ee_link);
-	ActionPrimitives::SimpleRelease<GripperUse::Simulation> release("release", gripper_handler);
-	ActionPrimitives::TransitUp transit("transit", 5.0f, 1);
+	ActionPrimitives::SimpleGrasp<GripperUse::FrankaHand> grasp("grasp", gripper_handler, ee_link);
+	ActionPrimitives::SimpleRelease<GripperUse::FrankaHand> release("release", gripper_handler);
+	ActionPrimitives::Transit transit("transit", 5.0f, 1);
+	ActionPrimitives::TransitUp transit_up("transit_up", 5.0f, 1);
+	ActionPrimitives::TransitSide transit_side("transit_side", 5.0f, 1);
+	ActionPrimitives::LinearTransit linear_transit("linear_transit", 5.0f, 1, 0.05);
+	ActionPrimitives::LinearTransitUp linear_transit_up("linear_transit_up", 5.0f, 1, 0.05);
+	ActionPrimitives::LinearTransitSide linear_transit_side("linear_transit_side", 5.0f, 1, 0.05);
 	ActionPrimitives::Transport transport("transport", 5.0f, 1, 0.05);
+	ActionPrimitives::LinearTransport linear_transport("linear_transport", 5.0f, 1, 0.05);
 
 	ManipulatorNode<
-		ActionPrimitives::UpdateEnvironment,
-	 	ActionPrimitives::Stow,
-		ActionPrimitives::SimpleGrasp<GripperUse::Simulation>, 
-		ActionPrimitives::SimpleRelease<GripperUse::Simulation>, 
-		ActionPrimitives::TransitUp,
-		ActionPrimitives::Transport
+	 	decltype(update_environment),
+		decltype(get_object_locations),
+	 	decltype(stow),
+		decltype(grasp), 
+		decltype(release), 
+		decltype(transit),
+		decltype(transit_up),
+		decltype(transit_side),
+		decltype(linear_transit),
+		decltype(linear_transit_up),
+		decltype(linear_transit_side),
+		decltype(transport),
+		decltype(linear_transport)
 	> manipulator_node(node_handle, node_name, "panda_arm", "panda_link0", 
-	 	std::move(update_environment),
+		std::move(update_environment), 
+		std::move(get_object_locations), 
 		std::move(stow), 
 		std::move(grasp), 
 		std::move(release), 
 		std::move(transit), 
-		std::move(transport)
+		std::move(transit_up), 
+		std::move(transit_side), 
+		std::move(linear_transit), 
+		std::move(linear_transit_up), 
+		std::move(linear_transit_side),
+		std::move(transport),
+		std::move(linear_transport)
 	);
 
 	ros::WallDuration(1.0).sleep();
@@ -58,7 +82,7 @@ int main(int argc, char** argv) {
 		ROS_WARN_NAMED(node_name, "Did not find param 'pose_tracker', assuming type 'simulation'");
 		pose_tracker = std::make_shared<SimulationPoseTracker>();
 	}
-
+	
 	// Wait for rviz topic to come up before creating scene
 	ros::WallDuration(5.0).sleep();
 

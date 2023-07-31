@@ -29,6 +29,7 @@ find_package(Boost REQUIRED system filesystem date_time thread)
 add_service_files(
 	DIRECTORY srv
 	FILES
+	GetObjectLocations.srv
 	StowSrv.srv
 	GraspSrv.srv
 	ReleaseSrv.srv
@@ -64,3 +65,5 @@ set(TASKIT_LIBRARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/taskit)
 
 add_subdirectory(taskit)
 add_subdirectory(src)
+
+# HELLO!!!
