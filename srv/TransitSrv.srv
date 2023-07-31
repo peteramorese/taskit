@@ -1,5 +1,10 @@
+# Environment location to move to
 string destination_location
 ---
 bool execution_success
+
+# The motion planning succeeded
 bool plan_success
+
+# Total time the action primitive took to execute
 float32 execution_time

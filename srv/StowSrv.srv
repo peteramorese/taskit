@@ -1,3 +1,5 @@
 ---
 bool execution_success
+
+# Total time the action primitive took to execute
 float32 execution_time

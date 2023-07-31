@@ -1,4 +1,12 @@
+# Ordered array of object IDs to query the predicate of; NOTE: object_locations hold the locations of the respective object IDs in object_ids
 string[] object_ids
 ---
+# All requested objects were successfully found
+bool found_all
+
+# Location predicate of all of the respective requested objects in object_ids (same order). If the object is currently grasped, the location will be "eef"
+# If found_all is false, object_locations will be empty
 string[] object_locations
+
+# Quick check to detect if the arm is holding an object
 bool eef_holding

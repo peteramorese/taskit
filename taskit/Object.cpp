@@ -36,7 +36,7 @@ void ObjectGroup::createObjects(const ros::NodeHandle& nh, const std::string& ns
 
 }
 
-void ObjectGroup::updatePosesWithPlanningScene(moveit::planning_interface::PlanningSceneInterface& pci, const std::string& planning_frame_id, bool ignore_static) {
+bool ObjectGroup::updatePosesWithPlanningScene(moveit::planning_interface::PlanningSceneInterface& pci, const std::string& planning_frame_id, bool ignore_static) {
     auto attached_objects = pci.getAttachedObjects();
 
     CollisionObjectVector collision_objects;
@@ -53,7 +53,11 @@ void ObjectGroup::updatePosesWithPlanningScene(moveit::planning_interface::Plann
         // Do not update if the object is static
         if (ignore_static && obj.isStatic()) continue;
 
-        obj.updatePose();
+        if (!obj.updatePose() && !obj.isStatic()) {
+            ROS_WARN_STREAM("Failed to update pose for object ID '" << id << "'");
+            return false;
+        }
+
         moveit_msgs::CollisionObject col_obj = obj.getCollisionObject(planning_frame_id);
 
         col_obj.operation = col_obj.ADD;
@@ -62,6 +66,8 @@ void ObjectGroup::updatePosesWithPlanningScene(moveit::planning_interface::Plann
     }
 
     pci.applyCollisionObjects(collision_objects);
+
+    return true;
 }
 
 

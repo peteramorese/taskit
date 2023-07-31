@@ -33,11 +33,7 @@ class CartesianMover {
             for (uint32_t i = 0; i < n_waypoints; ++i) {
                 waypts[i] = curr_pose;
                 tf2::toMsg(curr_position + static_cast<float>(i) / static_cast<float>(n_waypoints - 1) * diff, waypts[i].position);
-                //DEBUG_VEC("Waypoint " << i << " position: ", waypts[i].position);
             }
-            //waypts[0] = move_group.getCurrentPose().pose;
-            //waypts[1] = dst_pose;
-            //DEBUG_VEC("dst pose: ", waypts[1].position);
 
             moveit_msgs::RobotTrajectory trajectory;
             double fraction = move_group.computeCartesianPath(waypts, m_eef_step, m_jump_thresh, trajectory);

@@ -1,1 +1,5 @@
+# Include objects that are not moveable (generally set this to false)
+bool include_static
 ---
+# Returns false if the pose tracker failed to find any of the objects
+bool found_all

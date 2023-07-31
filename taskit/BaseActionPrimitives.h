@@ -75,7 +75,7 @@ class UpdateEnvironment : public ActionPrimitive<taskit::UpdateEnvSrv> {
             auto move_group = interface.move_group.lock();
             auto obj_group = interface.object_group.lock();
             auto pci = interface.planning_scene_interface.lock();
-            obj_group->updatePosesWithPlanningScene(*pci, move_group->getPlanningFrame(), true);
+            response.found_all = obj_group->updatePosesWithPlanningScene(*pci, move_group->getPlanningFrame(), !request.include_static);
             return true;
         }
         
@@ -99,6 +99,7 @@ class GetObjectLocations : public ActionPrimitive<taskit::GetObjectLocations> {
             response.eef_holding = !attached_objects.empty();
 
             response.object_locations.resize(request.object_ids.size());
+            response.found_all = true;
             std::size_t i = 0;
             for (const auto& obj_id : request.object_ids) {
                 if (!attached_objects.empty() && attached_objects.find(obj_id) != attached_objects.end()) {
@@ -107,12 +108,14 @@ class GetObjectLocations : public ActionPrimitive<taskit::GetObjectLocations> {
                 }
                 std::pair<bool, std::string> pred = predicate_set.lookupObjectPredicate(obj_id);   
                 if (!pred.first) {
-                    ROS_ERROR_STREAM("Could not retrieve predicate for object '" << obj_id << "'");
-                    return false;
+                    ROS_WARN_STREAM("Could not retrieve predicate for object '" << obj_id << "'");
+                    response.found_all = false;
                 }
                 response.object_locations[i++] = pred.second;
             }
-
+            if (!response.found_all) {
+                response.object_locations.clear();
+            }
             return true;
         }
 };

@@ -209,7 +209,13 @@ struct Object {
         }
 
         bool isStatic() const {return !tracker;}
-        void updatePose() {if (tracker) tracker->update(*this);}
+
+        bool updatePose() {
+            if (tracker) {
+                return tracker->update(*this);
+            }
+            return false;
+        }
 
         void setPose(const geometry_msgs::Pose& pose) {
             m_pose = pose;
@@ -307,7 +313,7 @@ class ObjectGroup {
             for (auto& v_type : m_objects) v_type.second.updatePose();
         }
 
-        void updatePosesWithPlanningScene(moveit::planning_interface::PlanningSceneInterface& pci, const std::string& planning_frame_id, bool ignore_static = true);
+        bool updatePosesWithPlanningScene(moveit::planning_interface::PlanningSceneInterface& pci, const std::string& planning_frame_id, bool ignore_static = true);
 
         bool hasObject(const std::string& obj_id) const {return m_objects.find(obj_id) != m_objects.end();}
     protected:

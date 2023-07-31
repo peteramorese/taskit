@@ -17,7 +17,7 @@ VRPNPoseTracker::VRPNPoseTracker(const std::shared_ptr<ros::NodeHandle>& node_ha
     , m_sampling_duration(sampling_duration)
 {}
 
-void VRPNPoseTracker::update(Object& object) const {
+bool VRPNPoseTracker::update(Object& object) const {
 
     ROS_INFO_STREAM("Updating pose for object: " << object.id);
     std::string topic = m_vrpn_client_topic + object.id + "/pose";
@@ -42,16 +42,17 @@ void VRPNPoseTracker::update(Object& object) const {
     while (true) {
         ros::Subscriber pose_sub = m_node_handle->subscribe<geometry_msgs::PoseStamped>(topic, 10, onMsg);
         duration.sleep();
-        if (position.length() == 0.0f)
-            ROS_WARN_STREAM("VRPN Data for object '" << object.id.c_str() << "' may not be found on topic, retrying (" << i + 1 << "/5 attempts)...");
-        else {
+        if (position.length() == 0.0f) {
+            ROS_WARN_STREAM("VRPN Data for object '" << object.id.c_str() << "' may not be found on topic, retrying in 5 seconds (" << i + 1 << "/5 attempts)...");
+            ros::WallDuration(5.0).sleep();
+        } else {
             break;
         }
         if (i < 5) {
             ++i;
         } else {
-            ROS_ERROR_STREAM("VRPN pose tracker publisher for object '" << object.id.c_str() << "'");
-            return;
+            ROS_ERROR_STREAM("VRPN pose tracker publisher for object '" << object.id.c_str() << "' was not found");
+            return false;
         }
     }
 
@@ -63,6 +64,7 @@ void VRPNPoseTracker::update(Object& object) const {
     tf2::toMsg(position, object_pose.position);
     tf2::convert(orientation, object_pose.orientation);
     object.setPose(object_pose);
+    return true;
 }
 
 }

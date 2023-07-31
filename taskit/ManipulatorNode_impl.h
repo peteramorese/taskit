@@ -73,8 +73,8 @@ ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::ManipulatorNode(const std::shared_p
 
 
 template <class...ACTION_PRIMITIVES_TYPES>
-void ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::updatePlanningScene(bool ignore_static) {
-    m_obj_group->updatePosesWithPlanningScene(*m_planning_scene_interface, m_move_group->getPlanningFrame(), ignore_static);
+bool ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::updatePlanningScene(bool ignore_static) {
+    return m_obj_group->updatePosesWithPlanningScene(*m_planning_scene_interface, m_move_group->getPlanningFrame(), ignore_static);
 }
 
 

@@ -87,7 +87,7 @@ class ManipulatorNode {
         }
 
         // Update all of the object poses, and update the collision objects in the planning scene
-        void updatePlanningScene(bool ignore_static = true);
+        bool updatePlanningScene(bool ignore_static = true);
 
         // Reference node handle.
         inline ros::NodeHandle& getNodeHandle() {return *m_node_handle;}
