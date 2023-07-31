@@ -20,3 +20,13 @@ Config file abstraction for:
  - Workspace collision objects
  - Manipulatable objects
  - Other relevant properties for the working manipulator
+
+
+# Instructions to run the code
+
+1. roslaunch manipulator_node.launch sim:=false pose\_tracker:={vrpn, sim}
+
+vrpn = Vicon
+sim = Hardcoded values
+
+config: Change env.yaml and config.yml
