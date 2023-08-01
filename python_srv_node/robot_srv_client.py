@@ -49,14 +49,14 @@ def send_transport_command_to_robot(loc: str) -> bool:
 def send_transit_command_to_robot(loc: str) -> bool:
 	#  convenience method that blocks until the service named is available
 	
-	if rospy.wait_for_service("/manipulator_node/action_primitive/linear_transit"):
+	rospy.wait_for_service("/manipulator_node/action_primitive/linear_transit")
 
-		# create a handle for calling the service
-		transit_handle = rospy.ServiceProxy("/manipulator_node/action_primitive/linear_transit", TransitSrv)
-	else:
-		rospy.wait_for_service("/manipulator_node/action_primitive/transit_up")
-		# create a handle for calling the service
-		transit_handle = rospy.ServiceProxy("/manipulator_node/action_primitive/transit_up", TransitSrv)
+	# create a handle for calling the service
+	transit_handle = rospy.ServiceProxy("/manipulator_node/action_primitive/linear_transit", TransitSrv)
+	# else:
+	# rospy.wait_for_service("/manipulator_node/action_primitive/transit_up")
+	# # create a handle for calling the service
+	# transit_handle = rospy.ServiceProxy("/manipulator_node/action_primitive/transit_up", TransitSrv)
 
 	# Return three parsms - execution success, plan_success, and execution_time 
 	t = transit_handle(loc)
@@ -89,7 +89,7 @@ def send_release_command_to_robot(obj_id: str) -> bool:
 if __name__ == "__main__":
 
 	# to robustify this code, we can regularly call update_environment. Currently, the VICON tracking is very reliable.
-	success = send_commands_to_robot(obj_id='A_3',start_loc='Else_1', end_loc='L3')
+	success = send_commands_to_robot(obj_id='A_2',start_loc='Else_1', end_loc='L3')
 	if success:
 		print("Done with the planning.")
 	else:

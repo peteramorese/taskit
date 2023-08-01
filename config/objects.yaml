@@ -40,7 +40,7 @@ object_orientation_types:
   #- up_y
 
 initial_locations: {
-  A_3: "Else_1",
-  A_2: "Else_2",
+  A_3: "Else_2",
+  A_2: "Else_1",
   #A_1: "L1",
 }
