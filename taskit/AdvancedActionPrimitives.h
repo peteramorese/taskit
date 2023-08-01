@@ -21,7 +21,7 @@ class CartesianMover {
             const geometry_msgs::Pose& curr_pose = move_group.getCurrentPose().pose;
 
             uint32_t n_waypoints = ManipulatorProperties::getLinearNumWaypoints("panda_arm");
-            ROS_ASSERT_MSG(n_waypoints > 1, "Number of linear waypoints must be greater than 1, check the arm config file");
+            ROS_ASSERT_MSG(n_waypoints > 2, "Number of linear waypoints must be greater than 2, check the arm config file");
             std::vector<geometry_msgs::Pose> waypts(n_waypoints);
 
             // Convert to tf2
@@ -32,7 +32,8 @@ class CartesianMover {
             tf2::Vector3 diff = dst_position - curr_position;
             for (uint32_t i = 0; i < n_waypoints; ++i) {
                 waypts[i] = curr_pose;
-                tf2::toMsg(curr_position + static_cast<float>(i) / static_cast<float>(n_waypoints - 1) * diff, waypts[i].position);
+                double scale = (i > 0) ? static_cast<double>(i) / static_cast<double>(n_waypoints - 1) : ManipulatorProperties::getLinearFirstPointFraction("panda_arm");
+                tf2::toMsg(curr_position + scale * diff, waypts[i].position);
             }
 
             moveit_msgs::RobotTrajectory trajectory;
@@ -57,6 +58,10 @@ class CartesianMover {
             moveit_msgs::RobotTrajectory robot_trajectory_msg;
             robot_trajectory.getRobotTrajectoryMsg(robot_trajectory_msg);
             move_group.setMaxVelocityScalingFactor(m_max_velocity_scale);
+
+            // Sleep a bit to make sure the arm has no residual velocity
+            ros::WallDuration(1.0).sleep();
+
             return move_group.execute(robot_trajectory_msg) == moveit::core::MoveItErrorCode::SUCCESS;
         }
     private:
