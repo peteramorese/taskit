@@ -17,7 +17,8 @@ eef_offset: 0.095
 
 # Cartesian movement
 safe_linear: false
-linear_eef_step_size: 0.1
+linear_eef_step_size: 1.5
 linear_jump_threshold: 0.0000
-linear_max_acceleration_scale: 0.05
+linear_max_acceleration_scale: 0.03
+linear_first_point_fraction: 0.0003
 linear_n_waypoints: 10
