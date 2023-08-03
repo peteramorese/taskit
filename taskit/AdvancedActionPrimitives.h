@@ -53,7 +53,7 @@ class CartesianMover {
 
 			robot_trajectory::RobotTrajectory robot_trajectory(move_group.getRobotModel(), "panda_arm");
             robot_trajectory.setRobotTrajectoryMsg(*move_group.getCurrentState(), trajectory);
-            m_iptp.computeTimeStamps(robot_trajectory, m_max_acceleration_scale); 
+            m_iptp.computeTimeStamps(robot_trajectory, m_max_velocity_scale, m_max_acceleration_scale); 
 
             moveit_msgs::RobotTrajectory robot_trajectory_msg;
             robot_trajectory.getRobotTrajectoryMsg(robot_trajectory_msg);
