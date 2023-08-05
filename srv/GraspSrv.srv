@@ -1,8 +1,5 @@
 # Object ID to grab; NOTE: Leave this blank to automatically detect the object that exists in the EEF location and grasp it
 string obj_id
 ---
-# Object was successfully attached and grasped
-bool success
-
-# Total time the action primitive took to execute
-float32 execution_time
+# Properties about the physical movement of the robot
+taskit/MovementProperties mv_props

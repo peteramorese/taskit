@@ -3,6 +3,7 @@
 #include <moveit/trajectory_processing/iterative_time_parameterization.h>
 
 #include "BaseActionPrimitives.h"
+#include "MovementAnalysis.h"
 
 namespace TaskIt {
 namespace ActionPrimitives {
@@ -17,7 +18,9 @@ class CartesianMover {
             m_max_acceleration_scale = ManipulatorProperties::getLinearMaxAccelerationScale("panda_arm");
         }
 
-        bool cartesianMove(moveit::planning_interface::MoveGroupInterface& move_group, const geometry_msgs::Point& dst_point) {
+        bool cartesianMove(taskit::MovementProperties& mv_props, moveit::planning_interface::MoveGroupInterface& move_group, const geometry_msgs::Point& dst_point) {
+
+            ros::Time begin = ros::Time::now();
             const geometry_msgs::Pose& curr_pose = move_group.getCurrentPose().pose;
 
             uint32_t n_waypoints = ManipulatorProperties::getLinearNumWaypoints("panda_arm");
@@ -62,7 +65,9 @@ class CartesianMover {
             // Sleep a bit to make sure the arm has no residual velocity
             ros::WallDuration(1.0).sleep();
 
-            return move_group.execute(robot_trajectory_msg) == moveit::core::MoveItErrorCode::SUCCESS;
+            bool execution_success = move_group.execute(robot_trajectory_msg) == moveit::core::MoveItErrorCode::SUCCESS;
+            makeMovementProperties(mv_props, execution_success, begin, robot_trajectory);
+            return execution_success;
         }
     private:
         double m_eef_step;
@@ -73,7 +78,7 @@ class CartesianMover {
 
 };
 
-class LinearTransit : public Transit, public CartesianMover {
+class LinearTransit : public Transit, private CartesianMover {
     public:
         LinearTransit(const std::string& topic, double planning_time, uint8_t max_trials, double distance, double max_velocity_scaling_factor = 0.5)
             : Transit(topic, planning_time, max_trials, max_velocity_scaling_factor)
@@ -106,7 +111,7 @@ class LinearTransit : public Transit, public CartesianMover {
             std::vector<EndEffectorGoalPoseProperties> approach_offset_eef_poses = getGraspGoalPoses(*obj_group, goal_pose_props, m_approach_distance);
 
             response.plan_success = false;
-            response.execution_success = false;
+            bool execution_success = false;
 
             move_group->setPlanningTime(m_planning_time);
 
@@ -120,7 +125,7 @@ class LinearTransit : public Transit, public CartesianMover {
                     dst_retreat_point.x -= m_retreat_distance * retreat_direction[0];
                     dst_retreat_point.y -= m_retreat_distance * retreat_direction[1];
                     dst_retreat_point.z -= m_retreat_distance * retreat_direction[2];
-                    if (!cartesianMove(*move_group, dst_retreat_point)) {
+                    if (!cartesianMove(response.mv_props, *move_group, dst_retreat_point)) {
                         // Failure
                         return true;
                     }
@@ -157,20 +162,30 @@ class LinearTransit : public Transit, public CartesianMover {
                             vis->publishGoalMarker(approach_offset_eef_pose, "Goal");
                         }
 
-                        response.execution_success = move_group->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
+                        execution_success = move_group->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
+
+                        // Make the movement properties for the motion plan
+                        taskit::MovementProperties motion_plan_mv_props;
+                        makeMovementProperties(motion_plan_mv_props, execution_success, begin, *move_group, plan);
+
+                        // Append the movement properties for the motion plan
+                        appendMovementProperties(response.mv_props, motion_plan_mv_props);
 
                         // If the execution succeeded, perform the cartesian approach
-                        if (response.execution_success && cartesianMove(*move_group, eef_pose.position)) {
+                        taskit::MovementProperties approach_mv_props;
+                        if (execution_success && cartesianMove(approach_mv_props, *move_group, eef_pose.position)) {
                             updateState(*state, request.destination_location, goal_pose_props.moving_to_object, eef_poses[i].rotation_type, eef_poses[i].placing_offset);
                         }
-                        response.execution_time = (ros::Time::now() - begin).toSec();
+
+                        // Append the movement properties for the cartesian movement
+                        appendMovementProperties(response.mv_props, approach_mv_props);
                         return true;
                     }
                 }
 
                 ++trial;        
                 if (trial >= m_max_trials) {
-                    response.execution_time = (ros::Time::now() - begin).toSec();
+                    makeMovementProperties(response.mv_props, execution_success, begin);
                     return true;
                 }
             }
@@ -203,7 +218,7 @@ class LinearTransitSide : public LinearTransit {
         }
 };
 
-class LinearTransport : public Transport, public CartesianMover {
+class LinearTransport : public Transport, private CartesianMover {
     public:
         LinearTransport(const std::string& topic, double planning_time, uint8_t max_trials, double distance, double max_velocity_scaling_factor = 0.5)
             : Transport(topic, planning_time, max_trials, max_velocity_scaling_factor)
@@ -226,11 +241,12 @@ class LinearTransport : public Transport, public CartesianMover {
             auto state = interface.state.lock();
 
             response.plan_success = false;
-            response.execution_success = false;
+            bool execution_success = false;
 
             // Make sure at least one object is attached
             if (!interface.planning_scene_interface.lock()->getAttachedObjects().size()) {
                 ROS_WARN_STREAM("Did not find attached object (is the manipulator grasping?), not executing");
+                makeMovementProperties(response.mv_props, execution_success, begin);
                 return false;
             }
 
@@ -238,6 +254,7 @@ class LinearTransport : public Transport, public CartesianMover {
             GoalPoseProperties goal_pose_props = getGoalPose(*predicate_handler, *obj_group, request);
             if (goal_pose_props.moving_to_object) {
                 ROS_ERROR_STREAM("Destination location '" << request.destination_location << "' is occupied by object: " << goal_pose_props.obj_id << ", not executing");
+                makeMovementProperties(response.mv_props, execution_success, begin);
                 return false;
             } else {
                 ROS_INFO_STREAM("Goal pose for location '" << request.destination_location <<"' extracted from predicate handler");
@@ -262,7 +279,7 @@ class LinearTransport : public Transport, public CartesianMover {
                     dst_retreat_point.x += m_retreat_offset[0];
                     dst_retreat_point.y += m_retreat_offset[1];
                     dst_retreat_point.z += m_retreat_offset[2];
-                    if (!cartesianMove(*move_group, dst_retreat_point)) {
+                    if (!cartesianMove(response.mv_props, *move_group, dst_retreat_point)) {
                         // Failure
                         return true;
                     }
@@ -300,19 +317,31 @@ class LinearTransport : public Transport, public CartesianMover {
                             vis->publishGoalMarker(approach_offset_eef_pose, "Goal");
                         }
 
-                        response.execution_success = move_group->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
-                        if (response.execution_success && cartesianMove(*move_group, eef_pose.position)) {
+                        execution_success = move_group->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
+
+                        // Make the movement properties for the motion plan
+                        taskit::MovementProperties motion_plan_mv_props;
+                        makeMovementProperties(motion_plan_mv_props, execution_success, begin, *move_group, plan);
+
+                        // Append the movement properties for the motion plan
+                        appendMovementProperties(response.mv_props, motion_plan_mv_props);
+
+                        // If the execution succeeded, perform the cartesian approach
+                        taskit::MovementProperties approach_mv_props;
+                        if (execution_success && cartesianMove(approach_mv_props, *move_group, eef_pose.position)) {
                             // Update destination location, must be near object (holding), keep rotation type, keep placing offset
                             updateState(*state, request.destination_location, true, state->grasp_rotation_type, state->placing_offset);
                         }
-                        response.execution_time = (ros::Time::now() - begin).toSec();
+
+                        // Append the movement properties for the cartesian movement
+                        appendMovementProperties(response.mv_props, approach_mv_props);
                         return true;
                     }
                 }
 
                 ++trial;        
                 if (trial >= m_max_trials) {
-                    response.execution_time = (ros::Time::now() - begin).toSec();
+                    makeMovementProperties(response.mv_props, execution_success, begin);
                     return true;
                 }
             }

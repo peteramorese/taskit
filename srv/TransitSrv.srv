@@ -1,10 +1,8 @@
 # Environment location to move to
 string destination_location
 ---
-bool execution_success
-
-# The motion planning succeeded
+# The motion planning success
 bool plan_success
 
-# Total time the action primitive took to execute
-float32 execution_time
+# Properties about the physical movement of the robot
+taskit/MovementProperties mv_props

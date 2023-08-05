@@ -16,6 +16,7 @@
 #include "PredicateHandler.h"
 #include "Gripper.h"
 #include "Tools.h"
+#include "MovementAnalysis.h"
 
 // Srv types
 #include "taskit/StowSrv.h"
@@ -29,6 +30,7 @@ namespace TaskIt {
 namespace ActionPrimitives {
 
 
+// Abstract specification for an action primitive
 template <class SRV_MSG_T>
 class ActionPrimitive {
     protected:
@@ -59,8 +61,12 @@ class Stow : public ActionPrimitive<taskit::StowSrv> {
             move_group->clearPoseTargets();
             move_group->setStartStateToCurrentState();
             move_group->setJointValueTarget(ManipulatorProperties::getStowJointValues("panda_arm"));
-            response.execution_success = move_group->move() == moveit::core::MoveItErrorCode::SUCCESS;
-            response.execution_time = (ros::Time::now() - begin).toSec();
+            
+            moveit::planning_interface::MoveGroupInterface::Plan plan;
+            response.plan_success = move_group->plan(plan) == moveit::core::MoveItErrorCode::SUCCESS;
+            bool execution_success = move_group->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
+
+            makeMovementProperties(response.mv_props, execution_success, begin, *move_group, plan);
             return true;
         }
 };
@@ -136,13 +142,12 @@ class SimpleGrasp : public ActionPrimitive<taskit::GraspSrv> {
             auto predicate_handler = interface.predicate_handler.lock();
             auto state = interface.state.lock();
 
-            std::cout<<"in operator()";
             if (request.obj_id == "none") {
                 GripperSpecification spec;
                 spec.grip_force = 10.0f;
                 spec.grip_width_closed = 0.0f;
-                std::cout<<"b4 close???";
-                response.success = m_gripper_handler->close(spec);
+                bool execution_success = m_gripper_handler->close(spec);
+                makeMovementProperties(response.mv_props, execution_success, begin);
                 return true;
             }
 
@@ -156,10 +161,10 @@ class SimpleGrasp : public ActionPrimitive<taskit::GraspSrv> {
                 ROS_ASSERT_MSG(obj_group->hasObject(request.obj_id), "Object not found");
                 obj_id = request.obj_id;
             }
-            response.success = m_gripper_handler->close(*(obj_group->getObject(obj_id).spec));
+            bool execution_success = m_gripper_handler->close(*(obj_group->getObject(obj_id).spec));
             move_group->attachObject(obj_id, m_attachment_link);
 
-            response.execution_time = (ros::Time::now() - begin).toSec();
+            makeMovementProperties(response.mv_props, execution_success, begin);
             return true;
         }
 
@@ -186,7 +191,8 @@ class SimpleRelease : public ActionPrimitive<taskit::ReleaseSrv> {
                 if (!planning_scene_interface->getAttachedObjects().empty()) {
                     move_group->detachObject();
                 }
-                response.success = m_gripper_handler->open(GripperSpecification{});
+                bool execution_success = m_gripper_handler->open(GripperSpecification{});
+                makeMovementProperties(response.mv_props, execution_success, begin);
                 return true;
             }
 
@@ -203,10 +209,10 @@ class SimpleRelease : public ActionPrimitive<taskit::ReleaseSrv> {
                 obj_id = attached_objects.begin()->first;
             }
 
-            response.success = m_gripper_handler->open(*(obj_group->getObject(obj_id).spec));
+            bool execution_success = m_gripper_handler->open(*(obj_group->getObject(obj_id).spec));
             move_group->detachObject(obj_id);
 
-            response.execution_time = (ros::Time::now() - begin).toSec();
+            makeMovementProperties(response.mv_props, execution_success, begin);
             return true;
         }
 
@@ -245,7 +251,7 @@ class Transit : public ActionPrimitive<taskit::TransitSrv> {
             std::vector<EndEffectorGoalPoseProperties> eef_poses = getGraspGoalPoses(*obj_group, goal_pose_props);
 
             response.plan_success = false;
-            response.execution_success = false;
+            bool execution_success = false;
 
             move_group->setPlanningTime(m_planning_time);
 
@@ -281,18 +287,19 @@ class Transit : public ActionPrimitive<taskit::TransitSrv> {
                             vis->publishGoalMarker(eef_pose, "Goal");
                         }
 
-                        response.execution_success = move_group->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
-                        if (response.execution_success) {
+                        execution_success = move_group->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
+                        if (execution_success) {
                             updateState(*state, request.destination_location, goal_pose_props.moving_to_object, pose_rot_type, eef_pose_props.placing_offset);
                         }
-                        response.execution_time = (ros::Time::now() - begin).toSec();
+
+                        makeMovementProperties(response.mv_props, execution_success, begin, *move_group, plan);
                         return true;
                     }
                 }
 
                 ++trial;        
                 if (trial >= m_max_trials) {
-                    response.execution_time = (ros::Time::now() - begin).toSec();
+                    makeMovementProperties(response.mv_props, execution_success, begin);
                     return true;
                 }
             }
@@ -425,7 +432,7 @@ class Transport : public Transit {
             auto state = interface.state.lock();
 
             response.plan_success = false;
-            response.execution_success = false;
+            bool execution_success = false;
 
             // Make sure at least one object is attached
             if (!interface.planning_scene_interface.lock()->getAttachedObjects().size()) {
@@ -482,19 +489,19 @@ class Transport : public Transit {
                             vis->publishGoalMarker(eef_pose, "Goal");
                         }
 
-                        response.execution_success = move_group->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
-                        if (response.execution_success) {
+                        execution_success = move_group->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
+                        if (execution_success) {
                             // Update destination location, must be near object (holding), keep rotation type, keep placing offset
                             updateState(*state, request.destination_location, true, state->grasp_rotation_type, state->placing_offset);
                         }
-                        response.execution_time = (ros::Time::now() - begin).toSec();
+                        makeMovementProperties(response.mv_props, execution_success, begin, *move_group, plan);
                         return true;
                     }
                 }
 
                 ++trial;        
                 if (trial >= m_max_trials) {
-                    response.execution_time = (ros::Time::now() - begin).toSec();
+                    makeMovementProperties(response.mv_props, execution_success, begin);
                     return true;
                 }
             }
