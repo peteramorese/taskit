@@ -36,11 +36,11 @@ add_service_files(
 	DIRECTORY srv
 	FILES
 	GetObjectLocations.srv
-	StowSrv.srv
-	GraspSrv.srv
-	ReleaseSrv.srv
-	TransitSrv.srv
-	UpdateEnvSrv.srv
+	Stow.srv
+	Grasp.srv
+	Release.srv
+	Transit.srv
+	UpdateEnv.srv
 )
 
 generate_messages(
