@@ -27,12 +27,6 @@ RUN apt-get install -y gcc-10 g++-10 && \
     update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100 \
                         --slave /usr/bin/g++ g++ /usr/bin/g++-10
 
-RUN wget https://gitlab.com/libeigen/eigen/-/archive/3.3.8/eigen-3.3.8.tar.gz
-RUN tar -xzvf eigen-3.3.8.tar.gz
-RUN cd eigen-3.3.8 && mkdir build && cd build
-WORKDIR /eigen-3.3.8/build
-RUN cmake -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc ..
-RUN make && make install
 
 # Add the ROS GPG key and repository
 RUN wget https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc && \
@@ -50,6 +44,14 @@ RUN apt-get install -y \
 # Initialize rosdep
 RUN rosdep init && \
     rosdep update
+
+RUN wget https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz
+RUN tar -xzvf eigen-3.4.0.tar.gz
+RUN ls
+RUN cd eigen-3.4.0 && mkdir build && cd build
+WORKDIR /eigen-3.4.0/build
+RUN cmake -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc ..
+RUN make && make install
 
 # Clean up unnecessary files
 RUN rm -rf ros.asc cmake-3.20.0-linux-x86_64.tar.gz cmake-3.20.0-linux-x86_64
