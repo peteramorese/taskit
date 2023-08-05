@@ -14,8 +14,25 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     vim \
     python3-pip \
-    apt-utils flex bison mona \
-    libeigen3-dev
+    apt-utils flex bison mona 
+
+# Download and install CMake 3.20
+RUN wget "https://cmake.org/files/v3.20/cmake-3.20.0-linux-x86_64.tar.gz" && \
+    tar xf cmake-3.20.0-linux-x86_64.tar.gz && \
+    cp -r cmake-3.20.0-linux-x86_64/bin/* /usr/local/bin/ && \
+    cp -r cmake-3.20.0-linux-x86_64/share/* /usr/local/share/
+
+# Install GCC 10
+RUN apt-get install -y gcc-10 g++-10 && \
+    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100 \
+                        --slave /usr/bin/g++ g++ /usr/bin/g++-10
+
+RUN wget https://gitlab.com/libeigen/eigen/-/archive/3.3.8/eigen-3.3.8.tar.gz
+RUN tar -xzvf eigen-3.3.8.tar.gz
+RUN cd eigen-3.3.8 && mkdir build && cd build
+WORKDIR /eigen-3.3.8/build
+RUN cmake -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc ..
+RUN make && make install
 
 # Add the ROS GPG key and repository
 RUN wget https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc && \
@@ -33,17 +50,6 @@ RUN apt-get install -y \
 # Initialize rosdep
 RUN rosdep init && \
     rosdep update
-
-# Download and install CMake 3.20
-RUN wget "https://cmake.org/files/v3.20/cmake-3.20.0-linux-x86_64.tar.gz" && \
-    tar xf cmake-3.20.0-linux-x86_64.tar.gz && \
-    cp -r cmake-3.20.0-linux-x86_64/bin/* /usr/local/bin/ && \
-    cp -r cmake-3.20.0-linux-x86_64/share/* /usr/local/share/
-
-# Install GCC 10
-RUN apt-get install -y gcc-10 g++-10 && \
-    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100 \
-                        --slave /usr/bin/g++ g++ /usr/bin/g++-10
 
 # Clean up unnecessary files
 RUN rm -rf ros.asc cmake-3.20.0-linux-x86_64.tar.gz cmake-3.20.0-linux-x86_64
@@ -107,7 +113,7 @@ WORKDIR /root/ws
 
 ADD ./ /root/ws/src/taskit/
 
-RUN catkin config --extend /opt/ros/${ROS_DISTRO} --cmake-args -DCMAKE_BUILD_TYPE=Release
+RUN catkin config --install --extend /opt/ros/${ROS_DISTRO} --cmake-args -DCMAKE_BUILD_TYPE=Release 
 
 # Temporary
 RUN touch ./src/grapefruit_ros/CATKIN_IGNORE
