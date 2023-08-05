@@ -2,13 +2,13 @@ location_names:
   - "Else_1"
   - "Else_2"
   - "Else_3"
-  - "L0"
-  - "L1"
-  - "L2"
-  - "L3"
+  - "HL0"
   - "HL1"
   - "HL2"
   - "HL3"
+  - "L1"
+  - "L2"
+  - "L3"
 
 ### else location where A1 and A3 are placed and I_1 is placed
 
@@ -38,60 +38,60 @@ Else_3: {
 
 # These are locations where the robot can build - Keeping a distance 15 cm between 
 
-L0: { 
+HL0: { 
   x: 0.25,
   y: 0.40,
-  z: 0.05, 
-  r: 0.05, 
-}
-
-
-L1: { 
-  x: 0.10,
-  y: 0.40,
-  z: 0.05, 
-  r: 0.05, 
-}
-
-L2: { 
-  x: -0.05,
-  y: 0.40,
-  z: 0.05, 
-  r: 0.05, 
-}
-
-L3: { 
-  x: -0.20,
-  y: 0.40,
-  z: 0.05, 
-  r: 0.05, 
+  z: 0.04, 
+  r: 0.10, 
 }
 
 
 HL1: { 
-  x: -0.50,
+  x: 0.10,
   y: 0.40,
-  z: 0.05, 
-  r: 0.05, 
+  z: 0.04, 
+  r: 0.10, 
 }
-
 
 HL2: { 
-  x: -0.50,
-  y: 0.25,
-  z: 0.05, 
-  r: 0.05, 
+  x: -0.05,
+  y: 0.40,
+  z: 0.04, 
+  r: 0.10, 
 }
-
 
 HL3: { 
-  x: -0.50,
-  y: -0.05,
-  z: 0.05, 
-  r: 0.05, 
+  x: -0.20,
+  y: 0.40,
+  z: 0.04, 
+  r: 0.10, 
 }
 
 
+L1: { 
+  x: -0.50,
+  y: 0.40,
+  z: 0.04, 
+  r: 0.10, 
+}
+
+
+L2: { 
+  x: -0.50,
+  y: 0.25,
+  z: 0.04, 
+  r: 0.10, 
+}
+
+
+L3: { 
+  x: -0.50,
+  y: -0.05,
+  z: 0.04, 
+  r: 0.10, 
+}
+
+# affects how the hand approaches the empty location
 location_orientation_types:
   - up_x
   - up_x
@@ -100,6 +100,6 @@ location_orientation_types:
   - up_x
   - up_x
   - up_x
-  - up_x
-  - up_x
-  - up_x
+  - up_y
+  - up_y
+  - up_y
