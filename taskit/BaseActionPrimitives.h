@@ -222,11 +222,11 @@ class SimpleRelease : public ActionPrimitive<taskit::Release> {
 
 class Transit : public ActionPrimitive<taskit::Transit> {
     public:
-        Transit(const std::string& topic, double planning_time, uint8_t max_trials, double max_velocity_scaling_factor = 1.0)
+        Transit(const std::string& topic, double planning_time, uint8_t max_trials)
             : ActionPrimitive<taskit::Transit>(topic)
             , m_planning_time(planning_time)
             , m_max_trials(max_trials)
-            , m_max_velocity_scaling_factor(max_velocity_scaling_factor)
+            , m_max_velocity_scaling_factor(ManipulatorProperties::getMaxAccelerationScale("panda_arm"))
         {}
 
         virtual bool operator()(ManipulatorNodeInterface&& interface, typename msg_t::Request& request, typename msg_t::Response& response) override {
@@ -395,8 +395,8 @@ class Transit : public ActionPrimitive<taskit::Transit> {
 
 class TransitUp : public Transit {
     public:
-        TransitUp(const std::string& topic, double planning_time, uint8_t max_trials, double max_velocity_scaling_factor = 1.0) 
-            : Transit(topic, planning_time, max_trials, max_velocity_scaling_factor) {}
+        TransitUp(const std::string& topic, double planning_time, uint8_t max_trials) 
+            : Transit(topic, planning_time, max_trials) {}
 
         virtual std::vector<Quaternions::RotationType> getTransitRotationTypes() const override {
             // Use only None and pitch 180 (up or down)
@@ -406,8 +406,8 @@ class TransitUp : public Transit {
 
 class TransitSide : public Transit {
     public:
-        TransitSide(const std::string& topic, double planning_time, uint8_t max_trials, double max_velocity_scaling_factor = 1.0) 
-            : Transit(topic, planning_time, max_trials, max_velocity_scaling_factor) {}
+        TransitSide(const std::string& topic, double planning_time, uint8_t max_trials) 
+            : Transit(topic, planning_time, max_trials) {}
 
         virtual std::vector<Quaternions::RotationType> getTransitRotationTypes() const override {
             // Use only pitch 90 and pitch 270 (side left or side right)
@@ -417,8 +417,8 @@ class TransitSide : public Transit {
 
 class Transport : public Transit {
     public:
-        Transport(const std::string& topic, double planning_time, uint8_t max_trials, double max_velocity_scaling_factor = 1.0)
-            : Transit(topic, planning_time, max_trials, max_velocity_scaling_factor)
+        Transport(const std::string& topic, double planning_time, uint8_t max_trials)
+            : Transit(topic, planning_time, max_trials)
         {}
 
         virtual bool operator()(ManipulatorNodeInterface&& interface, typename msg_t::Request& request, typename msg_t::Response& response) override {
