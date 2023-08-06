@@ -1,24 +1,25 @@
 object_ids:
-  # - A_1
+  - A_1
   - A_2
   - A_3
-  #- I_1
-  #- B_1
-  #- L_1
-  #- R_1
-  #- R_2
+  - I_1
+  - B_1   # static obstacle
+  - L_1   # static obstacle
+  - R_1
+  - R_2   # static obstacle
 
 
 object_types:
   - "box"
   - "box"
-  #- "box"
-  #- "box"
-  #- "box"
-  #- "box"
-  #- "box"
-  #- "box"
+  - "box"
+  - "box"
+  - "box"
+  - "box"
+  - "box"
+  - "box"
 
+# Original size 6 cm. Shrinking dynamic objects by 1 cm 
 A_2: {
   l: 0.05,
   w: 0.05,
@@ -33,15 +34,59 @@ A_3: {
 }
 
 
-# Affects the object is grabbed
+I_1: {
+  l: 0.05,
+  w: 0.05,
+  h: 0.05,
+}
+
+# Keepin static obstacles at 6 cm to avoid collision
+L_1: {
+  l: 0.06,
+  w: 0.06,
+  h: 0.06,
+}
+
+
+B_1: {
+  l: 0.06,
+  w: 0.06,
+  h: 0.06,
+}
+
+
+R_1: {
+  l: 0.05,
+  w: 0.05,
+  h: 0.05,
+}
+
+
+R_2: {
+  l: 0.06,
+  w: 0.06,
+  h: 0.06,
+}
+
+# Affects how the object is grabbed
 object_orientation_types:
   - up_x
   - up_x
-  #- up_y
-  #- up_y
+  - up_x
+  - up_x
+  - up_x
+  - up_x
+  - up_x
+  - up_x
+
 
 initial_locations: {
-  A_3: "Else_2",
+  A_1: "Else_2",
   A_2: "Else_1",
-  #A_1: "L1",
+  A_3: "HL0",
+  I_1: "Else_3",
+  L_1: "O1",
+  B_1: "O2",
+  R_1: "HL3",
+  R_2: "O1",
 }

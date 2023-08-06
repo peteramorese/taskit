@@ -9,9 +9,11 @@ location_names:
   - "L1"
   - "L2"
   - "L3"
+  - "O1"
+  - "O2"
+  - "O3"
 
 ### else location where A1 and A3 are placed and I_1 is placed
-
 Else_1: { 
   x: 0.40,
   y: 0.10,
@@ -36,8 +38,7 @@ Else_3: {
 }
 
 
-# These are locations where the robot can build - Keeping a distance 15 cm between 
-
+# These are locations where the robot and Human can build - Keeping a distance 15 cm between 
 HL0: { 
   x: 0.25,
   y: 0.40,
@@ -67,7 +68,7 @@ HL3: {
   r: 0.10, 
 }
 
-
+# Locations where only the robot can move objects
 L1: { 
   x: -0.50,
   y: 0.40,
@@ -91,6 +92,30 @@ L3: {
   r: 0.10, 
 }
 
+
+# Locations where the static obstacles are placed
+O1: { 
+  x: -0.35,
+  y: 0.40,
+  z: 0.04, 
+  r: 0.10, 
+}
+
+O2: { 
+  x: -0.65,
+  y: 0.40,
+  z: 0.04, 
+  r: 0.10, 
+}
+
+
+O3: { 
+  x: -0.50,
+  y: 0.10,
+  z: 0.04, 
+  r: 0.10, 
+}
+
 # affects how the hand approaches the empty location
 location_orientation_types:
   - up_x
@@ -100,6 +125,9 @@ location_orientation_types:
   - up_x
   - up_x
   - up_x
-  - up_y
-  - up_y
-  - up_y
+  - up_x
+  - up_x
+  - up_x
+  - up_x
+  - up_x
+  - up_x
