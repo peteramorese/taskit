@@ -112,7 +112,7 @@ class SmoothPlanMover : public LinearMover {
             // Reset to the default planner
             move_group.setPlannerId(ManipulatorProperties::getPlannerID("panda_arm"));
 
-            return true;
+            return execution_success;
         }
     
     private:

@@ -193,6 +193,9 @@ class LinearTransport : public Transport {
                 ROS_INFO_STREAM("Goal pose for location '" << request.destination_location <<"' extracted from predicate handler");
             }
 
+            // Set the temporary member before getting grasp goal poses
+            t_grasp_rotation_type = state->grasp_rotation_type;
+
             // Get the grasp pose options
             std::vector<EndEffectorGoalPoseProperties> eef_poses = getGraspGoalPoses(*obj_group, goal_pose_props, state->placing_offset);
 

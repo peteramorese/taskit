@@ -106,19 +106,16 @@ RUN apt-get update && apt-get install -y \
     libqt5widgets5 \
     x11-apps
 
-# Install grapefruit_ros
-RUN git clone https://github.com/peteramorese/grapefruit_ros.git /root/ws/src/grapefruit_ros
-
-WORKDIR /root/ws/src/grapefruit_ros
-RUN git submodule update --init --recursive
+## Install grapefruit_ros
+#RUN git clone https://github.com/peteramorese/grapefruit_ros.git /root/ws/src/grapefruit_ros
+#
+#WORKDIR /root/ws/src/grapefruit_ros
+#RUN git submodule update --init --recursive
 WORKDIR /root/ws
 
 COPY . /root/ws/src/taskit/
 
 RUN catkin config --install --extend /opt/ros/${ROS_DISTRO} --cmake-args -DCMAKE_BUILD_TYPE=Release 
-
-# Temporary
-RUN touch ./src/grapefruit_ros/CATKIN_IGNORE
 
 # Build the workspace
 RUN catkin build
