@@ -19,25 +19,33 @@ object_types:
   - "box"
   - "box"
 
-# Original size 6 cm. Shrinking dynamic objects by 1 cm 
+# Original size 6 cm. Shrinking dynamic objects by 1 cm. This to avoid panda finger ocllision and panda start state colliding with ground error.
+# These error are primarly caused due to inaccurate tracking by Vicon.
+A_1: {
+  l: 0.055,
+  w: 0.055,
+  h: 0.055,
+}
+
+
 A_2: {
-  l: 0.05,
-  w: 0.05,
-  h: 0.05,
+  l: 0.055,
+  w: 0.055,
+  h: 0.055,
 }
 
 
 A_3: {
-  l: 0.05,
-  w: 0.05,
-  h: 0.05,
+  l: 0.055,
+  w: 0.055,
+  h: 0.055,
 }
 
 
 I_1: {
-  l: 0.05,
-  w: 0.05,
-  h: 0.05,
+  l: 0.055,
+  w: 0.055,
+  h: 0.055,
 }
 
 # Keepin static obstacles at 6 cm to avoid collision
@@ -56,9 +64,9 @@ B_1: {
 
 
 R_1: {
-  l: 0.05,
-  w: 0.05,
-  h: 0.05,
+  l: 0.055,
+  w: 0.055,
+  h: 0.055,
 }
 
 
