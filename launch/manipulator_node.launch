@@ -120,9 +120,11 @@
   </group>
 
   <!-- Run Rviz -->
-  <include file="$(find panda_moveit_config)/launch/moveit_rviz.launch">
-    <arg name="debug" value="false"/>
-    <arg name="rviz_config" value="$(dirname)/taskit.rviz" />
-  </include>
+  <group if="$(arg use_rviz)">
+    <include file="$(find panda_moveit_config)/launch/moveit_rviz.launch">
+      <arg name="debug" value="false"/>
+      <arg name="rviz_config" value="$(dirname)/taskit.rviz" />
+    </include>
+  </group>
 
 </launch>

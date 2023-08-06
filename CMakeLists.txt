@@ -26,21 +26,28 @@ find_package(catkin REQUIRED COMPONENTS
 #find_package(Eigen3 REQUIRED)
 find_package(Boost REQUIRED system filesystem date_time thread)
 
+add_message_files(
+	DIRECTORY msg
+	FILES
+	MovementProperties.msg
+)
+
 add_service_files(
 	DIRECTORY srv
 	FILES
 	GetObjectLocations.srv
-	StowSrv.srv
-	GraspSrv.srv
-	ReleaseSrv.srv
-	TransitSrv.srv
-	UpdateEnvSrv.srv
+	Stow.srv
+	Grasp.srv
+	Release.srv
+	Transit.srv
+	UpdateEnv.srv
 )
 
 generate_messages(
 	DEPENDENCIES
 	geometry_msgs
 	std_msgs
+	#taskit
 )
 
 catkin_package(
@@ -65,5 +72,3 @@ set(TASKIT_LIBRARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/taskit)
 
 add_subdirectory(taskit)
 add_subdirectory(src)
-
-# HELLO!!!

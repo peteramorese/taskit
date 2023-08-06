@@ -1,8 +1,5 @@
 # Object ID for releasing; NOTE: Leave this blank to automatically detect the attached object and release it
 string obj_id
 ---
-# Object was successfully released
-bool success
-
-# Total time the action primitive took to execute
-float32 execution_time
+# Properties about the physical movement of the robot
+taskit/MovementProperties mv_props

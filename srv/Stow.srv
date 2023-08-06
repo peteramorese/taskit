@@ -1,0 +1,6 @@
+---
+# The motion planning success
+bool plan_success
+
+# Properties about the physical movement of the robot
+taskit/MovementProperties mv_props

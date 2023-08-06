@@ -18,6 +18,9 @@ int main(int argc, char** argv) {
 	// Make the simulation gripper handler
 	std::shared_ptr<GripperHandler<GripperUse::FrankaHand>> gripper_handler = std::make_shared<GripperHandler<GripperUse::FrankaHand>>(MI_FRANKA_GRIPPER_TOPIC, 5.0);
 
+	// Get the linear mover
+	std::shared_ptr<ActionPrimitives::LinearMover> linear_mover = ActionPrimitives::makeLinearMover();
+
 	// Construct action primitives
 	ActionPrimitives::UpdateEnvironment update_environment("update_environment");
 	ActionPrimitives::GetObjectLocations get_object_locations("get_object_locations");
@@ -27,11 +30,11 @@ int main(int argc, char** argv) {
 	ActionPrimitives::Transit transit("transit", 5.0f, 1);
 	ActionPrimitives::TransitUp transit_up("transit_up", 5.0f, 1);
 	ActionPrimitives::TransitSide transit_side("transit_side", 5.0f, 1);
-	ActionPrimitives::LinearTransit linear_transit("linear_transit", 5.0f, 1, 0.05);
-	ActionPrimitives::LinearTransitUp linear_transit_up("linear_transit_up", 5.0f, 1, 0.05);
-	ActionPrimitives::LinearTransitSide linear_transit_side("linear_transit_side", 5.0f, 1, 0.05);
-	ActionPrimitives::Transport transport("transport", 5.0f, 1, 0.05);
-	ActionPrimitives::LinearTransport linear_transport("linear_transport", 5.0f, 1, 0.05);
+	ActionPrimitives::LinearTransit linear_transit("linear_transit", 5.0f, 1, 0.05, linear_mover);
+	ActionPrimitives::LinearTransitUp linear_transit_up("linear_transit_up", 5.0f, 1, 0.05, linear_mover);
+	ActionPrimitives::LinearTransitSide linear_transit_side("linear_transit_side", 5.0f, 1, 0.05, linear_mover);
+	ActionPrimitives::Transport transport("transport", 5.0f, 1);
+	ActionPrimitives::LinearTransport linear_transport("linear_transport", 5.0f, 1, 0.05, linear_mover);
 
 	ManipulatorNode<
 	 	decltype(update_environment),
