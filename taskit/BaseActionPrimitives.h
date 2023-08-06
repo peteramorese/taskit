@@ -45,7 +45,19 @@ class ActionPrimitive {
         const std::string m_topic;
 };
 
-class Stow : public ActionPrimitive<taskit::StowSrv> {
+//// Convenience class for moving the arm with the move group interface
+//class Mover {
+//    protected:
+//        Mover() = default;
+//
+//        void setScalingFactors() const {
+//
+//        }
+//    protected:
+//        std::string m_default_planning_time;
+//};
+
+class Stow : public ActionPrimitive<taskit::Stow> {
     public:
         Stow(const std::string& topic)
             : ActionPrimitive<taskit::StowSrv>(topic)
