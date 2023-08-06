@@ -3,6 +3,7 @@
 #include "AdvancedActionPrimitives.h"
 #include "BaseActionPrimitives.h"
 #include "Gripper.h"
+#include "LinearMover.h"
 #include "ManipulatorNode.h"
 #include "ManipulatorNodeInterface.h"
 #include "ManipulatorProperties.h"

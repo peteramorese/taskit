@@ -3,12 +3,12 @@
   <arg name="arm_id" default="panda" />
 
   <arg name="sim" default="true" />
-  <arg name="advanced" default="true" />
   <arg name="pose_tracker" default="simulation" />
   <arg name="pose_tracker_sampling_duration" default="0.2" />
   <arg name="use_rviz" default="true" />
   <arg name="use_gui" default="false" />
   <arg name="robot_ip" default="franka-aria.colorado.edu" />
+  <arg name="config_directory" default="$(find taskit)/config" />
 
   <arg name="pipeline" default="ompl" />
 
@@ -53,6 +53,7 @@
   </include>
 
   <include file="$(find taskit)/launch/load_parameters.launch">
+    <arg name="config_directory" value="$(arg config_directory)"/>
   </include>
 
   <!-- If pose_tracker is vrpn, launch the vrpn node -->
@@ -119,9 +120,11 @@
   </group>
 
   <!-- Run Rviz -->
-  <include file="$(find panda_moveit_config)/launch/moveit_rviz.launch">
-    <arg name="debug" value="false"/>
-    <arg name="rviz_config" value="$(dirname)/taskit.rviz" />
-  </include>
+  <group if="$(arg use_rviz)">
+    <include file="$(find panda_moveit_config)/launch/moveit_rviz.launch">
+      <arg name="debug" value="false"/>
+      <arg name="rviz_config" value="$(dirname)/taskit.rviz" />
+    </include>
+  </group>
 
 </launch>

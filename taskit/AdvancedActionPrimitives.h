@@ -1,80 +1,22 @@
 #pragma once
 
 #include <moveit/trajectory_processing/iterative_time_parameterization.h>
+#include <moveit/move_group_interface/move_group_interface.h>
 
 #include "BaseActionPrimitives.h"
+#include "MovementAnalysis.h"
+#include "LinearMover.h"
 
 namespace TaskIt {
 namespace ActionPrimitives {
 
-class CartesianMover {
+class LinearTransit : public Transit {
     public:
-        CartesianMover(double max_velocity_scale)
-            : m_max_velocity_scale(max_velocity_scale)
-        {
-            m_eef_step = ManipulatorProperties::getLinearEEFStepSize("panda_arm");
-            m_jump_thresh = ManipulatorProperties::getLinearJumpThreshold("panda_arm");
-            m_max_acceleration_scale = ManipulatorProperties::getLinearMaxAccelerationScale("panda_arm");
-        }
-
-        bool cartesianMove(moveit::planning_interface::MoveGroupInterface& move_group, const geometry_msgs::Point& dst_point) {
-            const geometry_msgs::Pose& curr_pose = move_group.getCurrentPose().pose;
-
-            uint32_t n_waypoints = ManipulatorProperties::getLinearNumWaypoints("panda_arm");
-            ROS_ASSERT_MSG(n_waypoints > 1, "Number of linear waypoints must be greater than 1, check the arm config file");
-            std::vector<geometry_msgs::Pose> waypts(n_waypoints);
-
-            // Convert to tf2
-            tf2::Vector3 dst_position, curr_position;
-            tf2::fromMsg(dst_point, dst_position);
-            tf2::fromMsg(curr_pose.position, curr_position);
-
-            tf2::Vector3 diff = dst_position - curr_position;
-            for (uint32_t i = 0; i < n_waypoints; ++i) {
-                waypts[i] = curr_pose;
-                tf2::toMsg(curr_position + static_cast<float>(i) / static_cast<float>(n_waypoints - 1) * diff, waypts[i].position);
-            }
-
-            moveit_msgs::RobotTrajectory trajectory;
-            double fraction = move_group.computeCartesianPath(waypts, m_eef_step, m_jump_thresh, trajectory);
-
-            if (fraction <= 0.0) {
-                ROS_ERROR("Safe cartesian path computation failed!");
-                if (!ManipulatorProperties::enforceSafeLinearMovement("panda_arm")) {
-                    ROS_WARN("Attempting cartesian path computation without collision checking. Adjust the arm_config file if this behavior is undesired");
-                    fraction = move_group.computeCartesianPath(waypts, m_eef_step, m_jump_thresh, trajectory, false);
-                    if (fraction <= 0.0) {
-                        ROS_ERROR("Cartesian path computation failed!");
-                        return false;
-                    }
-                }
-            }
-
-			robot_trajectory::RobotTrajectory robot_trajectory(move_group.getRobotModel(), "panda_arm");
-            robot_trajectory.setRobotTrajectoryMsg(*move_group.getCurrentState(), trajectory);
-            m_iptp.computeTimeStamps(robot_trajectory, m_max_acceleration_scale); 
-
-            moveit_msgs::RobotTrajectory robot_trajectory_msg;
-            robot_trajectory.getRobotTrajectoryMsg(robot_trajectory_msg);
-            move_group.setMaxVelocityScalingFactor(m_max_velocity_scale);
-            return move_group.execute(robot_trajectory_msg) == moveit::core::MoveItErrorCode::SUCCESS;
-        }
-    private:
-        double m_eef_step;
-        double m_jump_thresh;
-        double m_max_acceleration_scale;
-        double m_max_velocity_scale;
-        trajectory_processing::IterativeParabolicTimeParameterization m_iptp;
-
-};
-
-class LinearTransit : public Transit, public CartesianMover {
-    public:
-        LinearTransit(const std::string& topic, double planning_time, uint8_t max_trials, double distance, double max_velocity_scaling_factor = 0.5)
-            : Transit(topic, planning_time, max_trials, max_velocity_scaling_factor)
-            , CartesianMover(max_velocity_scaling_factor)
+        LinearTransit(const std::string& topic, double planning_time, uint8_t max_trials, double distance, const std::shared_ptr<LinearMover>& linear_mover)
+            : Transit(topic, planning_time, max_trials)
             , m_approach_distance(distance)
             , m_retreat_distance(distance)
+            , m_linear_mover(linear_mover)
         {}
 
 
@@ -101,7 +43,7 @@ class LinearTransit : public Transit, public CartesianMover {
             std::vector<EndEffectorGoalPoseProperties> approach_offset_eef_poses = getGraspGoalPoses(*obj_group, goal_pose_props, m_approach_distance);
 
             response.plan_success = false;
-            response.execution_success = false;
+            bool execution_success = false;
 
             move_group->setPlanningTime(m_planning_time);
 
@@ -115,7 +57,7 @@ class LinearTransit : public Transit, public CartesianMover {
                     dst_retreat_point.x -= m_retreat_distance * retreat_direction[0];
                     dst_retreat_point.y -= m_retreat_distance * retreat_direction[1];
                     dst_retreat_point.z -= m_retreat_distance * retreat_direction[2];
-                    if (!cartesianMove(*move_group, dst_retreat_point)) {
+                    if (!m_linear_mover->move(response.mv_props, *move_group, dst_retreat_point)) {
                         // Failure
                         return true;
                     }
@@ -152,20 +94,30 @@ class LinearTransit : public Transit, public CartesianMover {
                             vis->publishGoalMarker(approach_offset_eef_pose, "Goal");
                         }
 
-                        response.execution_success = move_group->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
+                        execution_success = move_group->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
+
+                        // Make the movement properties for the motion plan
+                        taskit::MovementProperties motion_plan_mv_props;
+                        makeMovementProperties(motion_plan_mv_props, execution_success, begin, *move_group, plan);
+
+                        // Append the movement properties for the motion plan
+                        appendMovementProperties(response.mv_props, motion_plan_mv_props);
 
                         // If the execution succeeded, perform the cartesian approach
-                        if (response.execution_success && cartesianMove(*move_group, eef_pose.position)) {
+                        taskit::MovementProperties approach_mv_props;
+                        if (execution_success && m_linear_mover->move(approach_mv_props, *move_group, eef_pose.position)) {
                             updateState(*state, request.destination_location, goal_pose_props.moving_to_object, eef_poses[i].rotation_type, eef_poses[i].placing_offset);
                         }
-                        response.execution_time = (ros::Time::now() - begin).toSec();
+
+                        // Append the movement properties for the cartesian movement
+                        appendMovementProperties(response.mv_props, approach_mv_props);
                         return true;
                     }
                 }
 
                 ++trial;        
                 if (trial >= m_max_trials) {
-                    response.execution_time = (ros::Time::now() - begin).toSec();
+                    makeMovementProperties(response.mv_props, execution_success, begin);
                     return true;
                 }
             }
@@ -174,12 +126,13 @@ class LinearTransit : public Transit, public CartesianMover {
     protected:
         double m_approach_distance;
         double m_retreat_distance;
+        std::shared_ptr<LinearMover> m_linear_mover;
 };
 
 class LinearTransitUp : public LinearTransit {
     public:
-        LinearTransitUp(const std::string& topic, double planning_time, uint8_t max_trials, double distance, double max_velocity_scaling_factor = 0.5)
-            : LinearTransit(topic, planning_time, max_trials, distance, max_velocity_scaling_factor) {}
+        LinearTransitUp(const std::string& topic, double planning_time, uint8_t max_trials, double distance, const std::shared_ptr<LinearMover>& linear_mover)
+            : LinearTransit(topic, planning_time, max_trials, distance, linear_mover) {}
 
         virtual std::vector<Quaternions::RotationType> getTransitRotationTypes() const override {
             // Use only None and pitch 180 (up or down)
@@ -189,8 +142,8 @@ class LinearTransitUp : public LinearTransit {
 
 class LinearTransitSide : public LinearTransit {
     public:
-        LinearTransitSide(const std::string& topic, double planning_time, uint8_t max_trials, double distance, double max_velocity_scaling_factor = 0.5)
-            : LinearTransit(topic, planning_time, max_trials, distance, max_velocity_scaling_factor) {}
+        LinearTransitSide(const std::string& topic, double planning_time, uint8_t max_trials, double distance, const std::shared_ptr<LinearMover>& linear_mover)
+            : LinearTransit(topic, planning_time, max_trials, distance, linear_mover) {}
 
         virtual std::vector<Quaternions::RotationType> getTransitRotationTypes() const override {
             // Use only pitch 90 and pitch 270 (side left or side right)
@@ -198,13 +151,13 @@ class LinearTransitSide : public LinearTransit {
         }
 };
 
-class LinearTransport : public Transport, public CartesianMover {
+class LinearTransport : public Transport {
     public:
-        LinearTransport(const std::string& topic, double planning_time, uint8_t max_trials, double distance, double max_velocity_scaling_factor = 0.5)
-            : Transport(topic, planning_time, max_trials, max_velocity_scaling_factor)
-            , CartesianMover(max_velocity_scaling_factor)
+        LinearTransport(const std::string& topic, double planning_time, uint8_t max_trials, double distance, const std::shared_ptr<LinearMover>& linear_mover)
+            : Transport(topic, planning_time, max_trials)
             , m_approach_offset(0.0, 0.0, distance)
             , m_retreat_offset(0.0, 0.0, distance)
+            , m_linear_mover(linear_mover)
         {}
 
         inline void setApproachOffset(const tf2::Vector3& approach_offset) {m_approach_offset = approach_offset;}
@@ -221,11 +174,12 @@ class LinearTransport : public Transport, public CartesianMover {
             auto state = interface.state.lock();
 
             response.plan_success = false;
-            response.execution_success = false;
+            bool execution_success = false;
 
             // Make sure at least one object is attached
             if (!interface.planning_scene_interface.lock()->getAttachedObjects().size()) {
                 ROS_WARN_STREAM("Did not find attached object (is the manipulator grasping?), not executing");
+                makeMovementProperties(response.mv_props, execution_success, begin);
                 return false;
             }
 
@@ -233,13 +187,11 @@ class LinearTransport : public Transport, public CartesianMover {
             GoalPoseProperties goal_pose_props = getGoalPose(*predicate_handler, *obj_group, request);
             if (goal_pose_props.moving_to_object) {
                 ROS_ERROR_STREAM("Destination location '" << request.destination_location << "' is occupied by object: " << goal_pose_props.obj_id << ", not executing");
+                makeMovementProperties(response.mv_props, execution_success, begin);
                 return false;
             } else {
                 ROS_INFO_STREAM("Goal pose for location '" << request.destination_location <<"' extracted from predicate handler");
             }
-
-            // Set the temporary member before getting grasp goal poses
-            t_grasp_rotation_type = state->grasp_rotation_type;
 
             // Get the grasp pose options
             std::vector<EndEffectorGoalPoseProperties> eef_poses = getGraspGoalPoses(*obj_group, goal_pose_props, state->placing_offset);
@@ -257,7 +209,7 @@ class LinearTransport : public Transport, public CartesianMover {
                     dst_retreat_point.x += m_retreat_offset[0];
                     dst_retreat_point.y += m_retreat_offset[1];
                     dst_retreat_point.z += m_retreat_offset[2];
-                    if (!cartesianMove(*move_group, dst_retreat_point)) {
+                    if (!m_linear_mover->move(response.mv_props, *move_group, dst_retreat_point)) {
                         // Failure
                         return true;
                     }
@@ -295,19 +247,31 @@ class LinearTransport : public Transport, public CartesianMover {
                             vis->publishGoalMarker(approach_offset_eef_pose, "Goal");
                         }
 
-                        response.execution_success = move_group->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
-                        if (response.execution_success && cartesianMove(*move_group, eef_pose.position)) {
+                        execution_success = move_group->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
+
+                        // Make the movement properties for the motion plan
+                        taskit::MovementProperties motion_plan_mv_props;
+                        makeMovementProperties(motion_plan_mv_props, execution_success, begin, *move_group, plan);
+
+                        // Append the movement properties for the motion plan
+                        appendMovementProperties(response.mv_props, motion_plan_mv_props);
+
+                        // If the execution succeeded, perform the cartesian approach
+                        taskit::MovementProperties approach_mv_props;
+                        if (execution_success && m_linear_mover->move(approach_mv_props, *move_group, eef_pose.position)) {
                             // Update destination location, must be near object (holding), keep rotation type, keep placing offset
                             updateState(*state, request.destination_location, true, state->grasp_rotation_type, state->placing_offset);
                         }
-                        response.execution_time = (ros::Time::now() - begin).toSec();
+
+                        // Append the movement properties for the cartesian movement
+                        appendMovementProperties(response.mv_props, approach_mv_props);
                         return true;
                     }
                 }
 
                 ++trial;        
                 if (trial >= m_max_trials) {
-                    response.execution_time = (ros::Time::now() - begin).toSec();
+                    makeMovementProperties(response.mv_props, execution_success, begin);
                     return true;
                 }
             }
@@ -315,6 +279,7 @@ class LinearTransport : public Transport, public CartesianMover {
     protected:
         tf2::Vector3 m_approach_offset;
         tf2::Vector3 m_retreat_offset;
+        std::shared_ptr<LinearMover> m_linear_mover;
 
 };
 
