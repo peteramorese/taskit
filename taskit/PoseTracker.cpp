@@ -1,8 +1,22 @@
 #include "PoseTracker.h"
 
 #include "Object.h"
+#include "PredicateHandler.h"
 
 namespace TaskIt {
+
+SimulationPoseTracker::SimulationPoseTracker(const ros::NodeHandle& nh, const ManipulatorNodeInterface& interface, const std::string& objects_ns)
+    : m_planning_scene_interface(interface.planning_scene_interface.lock())
+{}
+
+bool SimulationPoseTracker::update(Object& object) const {
+    // Get the pose from the planning scene interface
+    std::map<std::string, geometry_msgs::Pose> objs = m_planning_scene_interface->getObjectPoses({object.id});
+
+    // Set pose without applying orientation type, because the pose has already been correctly stored in the planning scene
+    object.setPose(objs[object.id], false);
+    return true;
+}
 
 VRPNPoseTracker::VRPNPoseTracker(const std::shared_ptr<ros::NodeHandle>& node_handle, double sampling_duration)
     : m_node_handle(node_handle)

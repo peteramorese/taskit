@@ -23,8 +23,8 @@ optimal_planner_id: RRTstar
 eef_offset: 0.095
 
 # Movement scale constraints
-max_acceleration_scale: 0.03
-max_velocity_scale: 0.5
+max_acceleration_scale: 0.3
+max_velocity_scale: 0.9
 
 # Linear Mover type (cartesian, smoothplan)
 linear_mover: smoothplan

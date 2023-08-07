@@ -3,8 +3,11 @@
 #include <ros/ros.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <moveit/planning_scene_interface/planning_scene_interface.h>
 
 #include "Tools.h"
+#include "ManipulatorNodeInterface.h"
+
 namespace TaskIt {
 
 // Forward declarations
@@ -20,7 +23,12 @@ class PoseTracker {
 
 class SimulationPoseTracker : public PoseTracker {
     public:
-        virtual bool update(Object& object) const override {return true;}
+        SimulationPoseTracker(const ros::NodeHandle& nh, const ManipulatorNodeInterface& interface, const std::string& objects_ns = "objects");
+
+        virtual bool update(Object& object) const override;
+
+    private:
+        std::shared_ptr<moveit::planning_interface::PlanningSceneInterface> m_planning_scene_interface;
 };
 
 class VRPNPoseTracker : public PoseTracker {

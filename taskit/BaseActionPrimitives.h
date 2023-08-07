@@ -93,7 +93,7 @@ class UpdateEnvironment : public ActionPrimitive<taskit::UpdateEnv> {
             auto move_group = interface.move_group.lock();
             auto obj_group = interface.object_group.lock();
             auto pci = interface.planning_scene_interface.lock();
-            response.found_all = obj_group->updatePosesWithPlanningScene(*pci, move_group->getPlanningFrame(), !request.include_static);
+            response.found_all = obj_group->updatePlanningScene(*pci, move_group->getPlanningFrame(), !request.include_static);
             return true;
         }
         

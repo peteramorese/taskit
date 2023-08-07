@@ -82,12 +82,12 @@ class ManipulatorNode {
             m_predicate_handler.reset(new PredicateHandler(m_obj_group));
             m_predicate_handler->createEnvironment(*m_node_handle, environment_ns);
             m_predicate_handler->setObjectPosesToLocations(*m_node_handle, objects_ns);
-            updatePlanningScene(false);
+            updatePlanningScene(false, false);
             if (m_auto_visualize) m_visualizer->publishLocationMarkers(*m_predicate_handler);
         }
 
         // Update all of the object poses, and update the collision objects in the planning scene
-        bool updatePlanningScene(bool ignore_static = true);
+        bool updatePlanningScene(bool ignore_static = true, bool update_poses = true);
 
         // Reference node handle.
         inline ros::NodeHandle& getNodeHandle() {return *m_node_handle;}

@@ -217,9 +217,10 @@ struct Object {
             return false;
         }
 
-        void setPose(const geometry_msgs::Pose& pose) {
+        void setPose(const geometry_msgs::Pose& pose, bool apply_orientation_type = true) {
             m_pose = pose;
-            m_pose.orientation = Quaternions::convert(Quaternions::get(m_orientation_type) * Quaternions::convert(m_pose.orientation));
+            if (apply_orientation_type)
+                m_pose.orientation = Quaternions::convert(Quaternions::get(m_orientation_type) * Quaternions::convert(m_pose.orientation));
         }
 
         const geometry_msgs::Pose& pose() const {return m_pose;}
@@ -313,7 +314,7 @@ class ObjectGroup {
             for (auto& v_type : m_objects) v_type.second.updatePose();
         }
 
-        bool updatePosesWithPlanningScene(moveit::planning_interface::PlanningSceneInterface& pci, const std::string& planning_frame_id, bool ignore_static = true);
+        bool updatePlanningScene(moveit::planning_interface::PlanningSceneInterface& pci, const std::string& planning_frame_id, bool ignore_static = true, bool update_poses = true);
 
         bool hasObject(const std::string& obj_id) const {return m_objects.find(obj_id) != m_objects.end();}
     protected:

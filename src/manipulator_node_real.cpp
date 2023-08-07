@@ -74,7 +74,7 @@ int main(int argc, char** argv) {
 	std::string pose_tracker_type;
 	if (node_handle->getParam("pose_tracker/type", pose_tracker_type)) {
 		if (pose_tracker_type == "simulation") {
-			pose_tracker = std::make_shared<SimulationPoseTracker>();
+			pose_tracker = std::make_shared<SimulationPoseTracker>(*node_handle, manipulator_node.getInterface());
 		} else if (pose_tracker_type == "vrpn") {
 			double sampling_duration = node_handle->param("pose_tracker/sampling_duration", 0.1);
 			pose_tracker = std::make_shared<VRPNPoseTracker>(node_handle, sampling_duration);
@@ -83,7 +83,7 @@ int main(int argc, char** argv) {
 		}
 	} else {
 		ROS_WARN_NAMED(node_name, "Did not find param 'pose_tracker', assuming type 'simulation'");
-		pose_tracker = std::make_shared<SimulationPoseTracker>();
+		pose_tracker = std::make_shared<SimulationPoseTracker>(*node_handle, manipulator_node.getInterface());
 	}
 	
 	// Wait for rviz topic to come up before creating scene
