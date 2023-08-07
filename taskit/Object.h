@@ -217,13 +217,15 @@ struct Object {
             return false;
         }
 
-        void setPose(const geometry_msgs::Pose& pose, bool apply_orientation_type = true) {
-            m_pose = pose;
-            if (apply_orientation_type)
-                m_pose.orientation = Quaternions::convert(Quaternions::get(m_orientation_type) * Quaternions::convert(m_pose.orientation));
-        }
+        void setPose(const geometry_msgs::Pose& pose) {m_pose = pose;}
 
         const geometry_msgs::Pose& pose() const {return m_pose;}
+
+        geometry_msgs::Pose graspPose() const {
+            geometry_msgs::Pose grasp_pose = m_pose;
+            grasp_pose.orientation = Quaternions::convert(Quaternions::get(m_orientation_type) * Quaternions::convert(m_pose.orientation));
+            return grasp_pose;
+        }
 
         void setPoseFromConfig(const ObjectConfig& config) {
             geometry_msgs::Pose pose;

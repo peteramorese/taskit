@@ -92,6 +92,13 @@ int main(int argc, char** argv) {
 	manipulator_node.createScene(pose_tracker);
 	//manipulator_node.updatePlanningScene();
 
+	// For simulation, automatically update the environment after every action call
+	manipulator_node.setAfterActionCallback([&](){
+		taskit::UpdateEnv::Request req;
+		taskit::UpdateEnv::Response res;
+		manipulator_node.callActionByType<ActionPrimitives::UpdateEnvironment>(req, res);
+	});
+
 	manipulator_node.spawnAllActionServices();
 
 	ros::waitForShutdown();

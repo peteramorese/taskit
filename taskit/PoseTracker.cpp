@@ -13,8 +13,7 @@ bool SimulationPoseTracker::update(Object& object) const {
     // Get the pose from the planning scene interface
     std::map<std::string, geometry_msgs::Pose> objs = m_planning_scene_interface->getObjectPoses({object.id});
 
-    // Set pose without applying orientation type, because the pose has already been correctly stored in the planning scene
-    object.setPose(objs[object.id], false);
+    object.setPose(objs[object.id]);
     return true;
 }
 

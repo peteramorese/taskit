@@ -35,8 +35,8 @@ green_box_1: {
 }
 
 object_orientation_types:
-  - up_y
-  - up_y
+  - up_x
+  - up_x
   #- up_y
   #- up_y
 
