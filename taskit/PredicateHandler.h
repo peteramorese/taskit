@@ -17,13 +17,36 @@ class PredicateHandler {
         static inline const std::string s_ignored = "ignored";
 	public:
 		struct Location {
-            Location(const geometry_msgs::Pose& pose_, float detection_radius_)
-                : pose(pose_)
-                , detection_radius(detection_radius_)
-            {}
+            Location() = default;
+            Location(const geometry_msgs::Pose& pose, float detection_radius_)
+                : detection_radius(detection_radius_)
+            {
+                object_class_poses[Object::s_default_class] = pose;
+            }
 
-			geometry_msgs::Pose pose;
-            float detection_radius;
+            Location(const geometry_msgs::Point& position, Quaternions::Type orientation_type, float detection_radius_)
+                : detection_radius(detection_radius_)
+            {
+                geometry_msgs::Pose& default_pose = object_class_poses[Object::s_default_class];
+                default_pose.position = position;
+                default_pose.orientation = Quaternions::convert(Quaternions::get(orientation_type));
+            }
+
+            void addObjectClassPose(const std::string& object_type, const geometry_msgs::Pose& pose) {
+                object_class_poses[object_type] = pose;
+            }
+
+            void addObjectClassPose(const std::string& object_type, const geometry_msgs::Point& position, Quaternions::Type orientation_type) {
+                geometry_msgs::Pose& pose = object_class_poses[object_type];
+                pose.position = position;
+                pose.orientation = Quaternions::convert(Quaternions::get(orientation_type));
+            }
+
+            const geometry_msgs::Pose& defaultPose() const {return object_class_poses.at(Object::s_default_class);}
+
+            std::map<std::string, geometry_msgs::Pose> object_class_poses;
+            float detection_radius = 0.05;
+
 		};
         struct PredicateSet {
             public:
@@ -75,29 +98,20 @@ class PredicateHandler {
         // if `initial_locations` is not found
         void setObjectPosesToLocations(const ros::NodeHandle& nh, const std::string& objects_ns = "objects");
 
-		void addLocation(const std::string& name, const geometry_msgs::Point& position, Quaternions::Type orientation_type, float detection_radius) {
-            geometry_msgs::Pose pose;
-            pose.position = position;
-            pose.orientation = Quaternions::convert(Quaternions::get(orientation_type));
-            m_locations.emplace(std::piecewise_construct, std::forward_as_tuple(name), std::forward_as_tuple(pose, detection_radius));
-		}
-
-		void addLocation(const std::string& name, const geometry_msgs::Pose& pose, float detection_radius) {
-            m_locations.emplace(std::piecewise_construct, std::forward_as_tuple(name), std::forward_as_tuple(pose, detection_radius));
-		}
-
-        void addLocation(const std::string& name, const Location& location) {
-            m_locations.insert(std::make_pair(name, location));
+        void addLocation(const std::string& name, Location&& location) {
+            m_locations.insert(std::make_pair(name, std::move(location)));
         }
 
-        const geometry_msgs::Pose& getLocationPose(const std::string& name) const {return m_locations.at(name).pose;}
+        const geometry_msgs::Pose& getLocationPose(const std::string& name, const std::string& object_class = "default") const {
+            return m_locations.at(name).object_class_poses.at(object_class);
+        }
 
         // Look up
 		const PredicateSet getPredicates(const std::set<std::string>& ignore_obj_ids = std::set<std::string>{}) const;
     private:
 		static double distance(const geometry_msgs::Point& lhs, const geometry_msgs::Point& rhs);
 
-        std::pair<bool, std::string> findPredicate(const geometry_msgs::Point& loc) const;
+        std::pair<bool, std::string> findPredicate(const Object* obj) const;
 
     private:
         std::map<std::string, Location> m_locations;

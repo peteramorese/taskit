@@ -6,32 +6,75 @@ void PredicateHandler::createEnvironment(const ros::NodeHandle& nh, const std::s
     std::vector<std::string> location_names;
     nh.getParam(getParamName("location_names", environment_ns), location_names);
 
-    std::vector<std::string> location_orientation_types;
-    nh.getParam(getParamName("location_orientation_types", environment_ns), location_orientation_types);
+    for (const auto& location_name : location_names) {
+        ROS_ASSERT_MSG(nh.hasParam(getParamName(location_name, environment_ns)), "Missing configuration for at least one location");
 
-    for (uint32_t i=0; i<location_names.size(); ++i) {
-        std::map<std::string, float> location_properties;
-        nh.getParam(getParamName(location_names[i], environment_ns), location_properties);
-        ROS_INFO_STREAM("Loaded location: " << location_names[i] 
-            << " at (x: " << location_properties.at("x") 
-            << ", y: " << location_properties.at("y") 
-            << ", z: " << location_properties.at("z") 
-            << ", r: " << location_properties.at("r") 
-            << ")");
-        geometry_msgs::Point position;
-        position.x = location_properties.at("x");
-        position.y = location_properties.at("y");
-        position.z = location_properties.at("z");
-        addLocation(location_names[i], position, Quaternions::toType(location_orientation_types[i]), location_properties.at("r"));
+        Location location;
+
+        // Detection radius
+        ROS_ASSERT_MSG(nh.hasParam(getParamName(location_name + "/detection_radius", environment_ns)), "Must specify a 'detection_radius' for each location");
+        nh.getParam(getParamName(location_name + "/detection_radius", environment_ns), location.detection_radius);
+
+        // Orientation type
+        if (!nh.hasParam(getParamName(location_name + "/orientation_type", environment_ns))) {
+            ROS_WARN_STREAM("Did not find orientation type for location '" << location_name << "', setting to up_x");
+        }
+        Quaternions::Type orientation_type = Quaternions::toType(nh.param<std::string>(getParamName(location_name + "/orientation_type", environment_ns), "up_x"));
+        
+        // Default object class location
+        ROS_ASSERT_MSG(nh.hasParam(getParamName(location_name + "/default" , environment_ns)) 
+            || nh.hasParam(getParamName(location_name + "/object_classes", environment_ns)), "Must specify either a 'default' object class location and/or 'object_classes'");
+
+        if (nh.hasParam(getParamName(location_name + "/default", environment_ns))) {
+            std::map<std::string, float> location_properties;
+            nh.getParam(getParamName(location_name + "/default", environment_ns), location_properties);
+
+            ROS_INFO_STREAM("Loaded default object class location: " << location_name 
+                << " at (x: " << location_properties.at("x") 
+                << ", y: " << location_properties.at("y") 
+                << ", z: " << location_properties.at("z") 
+                << ")");
+            geometry_msgs::Point position;
+            position.x = location_properties.at("x");
+            position.y = location_properties.at("y");
+            position.z = location_properties.at("z");
+            location.addObjectClassPose(Object::s_default_class, position, orientation_type);
+        }
+
+        // Get list of specific object classes
+        std::vector<std::string> object_classes;
+        nh.getParam(getParamName(location_name, environment_ns) + "/object_classes", object_classes);
+
+        // Insert pose for each object class
+        for (const auto& object_class : object_classes) {
+            ROS_ASSERT_MSG(nh.hasParam(getParamName(location_name + "/" + object_class, environment_ns)), "Must specify a coordinate for each object class");
+            std::map<std::string, float> location_properties;
+            nh.getParam(getParamName(location_name + "/" + object_class, environment_ns), location_properties);
+
+            ROS_INFO_STREAM("Loaded '" << object_class << "' object class location: " << location_name 
+                << " at (x: " << location_properties.at("x") 
+                << ", y: " << location_properties.at("y") 
+                << ", z: " << location_properties.at("z") 
+                << ")");
+            geometry_msgs::Point position;
+            position.x = location_properties.at("x");
+            position.y = location_properties.at("y");
+            position.z = location_properties.at("z");
+            location.addObjectClassPose(object_class, position, orientation_type);
+        }
+
+        addLocation(location_name, std::move(location));
     }
 }
 
 void PredicateHandler::setObjectPosesToLocations(const ros::NodeHandle& nh, const std::string& objects_ns) {
-    std::map<std::string, std::string> initial_locations;
-    if (nh.getParam(getParamName("initial_locations", objects_ns), initial_locations)) {
-        for (const auto& v_type : initial_locations) {
-            m_obj_group->getObject(v_type.first).setPose(getLocationPose(v_type.second));
+    for (Object* obj : m_obj_group->getObjects()) {
+        std::string initial_location;
+        if (nh.getParam(getParamName(obj->id, objects_ns) + "/initial_location", initial_location)) {
+            ROS_ASSERT_MSG(m_locations.find(initial_location) != m_locations.end(), "Unrecognized object initial location");
+            obj->setPose(getLocationPose(initial_location, obj->class_id));
         }
+
     }
 }
 
@@ -42,16 +85,17 @@ double PredicateHandler::distance(const geometry_msgs::Point& lhs, const geometr
     return lhs_converted.distance(rhs_converted);
 }
 
-std::pair<bool, std::string> PredicateHandler::findPredicate(const geometry_msgs::Point& loc) const {
+std::pair<bool, std::string> PredicateHandler::findPredicate(const Object* obj) const {
     double min_dist = -1.0;
     std::string nearest_predicate{};
     bool found = false;
-    for (const auto& v_type : m_locations) {
-        double d = distance(v_type.second.pose.position, loc);
+    for (const auto& kv : m_locations) {
+        const geometry_msgs::Point& location_position = kv.second.object_class_poses.at(obj->class_id).position;
+        double d = distance(obj->pose().position, location_position);
         if (min_dist < 0.0 || d < min_dist) {
             min_dist = d;
-            if (d <= v_type.second.detection_radius) {
-                nearest_predicate = v_type.first;
+            if (d <= kv.second.detection_radius) {
+                nearest_predicate = kv.first;
                 found = true;
             }
         }
@@ -64,7 +108,7 @@ const PredicateHandler::PredicateSet PredicateHandler::getPredicates(const std::
     for (const auto obj : m_obj_group->getObjects()) {
         const std::string& obj_id = obj->id;
         if (ignore_obj_ids.empty() || ignore_obj_ids.find(obj_id) == ignore_obj_ids.end()) {
-            std::pair<bool, std::string> result = findPredicate(obj->pose().position);
+            std::pair<bool, std::string> result = findPredicate(obj);
             if (result.first) {
                 predicate_set.setObjectPredicate(obj_id, result.second);
             } else {

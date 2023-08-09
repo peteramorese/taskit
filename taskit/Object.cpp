@@ -10,27 +10,56 @@ void ObjectGroup::createObjects(const ros::NodeHandle& nh, const std::string& ns
     std::vector<std::string> object_ids;
     nh.getParam(getParamName("object_ids", ns), object_ids);
 
-    std::vector<std::string> object_types;
-    nh.getParam(getParamName("object_types", ns), object_types);
+    //std::vector<std::string> object_types;
+    //nh.getParam(getParamName("object_types", ns), object_types);
 
-    std::vector<std::string> object_domains;
-    nh.param(getParamName("object_domains", ns), object_domains, {});
+    //std::vector<std::string> object_domains;
+    //nh.param(getParamName("object_domains", ns), object_domains, {});
 
-    std::vector<std::string> object_orientation_types;
-    nh.getParam(getParamName("object_orientation_types", ns), object_orientation_types);
+    //std::vector<std::string> object_orientation_types;
+    //nh.getParam(getParamName("object_orientation_types", ns), object_orientation_types);
 
-    ROS_ASSERT_MSG(object_ids.size() == object_types.size(), "Each object name must correspond to a type");
-    ROS_ASSERT_MSG(object_ids.size() == object_orientation_types.size(), "Each object must have an orientation type");
+    //ROS_ASSERT_MSG(object_ids.size() == object_types.size(), "Each object name must correspond to a type");
+    //ROS_ASSERT_MSG(object_ids.size() == object_orientation_types.size(), "Each object must have an orientation type");
 
-    for (uint32_t i=0; i<object_ids.size(); ++i) {
-        ObjectConfig config;
-        nh.getParam(getParamName(object_ids[i], ns), config);
+    for (const auto& object_id : object_ids) {
+        ROS_ASSERT_MSG(nh.hasParam(getParamName(object_id, ns)), "Missing configuration for at least one object");
 
-        ROS_INFO_STREAM("Loaded object: " << object_ids[i]);
+        // Mandatory features
+        ROS_ASSERT_MSG(nh.hasParam(getParamName(object_id, ns) + "/dimensions"), "Must specify 'dimensions' for each object");
+        ROS_ASSERT_MSG(nh.hasParam(getParamName(object_id, ns) + "/primitive_type"), "Must specify 'primitive_type' for each object");
+        
+        // Make the object specification
+        ObjectDimensionConfig dimension_cfg;
+        nh.getParam(getParamName(object_id, ns) + "/dimensions", dimension_cfg);
+        
+        std::string primitive_type;
+        nh.getParam(getParamName(object_id, ns) + "/primitive_type", primitive_type);
 
-        std::shared_ptr<ObjectSpecification> spec = makeObjectSpecification(object_types[i], config);
-        Object object(object_ids[i], spec, config, Quaternions::toType(object_orientation_types[i]), pose_tracker);
+        std::shared_ptr<ObjectSpecification> spec = makeObjectSpecification(primitive_type, dimension_cfg);
 
+        // Get orientation type if the config has it, otherwise set to up_x
+        Quaternions::Type orientation_type = Quaternions::toType(nh.param<std::string>(getParamName(object_id + "/orientation_type", ns), "up_x"));
+
+        std::string class_id = nh.param<>(getParamName(object_id, ns) + "/class", Object::s_default_class);
+        Object object(object_id, spec, orientation_type, pose_tracker, class_id);
+
+        if (nh.hasParam(getParamName(object_id, ns) + "/position")) {
+            geometry_msgs::Pose pose;
+            std::map<std::string, float> position_values;
+            nh.getParam(getParamName(object_id, ns) + "/position", position_values);
+            pose.position.x = position_values.at("x");
+            pose.position.y = position_values.at("y");
+            pose.position.z = position_values.at("z");
+            pose.orientation.x = 0.0;
+            pose.orientation.y = 0.0;
+            pose.orientation.z = 0.0;
+            pose.orientation.w = 1.0;
+            ROS_INFO_STREAM("Found location for object '" << object_id << "' (x: " << position_values["x"] << " y: " << position_values["y"] << " z: " << position_values["z"] << ")");
+            object.setPose(pose);
+        }
+
+        ROS_INFO_STREAM("Loaded object: " << object_id);
         insertObject(std::move(object));
     }
 
