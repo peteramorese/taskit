@@ -1,7 +1,7 @@
 location_names: 
   - "L1"
   - "L2"
-#  - "L3"
+  - "L3"
 #  - "L4"
 #  - "L5"
 
@@ -36,6 +36,24 @@ L2: {
     x: 0.40,
     y: -0.20,
     z: 0.03, 
+  },
+  detection_radius: 0.20, 
+  orientation_type: up_x
+}
+
+L3: {
+  default: {
+    x: -0.4,
+    y: 0.0,
+    z: 0.09,
+  },
+  object_classes: [
+    small
+  ],
+  small: {
+    x: -0.4,
+    y: 0.0,
+    z: 0.03,
   },
   detection_radius: 0.20, 
   orientation_type: up_x

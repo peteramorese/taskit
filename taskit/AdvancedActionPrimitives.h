@@ -172,19 +172,22 @@ class LinearTransport : public Transport {
             auto predicate_handler = interface.predicate_handler.lock();
             auto vis = interface.visualizer.lock();
             auto state = interface.state.lock();
+            auto pci = interface.planning_scene_interface.lock();
 
             response.plan_success = false;
             bool execution_success = false;
 
+            auto attached_objects = pci->getAttachedObjects();
+
             // Make sure at least one object is attached
-            if (!interface.planning_scene_interface.lock()->getAttachedObjects().size()) {
-                ROS_WARN_STREAM("Did not find attached object (is the manipulator grasping?), not executing");
+            if (!attached_objects.size()) {
+                ROS_WARN_STREAM("Did not find attached object (is the manipulator holding an object?), not executing");
                 makeMovementProperties(response.mv_props, execution_success, begin);
                 return false;
             }
 
-            // Get the goal pose from the request location
-            GoalPoseProperties goal_pose_props = getGoalPose(*predicate_handler, *obj_group, request);
+            // Get the goal pose from the request location. Use the 
+            GoalPoseProperties goal_pose_props = getGoalPose(*predicate_handler, *obj_group, request, attached_objects.begin()->first); 
             if (goal_pose_props.moving_to_object) {
                 ROS_ERROR_STREAM("Destination location '" << request.destination_location << "' is occupied by object: " << goal_pose_props.obj_id << ", not executing");
                 makeMovementProperties(response.mv_props, execution_success, begin);
@@ -226,7 +229,8 @@ class LinearTransport : public Transport {
 
                     approach_offset_eef_pose.position.x += m_approach_offset[0];
                     approach_offset_eef_pose.position.y += m_approach_offset[1];
-                    approach_offset_eef_pose.position.z += m_approach_offset[2];
+                    // Apply the vertical placing offset to the goal pose:
+                    approach_offset_eef_pose.position.z += m_approach_offset[2] + ManipulatorProperties::getVerticalPlacingOffset("panda_arm");
 
                     move_group->setPoseTarget(approach_offset_eef_pose);
                     ros::WallDuration(1.0).sleep();

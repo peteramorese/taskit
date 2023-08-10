@@ -22,6 +22,9 @@ optimal_planner_id: RRTstar
 # Offset from the face of the object to the center of the EEF
 eef_offset: 0.095
 
+# Vertical offset applied to the goal pose when transporting an object to a location
+vertical_placing_offset: 0.01
+
 # Movement scale constraints
 max_acceleration_scale: 0.3
 max_velocity_scale: 0.9

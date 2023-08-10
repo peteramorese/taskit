@@ -368,15 +368,20 @@ class Transit : public ActionPrimitive<taskit::Transit> {
             return 0.0f;
         }
 
-        static GoalPoseProperties getGoalPose(const PredicateHandler& predicate_handler, const ObjectGroup& obj_group, const typename msg_t::Request& request) {
+        static GoalPoseProperties getGoalPose(const PredicateHandler& predicate_handler, const ObjectGroup& obj_group, const typename msg_t::Request& request, const std::string& attached_object_id = std::string()) {
 
 		    const PredicateHandler::PredicateSet predicate_set = predicate_handler.getPredicates();
             std::pair<bool, std::string> location_predicate = predicate_set.lookupLocationPredicate(request.destination_location);
 
-            if (location_predicate.first) // Object is in location
+            if (location_predicate.first) { // Object is in location
                 return GoalPoseProperties(obj_group.getObject(location_predicate.second).graspPose(), true, location_predicate.second);
-            else // No object, just to the location
-                return GoalPoseProperties(predicate_handler.getLocationPose(request.destination_location), false, std::string());
+            } else { // No object, just to the location
+                if (attached_object_id.empty()) {
+                    return GoalPoseProperties(predicate_handler.getLocationPose(request.destination_location), false, std::string());
+                } else {
+                    return GoalPoseProperties(predicate_handler.getLocationPose(request.destination_location, obj_group.getObject(attached_object_id).class_id), false, std::string());
+                }
+            }
         }
 
         std::vector<EndEffectorGoalPoseProperties> getGraspGoalPoses(const ObjectGroup& obj_group, const GoalPoseProperties& goal_pose_props, double distance_offset = 0.0) {
@@ -442,20 +447,25 @@ class Transport : public Transit {
             auto predicate_handler = interface.predicate_handler.lock();
             auto vis = interface.visualizer.lock();
             auto state = interface.state.lock();
+            auto pci = interface.planning_scene_interface.lock();
 
             response.plan_success = false;
             bool execution_success = false;
 
+            auto attached_objects = pci->getAttachedObjects();
+
             // Make sure at least one object is attached
-            if (!interface.planning_scene_interface.lock()->getAttachedObjects().size()) {
-                ROS_WARN_STREAM("Did not find attached object (is the manipulator grasping?), not executing");
+            if (!attached_objects.size()) {
+                ROS_WARN_STREAM("Did not find attached object (is the manipulator holding an object?), not executing");
+                makeMovementProperties(response.mv_props, execution_success, begin);
                 return false;
             }
 
-            // Get the goal pose from the request location
-            GoalPoseProperties goal_pose_props = getGoalPose(*predicate_handler, *obj_group, request);
+            // Get the goal pose from the request location. Use the 
+            GoalPoseProperties goal_pose_props = getGoalPose(*predicate_handler, *obj_group, request, attached_objects.begin()->first); 
             if (goal_pose_props.moving_to_object) {
                 ROS_ERROR_STREAM("Destination location '" << request.destination_location << "' is occupied by object: " << goal_pose_props.obj_id << ", not executing");
+                makeMovementProperties(response.mv_props, execution_success, begin);
                 return false;
             } else {
                 ROS_INFO_STREAM("Goal pose for location '" << request.destination_location <<"' extracted from predicate handler");
@@ -477,7 +487,11 @@ class Transport : public Transit {
 
                 for (const auto& eef_pose_props : eef_poses) {
 
-                    const auto& eef_pose = eef_pose_props.pose;
+                    // Copy the pose to edit the vertical offset
+                    geometry_msgs::Pose eef_pose = eef_pose_props.pose;
+
+                    // Apply the vertical placing offset to the goal pose:
+                    eef_pose.position.z += ManipulatorProperties::getVerticalPlacingOffset("panda_arm");
 
                     move_group->setPoseTarget(eef_pose);
                     ros::WallDuration(1.0).sleep();
