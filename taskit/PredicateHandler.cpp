@@ -39,6 +39,8 @@ void PredicateHandler::createEnvironment(const ros::NodeHandle& nh, const std::s
             position.y = location_properties.at("y");
             position.z = location_properties.at("z");
             location.addObjectClassPose(Object::s_default_class, position, orientation_type);
+        } else {
+            ROS_WARN_STREAM("No default class location was specified for location '" << location_name << "'. Detection radius checks will not be performed");
         }
 
         // Get list of specific object classes

@@ -29,6 +29,17 @@ class LinearTransit : public Transit {
             auto predicate_handler = interface.predicate_handler.lock();
             auto vis = interface.visualizer.lock();
             auto state = interface.state.lock();
+            auto pci = interface.planning_scene_interface.lock();
+
+            response.plan_success = false;
+            bool execution_success = false;
+
+            // Make sure no objects are attached
+            if (pci->getAttachedObjects().size()) {
+                ROS_ERROR_STREAM("Cannot 'transit' while gripping an object. Use 'transport' instead. Not executing");
+                makeMovementProperties(response.mv_props, execution_success, begin);
+                return false;
+            }
 
             // Get the goal pose from the request location
             GoalPoseProperties goal_pose_props = getGoalPose(*predicate_handler, *obj_group, request);
@@ -41,9 +52,6 @@ class LinearTransit : public Transit {
             // Get the grasp pose options
             std::vector<EndEffectorGoalPoseProperties> eef_poses = getGraspGoalPoses(*obj_group, goal_pose_props);
             std::vector<EndEffectorGoalPoseProperties> approach_offset_eef_poses = getGraspGoalPoses(*obj_group, goal_pose_props, m_approach_distance);
-
-            response.plan_success = false;
-            bool execution_success = false;
 
             move_group->setPlanningTime(m_planning_time);
 

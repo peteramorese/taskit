@@ -208,7 +208,6 @@ class SimpleRelease : public ActionPrimitive<taskit::Release> {
                 return true;
             }
 
-            ROS_ASSERT_MSG(obj_group->hasObject(request.obj_id), "Object not found");
 
             auto attached_objects = planning_scene_interface->getAttachedObjects();
             std::string obj_id;
@@ -219,6 +218,11 @@ class SimpleRelease : public ActionPrimitive<taskit::Release> {
             } else {
                 ROS_ASSERT_MSG(!attached_objects.empty(), "No objects attached, cannot release");
                 obj_id = attached_objects.begin()->first;
+            }
+
+            if (!obj_group->hasObject(obj_id)) {
+                ROS_ERROR_STREAM("Object '" << obj_id << "' was not found");
+                return false;
             }
 
             bool execution_success = m_gripper_handler->open(*(obj_group->getObject(obj_id).spec));
@@ -250,6 +254,17 @@ class Transit : public ActionPrimitive<taskit::Transit> {
             auto predicate_handler = interface.predicate_handler.lock();
             auto vis = interface.visualizer.lock();
             auto state = interface.state.lock();
+            auto pci = interface.planning_scene_interface.lock();
+
+            response.plan_success = false;
+            bool execution_success = false;
+
+            // Make sure no objects are attached
+            if (pci->getAttachedObjects().size()) {
+                ROS_ERROR_STREAM("Cannot 'transit' while gripping an object. Use 'transport' instead. Not executing");
+                makeMovementProperties(response.mv_props, execution_success, begin);
+                return false;
+            }
 
             // Get the goal pose from the request location
             GoalPoseProperties goal_pose_props = getGoalPose(*predicate_handler, *obj_group, request);
@@ -261,9 +276,6 @@ class Transit : public ActionPrimitive<taskit::Transit> {
 
             // Get the grasp pose options
             std::vector<EndEffectorGoalPoseProperties> eef_poses = getGraspGoalPoses(*obj_group, goal_pose_props);
-
-            response.plan_success = false;
-            bool execution_success = false;
 
             move_group->setPlanningTime(m_planning_time);
 
@@ -456,7 +468,7 @@ class Transport : public Transit {
 
             // Make sure at least one object is attached
             if (!attached_objects.size()) {
-                ROS_WARN_STREAM("Did not find attached object (is the manipulator holding an object?), not executing");
+                ROS_ERROR_STREAM("Did not find attached object (is the manipulator holding an object?), not executing");
                 makeMovementProperties(response.mv_props, execution_success, begin);
                 return false;
             }
