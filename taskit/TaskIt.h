@@ -13,3 +13,6 @@
 #include "Quaternions.h"
 #include "Tools.h"
 #include "Visualizer.h"
+
+// Objects
+#include "BasicObjects.h"

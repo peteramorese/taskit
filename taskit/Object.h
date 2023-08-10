@@ -13,9 +13,10 @@
 
 #include "Quaternions.h"
 #include "PoseTracker.h"
+#include "Tools.h"
+
 
 namespace TaskIt {
-
 
 using ObjectDimensionConfig = std::map<std::string, float>;
 
@@ -54,127 +55,46 @@ struct ObjectSpecification : public GripperSpecification {
         virtual float getLengthOffset() const = 0;
         virtual float getWidthOffset() const = 0;
         virtual float getHeightOffset() const = 0;
-
-};
-
-struct SingleObjectSpecification : ObjectSpecification {
-    public:
-        virtual moveit_msgs::CollisionObject getCollisionObject(const geometry_msgs::Pose& pose) const override {
-            moveit_msgs::CollisionObject col_obj = convert();
-            col_obj.primitive_poses.resize(1);
-            col_obj.primitive_poses[0] = pose;
-            return col_obj;
-        }
-
+    
     protected:
-        virtual moveit_msgs::CollisionObject convert() const = 0;
         virtual void constructFromConfig(const ObjectDimensionConfig& config) = 0;
 };
 
-struct BoxObjectSpecification : SingleObjectSpecification {
-    double length = 0.05;
-    double width = 0.05;
-    double height = 0.05;
+using ObjSpecPtr = std::shared_ptr<ObjectSpecification>;
 
-    BoxObjectSpecification() = default;
-    BoxObjectSpecification(const ObjectDimensionConfig& config) {constructFromConfig(config);}
-    virtual float getLengthOffset() const override {return length / 2.0;}
-    virtual float getWidthOffset() const override {return width / 2.0;}
-    virtual float getHeightOffset() const override {return height / 2.0;}
+class ObjectSpecificationFactory {
+    public:
+        static void hello(const std::string& test) {}
 
-    protected:
-        virtual moveit_msgs::CollisionObject convert() const override {
-            moveit_msgs::CollisionObject col_obj;
-            col_obj.primitives.resize(1);
-            auto& prim = col_obj.primitives[0];
-            prim.type = prim.BOX;
-            prim.dimensions = {length, width, height};
-            return col_obj;
+        template <class SPEC_T>
+        static void registerType(const std::string& spec_type_id) {
+            m_creators[spec_type_id] = [](const ObjectDimensionConfig& cfg) -> ObjSpecPtr {return std::make_shared<SPEC_T>(cfg);};
         }
 
-        virtual void constructFromConfig(const ObjectDimensionConfig& config) override {
-            try {
-                length = config.at("l");
-                width = config.at("w");
-                height = config.at("h");
-            } catch (const std::exception& e) {
-                ROS_ERROR("Config parameters do not match (need 'l', 'w', 'h' for box)");
+        static ObjSpecPtr make(const std::string& spec_type_id, const ObjectDimensionConfig& config) {
+            auto it = m_creators.find(spec_type_id);
+            if (it != m_creators.end()) {
+                return it->second(config);
+            } else {
+                ROS_ERROR_STREAM("Specification type '" << spec_type_id << "' has not been registered, cannot create");
+                return ObjSpecPtr{};
             }
         }
-};
-
-struct SphereObjectSpecification : SingleObjectSpecification {
-    double radius = 0.05;
-
-    SphereObjectSpecification() = default;
-    SphereObjectSpecification(const ObjectDimensionConfig& config) {constructFromConfig(config);}
-    virtual float getLengthOffset() const override {return radius;}
-    virtual float getWidthOffset() const override {return radius;}
-    virtual float getHeightOffset() const override {return radius;}
-
-    protected:
-        virtual moveit_msgs::CollisionObject convert() const override {
-            moveit_msgs::CollisionObject col_obj;
-            col_obj.primitives.resize(1);
-            auto& prim = col_obj.primitives[0];
-            prim.type = prim.SPHERE;
-            prim.dimensions = {radius};
-            return col_obj;
-        }
-
-        virtual void constructFromConfig(const ObjectDimensionConfig& config) override {
-            try {
-                radius = config.at("r");
-            } catch (const std::exception& e) {
-                ROS_ERROR("Config parameters do not match (need 'r' for sphere)");
+    private:
+        ObjectSpecificationFactory() {}
+        inline static std::map<std::string, std::function<ObjSpecPtr(const ObjectDimensionConfig&)>> m_creators;
+    public:
+        template <class SPEC_T>
+        struct _Register {
+            _Register(const std::string& spec_type_id) {
+                ObjectSpecificationFactory::registerType<SPEC_T>(spec_type_id);
             }
-        }
+        };
 };
 
-struct CylinderObjectSpecification : SingleObjectSpecification {
-    double height = 0.05;
-    double radius = 0.05;
-
-    CylinderObjectSpecification() = default;
-    CylinderObjectSpecification(const ObjectDimensionConfig& config) {constructFromConfig(config);}
-    virtual float getLengthOffset() const override {return radius;}
-    virtual float getWidthOffset() const override {return radius;}
-    virtual float getHeightOffset() const override {return height / 2.0;}
-
-    protected:
-        virtual moveit_msgs::CollisionObject convert() const override {
-            moveit_msgs::CollisionObject col_obj;
-            col_obj.primitives.resize(1);
-            auto& prim = col_obj.primitives[0];
-            prim.type = prim.CYLINDER;
-            prim.dimensions = {height, radius};
-            return col_obj;
-        }
-
-        virtual void constructFromConfig(const ObjectDimensionConfig& config) override {
-            try {
-                height = config.at("h");
-                radius = config.at("r");
-            } catch (const std::exception& e) {
-                ROS_ERROR("Config parameters do not match (need 'h', 'r' for sphere)");
-            }
-        }
-};
-
-static std::shared_ptr<ObjectSpecification> makeObjectSpecification(ObjectPrimitive primitive, const ObjectDimensionConfig& config) {
-    switch (primitive) {
-        case ObjectPrimitive::Box: return std::make_shared<BoxObjectSpecification>(config);
-        case ObjectPrimitive::Sphere: return std::make_shared<SphereObjectSpecification>(config);
-        case ObjectPrimitive::Cylinder: return std::make_shared<CylinderObjectSpecification>(config);
-    }
-    ROS_ERROR("Unrecognized primitive type");
-    return std::shared_ptr<ObjectSpecification>{};
-}
-
-static std::shared_ptr<ObjectSpecification> makeObjectSpecification(const std::string& primitive_str, const ObjectDimensionConfig& config) {
-    return makeObjectSpecification(getObjectPrimitiveType(primitive_str), config);
-}
-
+// Register an object specification type. `spec_type_id` is the string type (i.e. "box", "sphere", "cup", etc.). `SPEC_T` is the class.
+// Statically constructs a _Register. To prevent naming confict, a subscript is prepended to the type.
+#define REGISTER_OBJ_SPEC_TYPE(spec_type_id, SPEC_T) namespace {ObjectSpecificationFactory::_Register<SPEC_T> _##SPEC_T(spec_type_id);} 
 
 // Object classes
 struct Object {
@@ -222,15 +142,7 @@ struct Object {
             return grasp_pose;
         }
 
-        void setPoseToNeutral() {
-            m_pose.position.x = 0.0f;
-            m_pose.position.y = 0.0f;
-            m_pose.position.z = 0.0f;
-            m_pose.orientation.x = 0.0f;
-            m_pose.orientation.y = 0.0f;
-            m_pose.orientation.z = 0.0f;
-            m_pose.orientation.w = 1.0f;
-        }
+        void setPoseToNeutral() { m_pose = neutralPose(); }
 
         moveit_msgs::CollisionObject getCollisionObject(const std::string& frame_id) const {
             moveit_msgs::CollisionObject col_obj = spec->getCollisionObject(m_pose);
@@ -279,14 +191,6 @@ class ObjectGroup {
             for (const auto v_type : m_objects) collision_objs.push_back(v_type.second.getCollisionObject(frame_id));
             return collision_objs;
         }
-
-        //void addObject(const std::string& id, const std::shared_ptr<ObjectSpecification>& spec) {
-        //    this->m_objects.emplace(std::piecewise_construct, std::forward_as_tuple(id), std::forward_as_tuple(id, spec, geometry_msgs::Pose{}, Quaternions::Type::UpX));
-        //}
-
-        //void addObject(const std::string& id, const std::shared_ptr<ObjectSpecification>& spec, const geometry_msgs::Pose& pose, Quaternions::Type orientation_type) {
-        //    this->m_objects.emplace(std::piecewise_construct, std::forward_as_tuple(id), std::forward_as_tuple(id, spec, pose, orientation_type));
-        //}
 
         void insertObject(const Object& obj) {
             m_objects.insert(std::make_pair(obj.id, obj));

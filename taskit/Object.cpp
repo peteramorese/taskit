@@ -36,7 +36,7 @@ void ObjectGroup::createObjects(const ros::NodeHandle& nh, const std::string& ns
         std::string primitive_type;
         nh.getParam(getParamName(object_id, ns) + "/primitive_type", primitive_type);
 
-        std::shared_ptr<ObjectSpecification> spec = makeObjectSpecification(primitive_type, dimension_cfg);
+        ObjSpecPtr spec = ObjectSpecificationFactory::make(primitive_type, dimension_cfg);
 
         // Get orientation type if the config has it, otherwise set to up_x
         Quaternions::Type orientation_type = Quaternions::toType(nh.param<std::string>(getParamName(object_id + "/orientation_type", ns), "up_x"));
