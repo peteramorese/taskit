@@ -11,9 +11,9 @@ ground: {
     z: -0.05,
   },
   dimensions: {
-    l: 1.5,
-    w: 1.5,
-    h: 0.1,
+    length: 1.5,
+    width: 1.5,
+    height: 0.1,
   },
   primitive_type: box,
   orientation_type: up_x,

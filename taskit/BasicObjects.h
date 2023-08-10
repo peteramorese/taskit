@@ -9,7 +9,7 @@ struct BoxObjectSpecification : public ObjectSpecification {
     double width = 0.05;
     double height = 0.05;
 
-    BoxObjectSpecification() = default;
+    BoxObjectSpecification() = delete;
     BoxObjectSpecification(const ObjectDimensionConfig& config) {constructFromConfig(config);}
     virtual float getLengthOffset() const override {return length / 2.0;}
     virtual float getWidthOffset() const override {return width / 2.0;}
@@ -34,23 +34,17 @@ struct BoxObjectSpecification : public ObjectSpecification {
         }
 
         virtual void constructFromConfig(const ObjectDimensionConfig& config) override {
-            try {
-                length = config.at("l");
-                width = config.at("w");
-                height = config.at("h");
-            } catch (const std::exception& e) {
-                ROS_ERROR("Config parameters do not match (need 'l', 'w', 'h' for box)");
-            }
+            length = getDimensionConfigValue(config, "length");
+            width = getDimensionConfigValue(config, "width");
+            height = getDimensionConfigValue(config, "height");
         }
-
-        //REGISTER_OBJ_SPEC_TYPE("box", BoxObjectSpecification);
 };
 REGISTER_OBJ_SPEC_TYPE("box", BoxObjectSpecification);
 
 struct SphereObjectSpecification : public ObjectSpecification {
     double radius = 0.05;
 
-    SphereObjectSpecification() = default;
+    SphereObjectSpecification() = delete;
     SphereObjectSpecification(const ObjectDimensionConfig& config) {constructFromConfig(config);}
     virtual float getLengthOffset() const override {return radius;}
     virtual float getWidthOffset() const override {return radius;}
@@ -75,11 +69,7 @@ struct SphereObjectSpecification : public ObjectSpecification {
         }
 
         virtual void constructFromConfig(const ObjectDimensionConfig& config) override {
-            try {
-                radius = config.at("r");
-            } catch (const std::exception& e) {
-                ROS_ERROR("Config parameters do not match (need 'r' for sphere)");
-            }
+            radius = getDimensionConfigValue(config, "radius");
         }
 };
 REGISTER_OBJ_SPEC_TYPE("sphere", SphereObjectSpecification);
@@ -88,7 +78,7 @@ struct CylinderObjectSpecification : public ObjectSpecification {
     double height = 0.05;
     double radius = 0.05;
 
-    CylinderObjectSpecification() = default;
+    CylinderObjectSpecification() = delete;
     CylinderObjectSpecification(const ObjectDimensionConfig& config) {constructFromConfig(config);}
     virtual float getLengthOffset() const override {return radius;}
     virtual float getWidthOffset() const override {return radius;}
@@ -113,12 +103,8 @@ struct CylinderObjectSpecification : public ObjectSpecification {
         }
 
         virtual void constructFromConfig(const ObjectDimensionConfig& config) override {
-            try {
-                height = config.at("h");
-                radius = config.at("r");
-            } catch (const std::exception& e) {
-                ROS_ERROR("Config parameters do not match (need 'h', 'r' for cylinder)");
-            }
+            height = getDimensionConfigValue(config, "height");
+            radius = getDimensionConfigValue(config, "radius");
         }
 };
 REGISTER_OBJ_SPEC_TYPE("cylinder", CylinderObjectSpecification);

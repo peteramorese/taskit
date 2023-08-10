@@ -19,6 +19,20 @@
 namespace TaskIt {
 
 using ObjectDimensionConfig = std::map<std::string, float>;
+static double getDimensionConfigValue(const ObjectDimensionConfig& cfg, const std::string& key) {
+    auto it = cfg.find(key);
+    if (it != cfg.end()) {
+        return it->second;
+    }
+    ////
+    //for (auto kv : cfg) {
+    //    DEBUG("key: " << kv.first);
+    //}
+    ////
+    ROS_ERROR_STREAM("Object dimension configuration is missing value for '" << key << "'");
+    ROS_ASSERT(false);
+    return 0.0;
+}
 
 // Object specifications
 

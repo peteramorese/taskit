@@ -16,3 +16,4 @@
 
 // Objects
 #include "BasicObjects.h"
+#include "FancyObjects.h"

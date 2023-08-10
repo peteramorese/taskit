@@ -10,18 +10,6 @@ void ObjectGroup::createObjects(const ros::NodeHandle& nh, const std::string& ns
     std::vector<std::string> object_ids;
     nh.getParam(getParamName("object_ids", ns), object_ids);
 
-    //std::vector<std::string> object_types;
-    //nh.getParam(getParamName("object_types", ns), object_types);
-
-    //std::vector<std::string> object_domains;
-    //nh.param(getParamName("object_domains", ns), object_domains, {});
-
-    //std::vector<std::string> object_orientation_types;
-    //nh.getParam(getParamName("object_orientation_types", ns), object_orientation_types);
-
-    //ROS_ASSERT_MSG(object_ids.size() == object_types.size(), "Each object name must correspond to a type");
-    //ROS_ASSERT_MSG(object_ids.size() == object_orientation_types.size(), "Each object must have an orientation type");
-
     for (const auto& object_id : object_ids) {
         ROS_ASSERT_MSG(nh.hasParam(getParamName(object_id, ns)), "Missing configuration for at least one object");
 
