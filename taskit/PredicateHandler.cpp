@@ -13,7 +13,7 @@ void PredicateHandler::createEnvironment(const ros::NodeHandle& nh, const std::s
 
         // Detection radius
         ROS_ASSERT_MSG(nh.hasParam(getParamName(location_name + "/detection_radius", environment_ns)), "Must specify a 'detection_radius' for each location");
-        nh.getParam(getParamName(location_name + "/detection_radius", environment_ns), location.detection_radius);
+        nh.getParam(getParamName(location_name + "/detection_radius", environment_ns), location.detectionRadius());
 
         // Orientation type
         if (!nh.hasParam(getParamName(location_name + "/orientation_type", environment_ns))) {
@@ -92,11 +92,11 @@ std::pair<bool, std::string> PredicateHandler::findPredicate(const Object* obj) 
     std::string nearest_predicate{};
     bool found = false;
     for (const auto& kv : m_locations) {
-        const geometry_msgs::Point& location_position = kv.second.object_class_poses.at(obj->class_id).position;
+        const geometry_msgs::Point& location_position = kv.second.getPose(obj->class_id).position;
         double d = distance(obj->pose().position, location_position);
         if (min_dist < 0.0 || d < min_dist) {
             min_dist = d;
-            if (d <= kv.second.detection_radius) {
+            if (d <= kv.second.detectionRadius()) {
                 nearest_predicate = kv.first;
                 found = true;
             }
@@ -109,6 +109,7 @@ const PredicateHandler::PredicateSet PredicateHandler::getPredicates(const std::
     PredicateSet predicate_set;
     for (const auto obj : m_obj_group->getObjects()) {
         const std::string& obj_id = obj->id;
+        DEBUG("getting predicate for object: " << obj_id);
         if (ignore_obj_ids.empty() || ignore_obj_ids.find(obj_id) == ignore_obj_ids.end()) {
             std::pair<bool, std::string> result = findPredicate(obj);
             if (result.first) {

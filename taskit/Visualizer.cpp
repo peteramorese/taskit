@@ -133,9 +133,9 @@ void Visualizer::publishLocationMarkers(const PredicateHandler& predicate_handle
         detection_zone.type = visualization_msgs::Marker::SPHERE;
         detection_zone.action = visualization_msgs::Marker::ADD;
         detection_zone.pose = location.defaultPose();
-        detection_zone.scale.x = location.detection_radius;
-        detection_zone.scale.y = location.detection_radius;
-        detection_zone.scale.z = location.detection_radius;
+        detection_zone.scale.x = location.detectionRadius();
+        detection_zone.scale.y = location.detectionRadius();
+        detection_zone.scale.z = location.detectionRadius();
         detection_zone.color.a = MI_DETECTION_RADIUS_ALPHA;
         detection_zone.color.r = MI_LOCATION_MARKER_R / 255.0;
         detection_zone.color.g = MI_LOCATION_MARKER_G / 255.0;

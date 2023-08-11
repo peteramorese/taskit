@@ -85,7 +85,7 @@ class SmoothPlanMover : public LinearMover {
     public:
         SmoothPlanMover() 
             : m_optimal_planner_id(ManipulatorProperties::getOptimalPlannerID("panda_arm"))
-            , m_planning_time(3.0)
+            , m_planning_time(10.0)
         {}
 
         void setPlanningTime(double planning_time) {m_planning_time = planning_time;}
@@ -102,8 +102,17 @@ class SmoothPlanMover : public LinearMover {
             goal_pose.position = dst_point;
             move_group.setPoseTarget(goal_pose);
 
+            bool planning_success = false;
             moveit::planning_interface::MoveGroupInterface::Plan plan;
-            move_group.plan(plan);
+            for (uint32_t trial = 0; trial < m_n_retries; ++trial) {
+                planning_success = move_group.plan(plan) == moveit::core::MoveItErrorCode::SUCCESS;
+                if (planning_success)
+                    break;
+            }
+            if (!planning_success) {
+                makeMovementProperties(mv_props, false, begin);
+                return false;
+            }
 
             bool execution_success = move_group.execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
 
@@ -118,6 +127,7 @@ class SmoothPlanMover : public LinearMover {
     private:
         std::string m_optimal_planner_id;
         double m_planning_time;
+        uint32_t m_n_retries = 3;
 };
 
 std::shared_ptr<LinearMover> makeLinearMover() {

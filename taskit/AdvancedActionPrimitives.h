@@ -238,7 +238,7 @@ class LinearTransport : public Transport {
                     approach_offset_eef_pose.position.x += m_approach_offset[0];
                     approach_offset_eef_pose.position.y += m_approach_offset[1];
                     // Apply the vertical placing offset to the goal pose:
-                    approach_offset_eef_pose.position.z += m_approach_offset[2] + ManipulatorProperties::getVerticalPlacingOffset("panda_arm");
+                    approach_offset_eef_pose.position.z += m_approach_offset[2];
 
                     move_group->setPoseTarget(approach_offset_eef_pose);
                     ros::WallDuration(1.0).sleep();
@@ -273,7 +273,9 @@ class LinearTransport : public Transport {
 
                         // If the execution succeeded, perform the cartesian approach
                         taskit::MovementProperties approach_mv_props;
-                        if (execution_success && m_linear_mover->move(approach_mv_props, *move_group, eef_pose.position)) {
+                        geometry_msgs::Point vertical_offset_position = eef_pose.position;
+                        vertical_offset_position.z += ManipulatorProperties::getVerticalPlacingOffset("panda_arm");
+                        if (execution_success && m_linear_mover->move(approach_mv_props, *move_group, vertical_offset_position)) {
                             // Update destination location, must be near object (holding), keep rotation type, keep placing offset
                             updateState(*state, request.destination_location, true, state->grasp_rotation_type, state->placing_offset);
                         }

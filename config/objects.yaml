@@ -1,42 +1,65 @@
 object_ids:
-  - blue
-  - base
-  - cup
+  - mug
+  - pitcher
+  - small_cup
+  - lid
 
-blue: {
+mug: {
   dimensions: {
-    length: 0.064,
-    width: 0.044,
-    height: 0.16,
-  },
-  primitive_type: box,
-  orientation_type: up_x,
-  initial_location: L1,
-}
-
-base: {
-  dimensions: {
-    length: 0.06,
-    width: 0.06,
-    height: 0.06,
-  },
-  primitive_type: box,
-  orientation_type: up_x,
-  initial_location: L2,
-  class: small 
-}
-
-cup: {
-  dimensions: {
-    radius: 0.025,
-    height: 0.06,
-    handle_length: 0.04,
-    handle_width: 0.01,
-    flange_height: 0.02,
-    flange_width: 0.01
+    height: 0.080,
+    radius: 0.0384,
+    handle_length: 0.035,
+    handle_width: 0.015,
+    flange_height: 0.005,
+    flange_width: 0.004
   },
   primitive_type: cup,
   orientation_type: up_x,
-  initial_location: L3,
-  class: small 
+  initial_location: L0,
+  # default class
+}
+
+pitcher: {
+  dimensions: {
+    height: 0.091,
+    radius: 0.0375,
+    handle_length: 0.03,
+    handle_width: 0.015,
+    flange_height: 0.0,
+    flange_width: 0.00
+  },
+  primitive_type: cup,
+  orientation_type: up_x,
+  initial_location: L1,
+  class: pitcher 
+}
+
+small_cup: {
+  dimensions: {
+    radius: 0.0255,
+    height: 0.025,
+    handle_length: 0.0,
+    handle_width: 0.0,
+    flange_height: 0.002,
+    flange_width: 0.005
+  },
+  primitive_type: cup,
+  orientation_type: up_x,
+  initial_location: L2,
+  class: small_cup 
+}
+
+lid: {
+  dimensions: {
+    lid_length: 0.27,
+    lid_width: 0.435,
+    lid_height: 0.01,
+    handle_length: 0.06,
+    handle_width: 0.06,
+    handle_height: 0.06
+  },
+  primitive_type: lid,
+  orientation_type: up_x,
+  initial_location: lid_loc,
+  class: default
 }

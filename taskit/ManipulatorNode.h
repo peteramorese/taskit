@@ -21,7 +21,7 @@
 #include "ManipulatorNodeInterface.h"
 #include "Quaternions.h"
 #include "Tools.h"
-#include "PoseTracker.h"
+#include "PoseTracker.h" 
 #include "Object.h"
 #include "PredicateHandler.h"
 #include "Gripper.h"
@@ -75,8 +75,10 @@ class ManipulatorNode {
 
         // Automatically create the objects based off the parameter server (workspace_ns: param namespace for static obstacles, objects_ns: namespace for dynamic objects and predicates)
         void createScene(const std::shared_ptr<PoseTracker>& pose_tracker, const std::string& environment_ns = "environment", const std::string& workspace_ns = "workspace", const std::string& objects_ns = "objects") {
+            m_workspace_obj_group.reset(new ObjectGroup);
+            m_workspace_obj_group->createObjects(*m_node_handle, workspace_ns);
+
             m_obj_group.reset(new ObjectGroup);
-            m_obj_group->createObjects(*m_node_handle, workspace_ns);
             m_obj_group->createObjects(*m_node_handle, objects_ns, pose_tracker);
 
             m_predicate_handler.reset(new PredicateHandler(m_obj_group));
@@ -203,6 +205,7 @@ class ManipulatorNode {
         std::shared_ptr<moveit::planning_interface::MoveGroupInterface> m_move_group;
         std::shared_ptr<moveit::planning_interface::PlanningSceneInterface> m_planning_scene_interface;
         std::shared_ptr<ObjectGroup> m_obj_group;
+        std::shared_ptr<ObjectGroup> m_workspace_obj_group;
         std::shared_ptr<PredicateHandler> m_predicate_handler;
         std::shared_ptr<Visualizer> m_visualizer;
         std::shared_ptr<ManipulatorNodeState> m_state;

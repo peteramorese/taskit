@@ -16,58 +16,71 @@ class PredicateHandler {
     public:
         static inline const std::string s_ignored = "ignored";
 	public:
-		struct Location {
-            // Construct without a default class pose
-            Location() = default;
+		class Location {
+            public: 
+                // Construct without a default class pose
+                Location() = default;
 
-            // Construct with a default class pose
-            Location(const geometry_msgs::Pose& default_class_pose, float detection_radius_)
-                : detection_radius(detection_radius_)
-            {
-                object_class_poses[Object::s_default_class] = default_class_pose;
-            }
-
-            // Construct with a default class pose
-            Location(const geometry_msgs::Point& default_class_position, Quaternions::Type orientation_type, float detection_radius_)
-                : detection_radius(detection_radius_)
-            {
-                geometry_msgs::Pose& default_pose = object_class_poses[Object::s_default_class];
-                default_pose.position = default_class_position;
-                default_pose.orientation = Quaternions::convert(Quaternions::get(orientation_type));
-            }
-
-            void addObjectClassPose(const std::string& object_class_id, const geometry_msgs::Pose& pose) {
-                if (!isClassPoseValid(pose.position)) {
-                    ROS_ERROR_STREAM("Position corresponding to object class '" << object_class_id << "' is not within the detection radius (" << detection_radius << ") of the default-class position");
+                // Construct with a default class pose
+                Location(const geometry_msgs::Pose& default_class_pose, float detection_radius_)
+                    : m_detection_radius(detection_radius_)
+                {
+                    m_object_class_poses[Object::s_default_class] = default_class_pose;
                 }
-                object_class_poses[object_class_id] = pose;
-            }
 
-            void addObjectClassPose(const std::string& object_class_id, const geometry_msgs::Point& position, Quaternions::Type orientation_type) {
-                if (!isClassPoseValid(position)) {
-                    ROS_ERROR_STREAM("Position corresponding to object class '" << object_class_id << "' is not within the detection radius (" << detection_radius << ") of the default-class position");
+                // Construct with a default class pose
+                Location(const geometry_msgs::Point& default_class_position, Quaternions::Type orientation_type, float detection_radius_)
+                    : m_detection_radius(detection_radius_)
+                {
+                    geometry_msgs::Pose& default_pose = m_object_class_poses[Object::s_default_class];
+                    default_pose.position = default_class_position;
+                    default_pose.orientation = Quaternions::convert(Quaternions::get(orientation_type));
                 }
-                geometry_msgs::Pose& pose = object_class_poses[object_class_id];
-                pose.position = position;
-                pose.orientation = Quaternions::convert(Quaternions::get(orientation_type));
-            }
 
-            const geometry_msgs::Pose& defaultPose() const {return object_class_poses.at(Object::s_default_class);}
+                void addObjectClassPose(const std::string& object_class_id, const geometry_msgs::Pose& pose) {
+                    if (!isClassPoseValid(pose.position)) {
+                        ROS_ERROR_STREAM("Position corresponding to object class '" << object_class_id << "' is not within the detection radius (" << m_detection_radius << ") of the default-class position");
+                    }
+                    m_object_class_poses[object_class_id] = pose;
+                }
 
-            std::map<std::string, geometry_msgs::Pose> object_class_poses;
-            float detection_radius = 0.05;
+                void addObjectClassPose(const std::string& object_class_id, const geometry_msgs::Point& position, Quaternions::Type orientation_type) {
+                    if (!isClassPoseValid(position)) {
+                        ROS_ERROR_STREAM("Position corresponding to object class '" << object_class_id << "' is not within the detection radius (" << m_detection_radius << ") of the default-class position");
+                    }
+                    geometry_msgs::Pose& pose = m_object_class_poses[object_class_id];
+                    pose.position = position;
+                    pose.orientation = Quaternions::convert(Quaternions::get(orientation_type));
+                }
+
+                const geometry_msgs::Pose& defaultPose() const {return m_object_class_poses.at(Object::s_default_class);}
+                const geometry_msgs::Pose& getPose(const std::string& object_class_id) const {
+                    auto it = m_object_class_poses.find(object_class_id);
+                    if (it != m_object_class_poses.end()) {
+                        return it->second;
+                    } else {
+                        ROS_WARN_STREAM("Did not find a specific pose for object class '" << object_class_id << "', using 'default'");
+                        return defaultPose();
+                    }
+                }
+                double& detectionRadius() {return m_detection_radius;}
+                double detectionRadius() const {return m_detection_radius;}
 
             private:
                 bool isClassPoseValid(const geometry_msgs::Point& position) const {
-                    auto it = object_class_poses.find(Object::s_default_class);
-                    if (it != object_class_poses.end()) {
+                    auto it = m_object_class_poses.find(Object::s_default_class);
+                    if (it != m_object_class_poses.end()) {
                         tf2::Vector3 default_class_position, spec_class_position;
                         tf2::fromMsg(it->second.position, default_class_position);
                         tf2::fromMsg(position, spec_class_position);
-                        return tf2::tf2Distance(default_class_position, spec_class_position) <= detection_radius;
+                        return tf2::tf2Distance(default_class_position, spec_class_position) <= m_detection_radius;
                     }
                     return true;
                 }
+
+            private:
+                std::map<std::string, geometry_msgs::Pose> m_object_class_poses;
+                double m_detection_radius = 0.05;
 
 		};
         struct PredicateSet {
@@ -125,7 +138,7 @@ class PredicateHandler {
         }
 
         const geometry_msgs::Pose& getLocationPose(const std::string& name, const std::string& object_class = "default") const {
-            return m_locations.at(name).object_class_poses.at(object_class);
+            return m_locations.at(name).getPose(object_class);
         }
 
         // Look up
