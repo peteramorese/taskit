@@ -29,7 +29,7 @@ dw_l: {
     z: 0.0275,
   },
   detection_radius: 0.20, 
-  orientation_type: up_y
+  orientation_type: up_ny
 }
 
 dw_c: { 
@@ -111,7 +111,7 @@ L0: {
     z: 0.0125,
   },
   detection_radius: 0.10, 
-  orientation_type: up_x
+  orientation_type: up_nx
 }
 
 L1: { 

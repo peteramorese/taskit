@@ -18,7 +18,11 @@ namespace TaskIt {
                 UpX,
                 UpY,
                 SideX,
-                SideY
+                SideY,
+                UpNX,
+                UpNY,
+                SideNX,
+                SideNY,
             };
 
             enum class RotationType { 
@@ -42,6 +46,14 @@ namespace TaskIt {
                     return Type::SideX;
                 } else if (type_str == "side_y" || type_str == "SideY") {
                     return Type::SideY;
+                } else if (type_str == "up_nx" || type_str == "UpNX") {
+                    return Type::UpNX;
+                } else if (type_str == "up_ny" || type_str == "UpNY") {
+                    return Type::UpNY;
+                } else if (type_str == "side_nx" || type_str == "SideNX") {
+                    return Type::SideNX;
+                } else if (type_str == "side_ny" || type_str == "SideNY") {
+                    return Type::SideNY;
                 }
                 ROS_ERROR_STREAM("Unrecognized quaternion type '" << type_str << "'");
                 return Type::None;
@@ -70,6 +82,10 @@ namespace TaskIt {
                     case Type::UpY:         { q_rot.setRPY(0.0, 0.0, M_PI/2.0); break; }
                     case Type::SideX:       { q_rot.setRPY(0.0, -M_PI/2.0, 0.0); break; }
                     case Type::SideY:       { q_rot.setRPY(-M_PI/2.0, M_PI/2.0, 0.0); break; }
+                    case Type::UpNX:         { q_rot.setRPY(0.0, 0.0, M_PI); break; }
+                    case Type::UpNY:         { q_rot.setRPY(0.0, 0.0, -M_PI/2.0); break; }
+                    case Type::SideNX:       { q_rot.setRPY(0.0, -M_PI/2.0, M_PI); break; }
+                    case Type::SideNY:       { q_rot.setRPY(-M_PI/2.0, M_PI/2.0, M_PI); break; }
                     default:                { q_rot.setRPY(0.0, 0.0, 0.0); }
                 }
                 return q_rot * q_default_up;
