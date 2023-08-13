@@ -109,7 +109,6 @@ const PredicateHandler::PredicateSet PredicateHandler::getPredicates(const std::
     PredicateSet predicate_set;
     for (const auto obj : m_obj_group->getObjects()) {
         const std::string& obj_id = obj->id;
-        DEBUG("getting predicate for object: " << obj_id);
         if (ignore_obj_ids.empty() || ignore_obj_ids.find(obj_id) == ignore_obj_ids.end()) {
             std::pair<bool, std::string> result = findPredicate(obj);
             if (result.first) {
