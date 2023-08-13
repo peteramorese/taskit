@@ -53,7 +53,7 @@ dw_c: {
     z: 0.0275,
   },
   detection_radius: 0.20, 
-  orientation_type: up_x
+  orientation_type: up_y
 }
 
 dw_r: { 

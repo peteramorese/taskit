@@ -70,9 +70,6 @@ class ManipulatorNode {
         // Visualize the goal markers. True by default
         inline void toggleAutoVisualize(bool auto_visualize) {m_auto_visualize = auto_visualize;}
 
-        //// Insert an object group that was manually created
-        //void insertObjectGroup(const std::shared_ptr<ObjectGroup>& obj_group) {m_obj_group = obj_group;}
-
         // Automatically create the objects based off the parameter server (workspace_ns: param namespace for static obstacles, objects_ns: namespace for dynamic objects and predicates)
         void createScene(const std::shared_ptr<PoseTracker>& pose_tracker, const std::string& environment_ns = "environment", const std::string& workspace_ns = "workspace", const std::string& objects_ns = "objects") {
             m_workspace_obj_group.reset(new ObjectGroup);
