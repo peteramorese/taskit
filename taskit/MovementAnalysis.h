@@ -2,11 +2,16 @@
 
 #include <cmath>
 
+#include <tf2_eigen/tf2_eigen.h>
+
 // MoveIt
 #include <moveit/move_group_interface/move_group_interface.h>
 
 // Msg types
 #include "taskit/MovementProperties.h"
+
+// TaskIt
+#include "Config.h"
 
 namespace taskit {
 
@@ -18,13 +23,22 @@ namespace taskit {
 /// @param max_velocity Maximum speed encountered along the robot trajectory
 /// @param max_acceleration Maximum acceleration magnitude encountered along the robot trajectory
 /// @param max_effort Maximum effort magnitude encountered along the robot trajectory
-void makeMovementProperties(taskit::MovementProperties& mv_props, bool execution_success, ros::Time start_time, double path_length = 0.0, double max_velocity = 0.0, double max_acceleration = 0.0, double max_effort = 0.0) {
+void makeMovementProperties(
+        taskit::MovementProperties& mv_props, 
+        bool execution_success, 
+        ros::Time start_time, 
+        double path_length = 0.0, 
+        double max_velocity = 0.0, 
+        double max_acceleration = 0.0, 
+        double max_effort = 0.0, 
+        const std::vector<geometry_msgs::Pose>& eef_trajectory = std::vector<geometry_msgs::Pose>{}) {
     mv_props.execution_success = execution_success;
     mv_props.execution_time = (ros::Time::now() - start_time).toSec();
     mv_props.path_length = path_length;
     mv_props.max_velocity = max_velocity;
     mv_props.max_acceleration = max_acceleration;
     mv_props.max_effort = max_effort;
+    mv_props.eef_trajectory = eef_trajectory;
 }
 
 /// Helper functions for gathering movement properties
@@ -41,6 +55,11 @@ void makeMovementProperties(taskit::MovementProperties& mv_props, bool execution
     double max_v = 0.0;
     double max_a = 0.0;
     double max_e = 0.0;
+
+    // Sequence of eef poses for each waypoint in the trajectory
+    std::vector<geometry_msgs::Pose> eef_trajectory;
+    eef_trajectory.reserve(r_traj.getWayPointCount());
+
     for (std::size_t i = 0; i < r_traj.getWayPointCount(); ++i) {
         const moveit::core::RobotState& state = r_traj.getWayPoint(i);
 
@@ -76,8 +95,12 @@ void makeMovementProperties(taskit::MovementProperties& mv_props, bool execution
                 }
             }
         }
+
+        // Get the end effector pose for the current state
+        const Eigen::Affine3d& transform = state.getFrameTransform(TASKIT_EEF_LINK_ID);
+        eef_trajectory.emplace_back(tf2::toMsg(transform));
     }
-    makeMovementProperties(mv_props, execution_success, start_time, robot_trajectory::path_length(r_traj), max_v, max_a, max_e);
+    makeMovementProperties(mv_props, execution_success, start_time, robot_trajectory::path_length(r_traj), max_v, max_a, max_e, eef_trajectory);
 }
 
 /// Helper functions for gathering movement properties
@@ -87,7 +110,7 @@ void makeMovementProperties(taskit::MovementProperties& mv_props, bool execution
 /// @param move_group 
 /// @param motion_plan Motion plan for the manipulator
 void makeMovementProperties(taskit::MovementProperties& mv_props, bool execution_success, ros::Time start_time, const moveit::planning_interface::MoveGroupInterface& move_group, const moveit::planning_interface::MoveGroupInterface::Plan& motion_plan) {
-    robot_trajectory::RobotTrajectory r_traj(move_group.getRobotModel(), "panda_arm");
+    robot_trajectory::RobotTrajectory r_traj(move_group.getRobotModel(), TASKIT_PLANNING_GROUP_ID);
     r_traj.setRobotTrajectoryMsg(*move_group.getCurrentState(), motion_plan.trajectory_);
     makeMovementProperties(mv_props, execution_success, start_time, r_traj);
 }

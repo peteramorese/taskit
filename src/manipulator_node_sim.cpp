@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
 	const std::string ee_link = "panda_link8";
 	
 	// Make the simulation gripper handler
-	std::shared_ptr<GripperHandler<GripperUse::Simulation>> gripper_handler = std::make_shared<GripperHandler<GripperUse::Simulation>>(MI_FRANKA_GRIPPER_TOPIC, 5.0);
+	std::shared_ptr<GripperHandler<GripperUse::Simulation>> gripper_handler = std::make_shared<GripperHandler<GripperUse::Simulation>>(TASKIT_FRANKA_GRIPPER_TOPIC, 5.0);
 
 	// Get the linear mover
 	std::shared_ptr<ActionPrimitives::LinearMover> linear_mover = ActionPrimitives::makeLinearMover();
@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
 		decltype(linear_transit_side),
 		decltype(transport),
 		decltype(linear_transport)
-	> manipulator_node(node_handle, node_name, "panda_arm", "panda_link0", 
+	> manipulator_node(node_handle, node_name, TASKIT_PLANNING_GROUP_ID, TASKIT_BASE_LINK_ID, 
 		std::move(update_environment), 
 		std::move(get_object_locations),
 		std::move(stow), 

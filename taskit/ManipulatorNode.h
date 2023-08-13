@@ -17,7 +17,8 @@
 #include <moveit/robot_model_loader/robot_model_loader.h>
 #include <moveit_visual_tools/moveit_visual_tools.h>
 
-// Manipulation Interface
+// TaskIt
+#include "Config.h"
 #include "ManipulatorNodeInterface.h"
 #include "Quaternions.h"
 #include "Tools.h"

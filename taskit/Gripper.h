@@ -2,18 +2,17 @@
 
 #include <memory>
 
-// Compile with franka gripper
-#define MI_USE_FRANKA_GRIPPER
 
-#ifdef MI_USE_FRANKA_GRIPPER
+#include "Config.h"
+#include "Object.h"
+
+#ifdef TASKIT_USE_FRANKA_GRIPPER
     // Franka gripper
     #include "franka_gripper/GraspAction.h"
     #include "franka_gripper/GraspActionGoal.h"
 
-    #define MI_FRANKA_GRIPPER_TOPIC "/franka_gripper/grasp"
+    #define TASKIT_FRANKA_GRIPPER_TOPIC "/franka_gripper/grasp"
 #endif
-
-#include "Object.h"
 
 
 namespace TaskIt {
@@ -34,7 +33,7 @@ class GripperHandler<GripperUse::Simulation> {
         bool open(const GripperSpecification& grip_spec) {return true;}
 };
 
-#ifdef MI_USE_FRANKA_GRIPPER
+#ifdef TASKIT_USE_FRANKA_GRIPPER
 
 template<>
 class GripperHandler<GripperUse::FrankaHand> {

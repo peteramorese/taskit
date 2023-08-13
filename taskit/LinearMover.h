@@ -2,6 +2,7 @@
 
 #include <moveit/trajectory_processing/iterative_time_parameterization.h>
 
+#include "Config.h"
 #include "MovementAnalysis.h"
 
 namespace TaskIt {
@@ -15,10 +16,10 @@ class LinearMover {
 class CartesianMover : public LinearMover {
     public:
         CartesianMover()
-            : m_eef_step(ManipulatorProperties::getLinearEEFStepSize("panda_arm"))
-            , m_jump_thresh(ManipulatorProperties::getLinearJumpThreshold("panda_arm"))
-            , m_max_acceleration_scale(ManipulatorProperties::getMaxAccelerationScale("panda_arm"))
-            , m_max_velocity_scale(ManipulatorProperties::getMaxVelocityScale("panda_arm"))
+            : m_eef_step(ManipulatorProperties::getLinearEEFStepSize(TASKIT_PLANNING_GROUP_ID))
+            , m_jump_thresh(ManipulatorProperties::getLinearJumpThreshold(TASKIT_PLANNING_GROUP_ID))
+            , m_max_acceleration_scale(ManipulatorProperties::getMaxAccelerationScale(TASKIT_PLANNING_GROUP_ID))
+            , m_max_velocity_scale(ManipulatorProperties::getMaxVelocityScale(TASKIT_PLANNING_GROUP_ID))
         {}
 
         virtual bool move(taskit::MovementProperties& mv_props, moveit::planning_interface::MoveGroupInterface& move_group, const geometry_msgs::Point& dst_point) override {
@@ -26,7 +27,7 @@ class CartesianMover : public LinearMover {
             ros::Time begin = ros::Time::now();
             const geometry_msgs::Pose& curr_pose = move_group.getCurrentPose().pose;
 
-            uint32_t n_waypoints = ManipulatorProperties::getLinearNumWaypoints("panda_arm");
+            uint32_t n_waypoints = ManipulatorProperties::getLinearNumWaypoints(TASKIT_PLANNING_GROUP_ID);
             ROS_ASSERT_MSG(n_waypoints > 2, "Number of linear waypoints must be greater than 2, check the arm config file");
             std::vector<geometry_msgs::Pose> waypts(n_waypoints);
 
@@ -38,7 +39,7 @@ class CartesianMover : public LinearMover {
             tf2::Vector3 diff = dst_position - curr_position;
             for (uint32_t i = 0; i < n_waypoints; ++i) {
                 waypts[i] = curr_pose;
-                double scale = (i > 0) ? static_cast<double>(i) / static_cast<double>(n_waypoints - 1) : ManipulatorProperties::getLinearFirstPointFraction("panda_arm");
+                double scale = (i > 0) ? static_cast<double>(i) / static_cast<double>(n_waypoints - 1) : ManipulatorProperties::getLinearFirstPointFraction(TASKIT_PLANNING_GROUP_ID);
                 tf2::toMsg(curr_position + scale * diff, waypts[i].position);
             }
 
@@ -47,7 +48,7 @@ class CartesianMover : public LinearMover {
 
             if (fraction <= 0.0) {
                 ROS_ERROR("Safe cartesian path computation failed!");
-                if (!ManipulatorProperties::enforceSafeLinearMovement("panda_arm")) {
+                if (!ManipulatorProperties::enforceSafeLinearMovement(TASKIT_PLANNING_GROUP_ID)) {
                     ROS_WARN("Attempting cartesian path computation without collision checking. Adjust the arm_config file if this behavior is undesired");
                     fraction = move_group.computeCartesianPath(waypts, m_eef_step, m_jump_thresh, trajectory, false);
                     if (fraction <= 0.0) {
@@ -57,7 +58,7 @@ class CartesianMover : public LinearMover {
                 }
             }
 
-			robot_trajectory::RobotTrajectory robot_trajectory(move_group.getRobotModel(), "panda_arm");
+			robot_trajectory::RobotTrajectory robot_trajectory(move_group.getRobotModel(), TASKIT_PLANNING_GROUP_ID);
             robot_trajectory.setRobotTrajectoryMsg(*move_group.getCurrentState(), trajectory);
             m_iptp.computeTimeStamps(robot_trajectory, m_max_velocity_scale, m_max_acceleration_scale); 
 
@@ -84,7 +85,7 @@ class CartesianMover : public LinearMover {
 class SmoothPlanMover : public LinearMover {
     public:
         SmoothPlanMover() 
-            : m_optimal_planner_id(ManipulatorProperties::getOptimalPlannerID("panda_arm"))
+            : m_optimal_planner_id(ManipulatorProperties::getOptimalPlannerID(TASKIT_PLANNING_GROUP_ID))
             , m_planning_time(10.0)
         {}
 
@@ -119,7 +120,7 @@ class SmoothPlanMover : public LinearMover {
             makeMovementProperties(mv_props, execution_success, begin, move_group, plan);
 
             // Reset to the default planner
-            move_group.setPlannerId(ManipulatorProperties::getPlannerID("panda_arm"));
+            move_group.setPlannerId(ManipulatorProperties::getPlannerID(TASKIT_PLANNING_GROUP_ID));
 
             return execution_success;
         }
@@ -132,7 +133,7 @@ class SmoothPlanMover : public LinearMover {
 
 std::shared_ptr<LinearMover> makeLinearMover() {
 	std::shared_ptr<LinearMover> linear_mover;
-    const std::string& linear_mover_name = ManipulatorProperties::getLinearMover("panda_arm");
+    const std::string& linear_mover_name = ManipulatorProperties::getLinearMover(TASKIT_PLANNING_GROUP_ID);
 	if (linear_mover_name == "cartesian") {
 		return std::make_shared<CartesianMover>();
 	} else if (linear_mover_name == "smoothplan") {

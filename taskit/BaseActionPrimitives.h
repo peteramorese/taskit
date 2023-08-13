@@ -11,6 +11,7 @@
 #include <moveit/planning_interface/planning_interface.h>
 
 // TaskIt
+#include "Config.h"
 #include "ManipulatorNode.h"
 #include "ManipulatorNodeInterface.h"
 #include "PredicateHandler.h"
@@ -72,7 +73,7 @@ class Stow : public ActionPrimitive<taskit::Stow> {
             
             move_group->clearPoseTargets();
             move_group->setStartStateToCurrentState();
-            move_group->setJointValueTarget(ManipulatorProperties::getStowJointValues("panda_arm"));
+            move_group->setJointValueTarget(ManipulatorProperties::getStowJointValues(TASKIT_PLANNING_GROUP_ID));
             
             moveit::planning_interface::MoveGroupInterface::Plan plan;
             response.plan_success = move_group->plan(plan) == moveit::core::MoveItErrorCode::SUCCESS;
@@ -242,7 +243,7 @@ class Transit : public ActionPrimitive<taskit::Transit> {
             : ActionPrimitive<taskit::Transit>(topic)
             , m_planning_time(planning_time)
             , m_max_trials(max_trials)
-            , m_max_velocity_scaling_factor(ManipulatorProperties::getMaxAccelerationScale("panda_arm"))
+            , m_max_velocity_scaling_factor(ManipulatorProperties::getMaxAccelerationScale(TASKIT_PLANNING_GROUP_ID))
         {}
 
         virtual bool operator()(ManipulatorNodeInterface&& interface, typename msg_t::Request& request, typename msg_t::Response& response) override {
@@ -408,9 +409,9 @@ class Transit : public ActionPrimitive<taskit::Transit> {
                 if (goal_pose_props.moving_to_object) {
                     relative_offset[2] = getOffsetDimension(obj_group.getObject(goal_pose_props.obj_id), rot_type);
                 }
-                double eef_offset = ManipulatorProperties::getEndEffectorOffset("panda_arm");
+                double eef_offset = ManipulatorProperties::getEndEffectorOffset(TASKIT_PLANNING_GROUP_ID);
                 relative_offset[2] += distance_offset + eef_offset; // Apply distance and eef offset regardless
-                grasp_poses.emplace_back(Quaternions::getPointAlongPose("panda_arm", relative_offset, goal_pose_props.pose, rot_type), rot_type, relative_offset[2] - eef_offset);
+                grasp_poses.emplace_back(Quaternions::getPointAlongPose(TASKIT_PLANNING_GROUP_ID, relative_offset, goal_pose_props.pose, rot_type), rot_type, relative_offset[2] - eef_offset);
             }
             return grasp_poses;
         }
@@ -503,7 +504,7 @@ class Transport : public Transit {
                     geometry_msgs::Pose eef_pose = eef_pose_props.pose;
 
                     // Apply the vertical placing offset to the goal pose:
-                    eef_pose.position.z += ManipulatorProperties::getVerticalPlacingOffset("panda_arm");
+                    eef_pose.position.z += ManipulatorProperties::getVerticalPlacingOffset(TASKIT_PLANNING_GROUP_ID);
 
                     move_group->setPoseTarget(eef_pose);
                     ros::WallDuration(1.0).sleep();

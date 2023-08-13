@@ -1,5 +1,6 @@
 #include "PoseTracker.h"
 
+#include "Config.h"
 #include "Object.h"
 #include "PredicateHandler.h"
 
@@ -23,7 +24,7 @@ VRPNPoseTracker::VRPNPoseTracker(const std::shared_ptr<ros::NodeHandle>& node_ha
     : m_node_handle(node_handle)
     , m_sampling_duration(sampling_duration)
 {
-    m_vrpn_client_topic = m_node_handle->param<std::string>(getParamName("vrpn_client_topic"), "/vrpn_client_node/");
+    m_vrpn_client_topic = m_node_handle->param<std::string>(getParamName("vrpn_client_topic"), TASKIT_DEFAULT_VRPN_CLIENT_TOPIC);
 }
 
 VRPNPoseTracker::VRPNPoseTracker(const std::shared_ptr<ros::NodeHandle>& node_handle, const std::string& vrpn_client_topic, double sampling_duration)
