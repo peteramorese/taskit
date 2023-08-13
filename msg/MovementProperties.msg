@@ -17,3 +17,6 @@ float64 max_effort
 
 # End-effector pose for each point along the trajectory
 geometry_msgs/Pose[] eef_trajectory
+
+# Duration for each waypoint
+float64[] waypoint_durations

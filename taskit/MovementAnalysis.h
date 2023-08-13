@@ -31,7 +31,8 @@ void makeMovementProperties(
         double max_velocity = 0.0, 
         double max_acceleration = 0.0, 
         double max_effort = 0.0, 
-        const std::vector<geometry_msgs::Pose>& eef_trajectory = std::vector<geometry_msgs::Pose>{}) {
+        const std::vector<geometry_msgs::Pose>& eef_trajectory = std::vector<geometry_msgs::Pose>{},
+        const std::vector<double>& waypoint_durations = std::vector<double>{}) {
     mv_props.execution_success = execution_success;
     mv_props.execution_time = (ros::Time::now() - start_time).toSec();
     mv_props.path_length = path_length;
@@ -39,6 +40,8 @@ void makeMovementProperties(
     mv_props.max_acceleration = max_acceleration;
     mv_props.max_effort = max_effort;
     mv_props.eef_trajectory = eef_trajectory;
+    mv_props.waypoint_durations = waypoint_durations;
+    ROS_ASSERT(eef_trajectory.size() == waypoint_durations.size());
 }
 
 /// Helper functions for gathering movement properties
@@ -55,6 +58,14 @@ void makeMovementProperties(taskit::MovementProperties& mv_props, bool execution
     double max_v = 0.0;
     double max_a = 0.0;
     double max_e = 0.0;
+
+    // Waypoint durations
+    const std::deque<double>& waypoint_durations_deque = r_traj.getWayPointDurations();
+    std::vector<double> waypoint_durations;
+    waypoint_durations.reserve(waypoint_durations_deque.size());
+    for (auto duration : waypoint_durations_deque) {
+        waypoint_durations.push_back(duration);
+    }
 
     // Sequence of eef poses for each waypoint in the trajectory
     std::vector<geometry_msgs::Pose> eef_trajectory;
@@ -100,7 +111,7 @@ void makeMovementProperties(taskit::MovementProperties& mv_props, bool execution
         const Eigen::Affine3d& transform = state.getFrameTransform(TASKIT_EEF_LINK_ID);
         eef_trajectory.emplace_back(tf2::toMsg(transform));
     }
-    makeMovementProperties(mv_props, execution_success, start_time, robot_trajectory::path_length(r_traj), max_v, max_a, max_e, eef_trajectory);
+    makeMovementProperties(mv_props, execution_success, start_time, robot_trajectory::path_length(r_traj), max_v, max_a, max_e, eef_trajectory, waypoint_durations);
 }
 
 /// Helper functions for gathering movement properties
