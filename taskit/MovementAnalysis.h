@@ -6,6 +6,7 @@
 
 // MoveIt
 #include <moveit/move_group_interface/move_group_interface.h>
+#include <moveit/robot_trajectory/robot_trajectory.h>
 
 // Msg types
 #include "taskit/MovementProperties.h"
@@ -13,135 +14,106 @@
 // TaskIt
 #include "Config.h"
 
-namespace taskit {
+namespace TaskIt {
 
-/// Helper functions for gathering movement properties
-/// @param mv_props Movement properties to edit in place
-/// @param execution_success Success of the execution
-/// @param start_time Time stamp marking the start of the action primitive. The execution time is the difference btw the start time and the time this function is called
-/// @param path_length Length of the robot trajectory
-/// @param max_velocity Maximum speed encountered along the robot trajectory
-/// @param max_acceleration Maximum acceleration magnitude encountered along the robot trajectory
-/// @param max_effort Maximum effort magnitude encountered along the robot trajectory
-void makeMovementProperties(
-        taskit::MovementProperties& mv_props, 
-        bool execution_success, 
-        ros::Time start_time, 
-        double path_length = 0.0, 
-        double max_velocity = 0.0, 
-        double max_acceleration = 0.0, 
-        double max_effort = 0.0, 
-        const std::vector<geometry_msgs::Pose>& eef_trajectory = std::vector<geometry_msgs::Pose>{},
-        const std::vector<double>& waypoint_durations = std::vector<double>{}) {
-    mv_props.execution_success = execution_success;
-    mv_props.execution_time = (ros::Time::now() - start_time).toSec();
-    mv_props.path_length = path_length;
-    mv_props.max_velocity = max_velocity;
-    mv_props.max_acceleration = max_acceleration;
-    mv_props.max_effort = max_effort;
-    mv_props.eef_trajectory = eef_trajectory;
-    mv_props.waypoint_durations = waypoint_durations;
-    ROS_ASSERT(eef_trajectory.size() == waypoint_durations.size());
-}
+class MovementAnalysis {
+    public:
+        // Wrapper around msg reference to dynamically decide if the function should 'create' or 'append'
+        struct Argument {
+            public:
+                /// @brief Construct an argument with movement properties msg
+                /// @param mv_props Properties msg
+                /// @param auto_append_ Automatically append properties after the first movement
+                /// @param infemum_time Using one clock, append using maximum time value (true) instead of cumulative time value (false)
+                Argument(taskit::MovementProperties& mv_props, bool auto_append_ = true, bool infemum_time_ = true) 
+                    : m_mv_props(mv_props) 
+                    , auto_append(auto_append_)
+                    , infemum_time(infemum_time_)
+                    , append(false)
+                {}
+                operator taskit::MovementProperties&() {return m_mv_props;}
 
-/// Helper functions for gathering movement properties
-/// @param mv_props Movement properties to edit in place
-/// @param execution_success Success of the execution
-/// @param start_time Time stamp marking the start of the action primitive. The execution time is the difference btw the start time and the time this function is called
-/// @param move_group 
-/// @param motion_plan Motion plan for the manipulator
-void makeMovementProperties(taskit::MovementProperties& mv_props, bool execution_success, ros::Time start_time, const robot_trajectory::RobotTrajectory& r_traj) {
-    // Trajectory path length
-    mv_props.path_length = robot_trajectory::path_length(r_traj);
+            public:
+                bool append;
+                const bool auto_append;
+                const bool infemum_time;
+            private:
+                taskit::MovementProperties& m_mv_props;
+        };
+    public:
+        /// @brief Create in-place properties of the robotic movement
+        /// @param mv_props Movement properties to edit in place
+        /// @param execution_success Success of the execution
+        /// @param start_time Time stamp marking the start of the action primitive. The execution time is the difference btw the start time and the time this function is called
+        /// @param path_length Length of the robot trajectory
+        /// @param max_velocity Maximum speed encountered along the robot trajectory
+        /// @param max_acceleration Maximum acceleration magnitude encountered along the robot trajectory
+        /// @param max_effort Maximum effort magnitude encountered along the robot trajectory
+        void create(
+                taskit::MovementProperties& mv_props, 
+                bool execution_success, 
+                ros::Time start_time, 
+                double path_length = 0.0, 
+                double max_velocity = 0.0, 
+                double max_acceleration = 0.0, 
+                double max_effort = 0.0, 
+                const std::vector<geometry_msgs::Pose>& eef_trajectory = std::vector<geometry_msgs::Pose>{},
+                const std::vector<double>& waypoint_durations = std::vector<double>{});
 
-    // Max quantities for any joint along trajectory (velocity, acceleration, effort)
-    double max_v = 0.0;
-    double max_a = 0.0;
-    double max_e = 0.0;
+        /// @brief Create in-place properties of the robotic movement
+        /// @param mv_props Movement properties to edit in place
+        /// @param execution_success Success of the execution
+        /// @param start_time Time stamp marking the start of the action primitive. 
+        /// The execution time is the difference btw the start time and the time this function is called
+        /// @param move_group 
+        /// @param motion_plan Motion plan for the manipulator
+        void create(taskit::MovementProperties& mv_props, 
+                bool execution_success, 
+                ros::Time start_time, 
+                const robot_trajectory::RobotTrajectory& r_traj);
 
-    // Waypoint durations
-    const std::deque<double>& waypoint_durations_deque = r_traj.getWayPointDurations();
-    std::vector<double> waypoint_durations;
-    waypoint_durations.reserve(waypoint_durations_deque.size());
-    for (auto duration : waypoint_durations_deque) {
-        waypoint_durations.push_back(duration);
-    }
+        /// @brief Create in-place properties of the robotic movement
+        /// @param mv_props Movement properties to edit in place
+        /// @param execution_success Success of the execution
+        /// @param start_time Time stamp marking the start of the action primitive. 
+        /// The execution time is the difference btw the start time and the time this function is called
+        /// @param move_group 
+        /// @param motion_plan Motion plan for the manipulator
+        void create(taskit::MovementProperties& mv_props, 
+                bool execution_success, 
+                ros::Time start_time, 
+                const moveit::planning_interface::MoveGroupInterface& move_group, 
+                const moveit::planning_interface::MoveGroupInterface::Plan& motion_plan);
 
-    // Sequence of eef poses for each waypoint in the trajectory
-    std::vector<geometry_msgs::Pose> eef_trajectory;
-    eef_trajectory.reserve(r_traj.getWayPointCount());
+        /// @brief Append properties of the robotic movement to existing properties of a previous movement
+        /// @param mv_props Movement properties to edit in place
+        template <typename...ARGS_T>
+        void append(Argument& mv_arg, ARGS_T&&...args) {
+            taskit::MovementProperties mv_props_append;
+            create(mv_props_append, std::forward<ARGS_T>(args)...);
+            appendExisting(mv_arg, mv_props_append);
+        }
 
-    for (std::size_t i = 0; i < r_traj.getWayPointCount(); ++i) {
-        const moveit::core::RobotState& state = r_traj.getWayPoint(i);
 
-        // Determine max velocity for any joint and state
-        if (state.hasVelocities()) {
-            const double* velocities = state.getVariableVelocities();
-            for (std::size_t j = 0; j < state.getVariableCount(); ++j) {
-                double velocity = std::abs(velocities[j]);
-                if (velocity > max_v) {
-                    max_v = velocity;
-                }
+        /// @brief Dynamically decide if properties should be created (previous properties erased) or appended
+        /// (appended to previous properties)
+        /// @param mv_arg Movement properties argument
+        template <typename...ARGS_T>
+        void make(Argument& mv_arg, ARGS_T&&... args) {
+            if (mv_arg.append) {
+                append(mv_arg, std::forward<ARGS_T>(args)...);
+            } else {
+                create(mv_arg, std::forward<ARGS_T>(args)...);
+            }
+            // Auto append sets the append flag to true after the first time movement properties were created
+            if (mv_arg.auto_append) {
+                mv_arg.append = true;
             }
         }
 
-        // Determine max velocity for any joint and state
-        if (state.hasAccelerations()) {
-            const double* accelerations = state.getVariableAccelerations();
-            for (std::size_t j = 0; j < state.getVariableCount(); ++j) {
-                double acceleration = std::abs(accelerations[j]);
-                if (acceleration > max_a) {
-                    max_a = acceleration;
-                }
-            }
-        }
+    private:
+        void appendExisting(Argument& mv_arg, const taskit::MovementProperties& mv_props_append);
 
-        // Determine max effort for any joint and state
-        if (state.hasEffort()) {
-            const double* efforts = state.getVariableEffort();
-            for (std::size_t j = 0; j < state.getVariableCount(); ++j) {
-                double effort = std::abs(efforts[j]);
-                if (effort > max_e) {
-                    max_e = effort;
-                }
-            }
-        }
-
-        // Get the end effector pose for the current state
-        const Eigen::Affine3d& transform = state.getFrameTransform(TASKIT_EEF_LINK_ID);
-        eef_trajectory.emplace_back(tf2::toMsg(transform));
-    }
-    makeMovementProperties(mv_props, execution_success, start_time, robot_trajectory::path_length(r_traj), max_v, max_a, max_e, eef_trajectory, waypoint_durations);
-}
-
-/// Helper functions for gathering movement properties
-/// @param mv_props Movement properties to edit in place
-/// @param execution_success Success of the execution
-/// @param start_time Time stamp marking the start of the action primitive. The execution time is the difference btw the start time and the time this function is called
-/// @param move_group 
-/// @param motion_plan Motion plan for the manipulator
-void makeMovementProperties(taskit::MovementProperties& mv_props, bool execution_success, ros::Time start_time, const moveit::planning_interface::MoveGroupInterface& move_group, const moveit::planning_interface::MoveGroupInterface::Plan& motion_plan) {
-    robot_trajectory::RobotTrajectory r_traj(move_group.getRobotModel(), TASKIT_PLANNING_GROUP_ID);
-    r_traj.setRobotTrajectoryMsg(*move_group.getCurrentState(), motion_plan.trajectory_);
-    makeMovementProperties(mv_props, execution_success, start_time, r_traj);
-}
-
-/// Appends a movement to an existing movement properties message
-/// @param mv_props Movement properties to edit in place
-/// @param execution_success Success of the execution
-/// @param start_time Time stamp marking the start of the action primitive. The execution time is the difference btw the start time and the time this function is called
-/// @param move_group 
-/// @param motion_plan Motion plan for the manipulator
-void appendMovementProperties(taskit::MovementProperties& mv_props, const taskit::MovementProperties& mv_props_append) {
-    mv_props.execution_success = mv_props.execution_success && mv_props_append.execution_success;
-    mv_props.execution_time += mv_props_append.execution_time;
-    mv_props.path_length += mv_props_append.path_length;
-    if (mv_props.max_velocity < mv_props_append.max_velocity) 
-        mv_props.max_velocity = mv_props_append.max_velocity;
-    if (mv_props.max_acceleration < mv_props_append.max_acceleration) 
-        mv_props.max_acceleration = mv_props_append.max_acceleration;
-    if (mv_props.max_effort < mv_props_append.max_effort) 
-        mv_props.max_effort = mv_props_append.max_effort;
-}
+};
 
 }

@@ -68,6 +68,8 @@ class Stow : public ActionPrimitive<taskit::Stow> {
 
         virtual bool operator()(ManipulatorNodeInterface&& interface, typename msg_t::Request& request, typename msg_t::Response& response) override {
             ros::Time begin = ros::Time::now();
+            MovementAnalysis::Argument mv_props(request.mv_props, false); // No appending (only one movement)
+
             auto move_group = interface.move_group.lock();
             interface.state.lock()->reset();
             
@@ -79,7 +81,7 @@ class Stow : public ActionPrimitive<taskit::Stow> {
             response.plan_success = move_group->plan(plan) == moveit::core::MoveItErrorCode::SUCCESS;
             bool execution_success = move_group->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
 
-            makeMovementProperties(response.mv_props, execution_success, begin, *move_group, plan);
+            MovementAnalysis::make(mv_props, execution_success, begin, *move_group, plan);
             return true;
         }
 };
@@ -150,6 +152,8 @@ class SimpleGrasp : public ActionPrimitive<taskit::Grasp> {
 
         virtual bool operator()(ManipulatorNodeInterface&& interface, typename msg_t::Request& request, typename msg_t::Response& response) override {
             ros::Time begin = ros::Time::now();
+            MovementAnalysis::Argument mv_props(request.mv_props, false); // No appending (only one movement)
+
             auto move_group = interface.move_group.lock();
             auto obj_group = interface.object_group.lock();
             auto predicate_handler = interface.predicate_handler.lock();
@@ -160,7 +164,7 @@ class SimpleGrasp : public ActionPrimitive<taskit::Grasp> {
                 spec.grip_force = 10.0f;
                 spec.grip_width_closed = 0.0f;
                 bool execution_success = m_gripper_handler->close(spec);
-                makeMovementProperties(response.mv_props, execution_success, begin);
+                MovementAnalysis::make(mv_props, execution_success, begin);
                 return true;
             }
 
@@ -177,7 +181,7 @@ class SimpleGrasp : public ActionPrimitive<taskit::Grasp> {
             bool execution_success = m_gripper_handler->close(*(obj_group->getObject(obj_id).spec));
             move_group->attachObject(obj_id, m_attachment_link);
 
-            makeMovementProperties(response.mv_props, execution_success, begin);
+            MovementAnalysis::make(mv_props, execution_success, begin);
             return true;
         }
 
@@ -196,6 +200,8 @@ class SimpleRelease : public ActionPrimitive<taskit::Release> {
 
         virtual bool operator()(ManipulatorNodeInterface&& interface, typename msg_t::Request& request, typename msg_t::Response& response) override {
             ros::Time begin = ros::Time::now();
+            MovementAnalysis::Argument mv_props(request.mv_props, false); // No appending (only one movement)
+
             auto move_group = interface.move_group.lock();
             auto obj_group = interface.object_group.lock();
             auto planning_scene_interface = interface.planning_scene_interface.lock();
@@ -205,7 +211,7 @@ class SimpleRelease : public ActionPrimitive<taskit::Release> {
                     move_group->detachObject();
                 }
                 bool execution_success = m_gripper_handler->open(GripperSpecification{});
-                makeMovementProperties(response.mv_props, execution_success, begin);
+                MovementAnalysis::make(mv_props, execution_success, begin);
                 return true;
             }
 
@@ -229,7 +235,7 @@ class SimpleRelease : public ActionPrimitive<taskit::Release> {
             bool execution_success = m_gripper_handler->open(*(obj_group->getObject(obj_id).spec));
             move_group->detachObject(obj_id);
 
-            makeMovementProperties(response.mv_props, execution_success, begin);
+            MovementAnalysis::make(mv_props, execution_success, begin);
             return true;
         }
 
@@ -248,6 +254,7 @@ class Transit : public ActionPrimitive<taskit::Transit> {
 
         virtual bool operator()(ManipulatorNodeInterface&& interface, typename msg_t::Request& request, typename msg_t::Response& response) override {
             ros::Time begin = ros::Time::now();
+            MovementAnalysis::Argument mv_props(request.mv_props, false); // No appending (only one movement)
 
             // Extract what we need
             auto move_group = interface.move_group.lock();
@@ -263,7 +270,7 @@ class Transit : public ActionPrimitive<taskit::Transit> {
             // Make sure no objects are attached
             if (pci->getAttachedObjects().size()) {
                 ROS_ERROR_STREAM("Cannot 'transit' while gripping an object. Use 'transport' instead. Not executing");
-                makeMovementProperties(response.mv_props, execution_success, begin);
+                MovementAnalysis::make(mv_props, execution_success, begin);
                 return false;
             }
 
@@ -317,14 +324,14 @@ class Transit : public ActionPrimitive<taskit::Transit> {
                             updateState(*state, request.destination_location, goal_pose_props.moving_to_object, pose_rot_type, eef_pose_props.placing_offset);
                         }
 
-                        makeMovementProperties(response.mv_props, execution_success, begin, *move_group, plan);
+                        MovementAnalysis::make(mv_props, execution_success, begin, *move_group, plan);
                         return true;
                     }
                 }
 
                 ++trial;        
                 if (trial >= m_max_trials) {
-                    makeMovementProperties(response.mv_props, execution_success, begin);
+                    MovementAnalysis::make(mv_props, execution_success, begin);
                     return true;
                 }
             }
@@ -470,7 +477,7 @@ class Transport : public Transit {
             // Make sure at least one object is attached
             if (!attached_objects.size()) {
                 ROS_ERROR_STREAM("Did not find attached object (is the manipulator holding an object?), not executing");
-                makeMovementProperties(response.mv_props, execution_success, begin);
+                MovementAnalysis::make(response.mv_props, execution_success, begin);
                 return false;
             }
 
@@ -478,7 +485,7 @@ class Transport : public Transit {
             GoalPoseProperties goal_pose_props = getGoalPose(*predicate_handler, *obj_group, request, attached_objects.begin()->first); 
             if (goal_pose_props.moving_to_object) {
                 ROS_ERROR_STREAM("Destination location '" << request.destination_location << "' is occupied by object: " << goal_pose_props.obj_id << ", not executing");
-                makeMovementProperties(response.mv_props, execution_success, begin);
+                MovementAnalysis::make(response.mv_props, execution_success, begin);
                 return false;
             } else {
                 ROS_INFO_STREAM("Goal pose for location '" << request.destination_location <<"' extracted from predicate handler");
@@ -533,14 +540,14 @@ class Transport : public Transit {
                             // Update destination location, must be near object (holding), keep rotation type, keep placing offset
                             updateState(*state, request.destination_location, true, state->grasp_rotation_type, state->placing_offset);
                         }
-                        makeMovementProperties(response.mv_props, execution_success, begin, *move_group, plan);
+                        MovementAnalysis::make(response.mv_props, execution_success, begin, *move_group, plan);
                         return true;
                     }
                 }
 
                 ++trial;        
                 if (trial >= m_max_trials) {
-                    makeMovementProperties(response.mv_props, execution_success, begin);
+                    MovementAnalysis::make(response.mv_props, execution_success, begin);
                     return true;
                 }
             }

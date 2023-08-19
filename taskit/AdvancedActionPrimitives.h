@@ -22,6 +22,7 @@ class LinearTransit : public Transit {
 
         virtual bool operator()(ManipulatorNodeInterface&& interface, msg_t::Request& request, msg_t::Response& response) override {
             ros::Time begin = ros::Time::now();
+            MovementAnalysis::Argument mv_props(request.mv_props, true); // Auto append
 
             // Extract what we need
             auto move_group = interface.move_group.lock();
@@ -37,7 +38,7 @@ class LinearTransit : public Transit {
             // Make sure no objects are attached
             if (pci->getAttachedObjects().size()) {
                 ROS_ERROR_STREAM("Cannot 'transit' while gripping an object. Use 'transport' instead. Not executing");
-                makeMovementProperties(response.mv_props, execution_success, begin);
+                MovementAnalysis::make(mv_props, execution_success, begin);
                 return false;
             }
 
@@ -58,6 +59,7 @@ class LinearTransit : public Transit {
             uint8_t trial = 0;
             while (true) {
 
+
                 // If the eef is near an object, perform the retreat
                 if (state->near_object) {
                     geometry_msgs::Point dst_retreat_point = move_group->getCurrentPose().pose.position;
@@ -65,11 +67,11 @@ class LinearTransit : public Transit {
                     dst_retreat_point.x -= m_retreat_distance * retreat_direction[0];
                     dst_retreat_point.y -= m_retreat_distance * retreat_direction[1];
                     dst_retreat_point.z -= m_retreat_distance * retreat_direction[2];
-                    if (!m_linear_mover->move(response.mv_props, *move_group, dst_retreat_point)) {
+                    if (!m_linear_mover->move(mv_props, *move_group, dst_retreat_point)) {
                         // Failure
                         return true;
-                    }
-                }
+                    } 
+                } 
 
                 move_group->setStartStateToCurrentState();
                 moveit::planning_interface::MoveGroupInterface::Plan plan;
@@ -103,10 +105,10 @@ class LinearTransit : public Transit {
                         }
 
                         execution_success = move_group->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
+                        DEBUG("execution success: " << execution_success);
 
                         // Make the movement properties for the motion plan
-                        taskit::MovementProperties motion_plan_mv_props;
-                        makeMovementProperties(motion_plan_mv_props, execution_success, begin, *move_group, plan);
+                        MovementAnalysis::append(motion_plan_mv_props, execution_success, begin, *move_group, plan);
 
                         // Append the movement properties for the motion plan
                         appendMovementProperties(response.mv_props, motion_plan_mv_props);
@@ -125,7 +127,7 @@ class LinearTransit : public Transit {
 
                 ++trial;        
                 if (trial >= m_max_trials) {
-                    makeMovementProperties(response.mv_props, execution_success, begin);
+                    MovementAnalysis::make(response.mv_props, execution_success, begin);
                     return true;
                 }
             }
@@ -190,7 +192,7 @@ class LinearTransport : public Transport {
             // Make sure at least one object is attached
             if (!attached_objects.size()) {
                 ROS_WARN_STREAM("Did not find attached object (is the manipulator holding an object?), not executing");
-                makeMovementProperties(response.mv_props, execution_success, begin);
+                MovementAnalysis::make(response.mv_props, execution_success, begin);
                 return false;
             }
 
@@ -198,7 +200,7 @@ class LinearTransport : public Transport {
             GoalPoseProperties goal_pose_props = getGoalPose(*predicate_handler, *obj_group, request, attached_objects.begin()->first); 
             if (goal_pose_props.moving_to_object) {
                 ROS_ERROR_STREAM("Destination location '" << request.destination_location << "' is occupied by object: " << goal_pose_props.obj_id << ", not executing");
-                makeMovementProperties(response.mv_props, execution_success, begin);
+                MovementAnalysis::make(response.mv_props, execution_success, begin);
                 return false;
             } else {
                 ROS_INFO_STREAM("Goal pose for location '" << request.destination_location <<"' extracted from predicate handler");
@@ -266,7 +268,7 @@ class LinearTransport : public Transport {
 
                         // Make the movement properties for the motion plan
                         taskit::MovementProperties motion_plan_mv_props;
-                        makeMovementProperties(motion_plan_mv_props, execution_success, begin, *move_group, plan);
+                        MovementAnalysis::make(motion_plan_mv_props, execution_success, begin, *move_group, plan);
 
                         // Append the movement properties for the motion plan
                         appendMovementProperties(response.mv_props, motion_plan_mv_props);
@@ -288,7 +290,7 @@ class LinearTransport : public Transport {
 
                 ++trial;        
                 if (trial >= m_max_trials) {
-                    makeMovementProperties(response.mv_props, execution_success, begin);
+                    MovementAnalysis::make(response.mv_props, execution_success, begin);
                     return true;
                 }
             }
