@@ -69,10 +69,19 @@ class Mover {
         }
 
         bool planWithRetries(moveit::planning_interface::MoveGroupInterface& move_group, moveit::planning_interface::MoveGroupInterface::Plan& motion_plan) {
-            for (uint32_t trial = 0; trial < ManipulatorProperties::getPlannerRetries(TASKIT_PLANNING_GROUP_ID); ++trial) {
-                if(move_group.plan(motion_plan) == moveit::core::MoveItErrorCode::SUCCESS)
+            double planning_time = ManipulatorProperties::getPlanningTime(TASKIT_PLANNING_GROUP_ID);
+            uint32_t trials = ManipulatorProperties::getPlannerRetries(TASKIT_PLANNING_GROUP_ID);
+            for (uint32_t trial = 0; trial < trials; ++trial) {
+                if(move_group.plan(motion_plan) == moveit::core::MoveItErrorCode::SUCCESS) {
+                    // Reset planning time
+                    move_group.setPlanningTime(planning_time);
                     return true;
+                }
+                ROS_WARN_STREAM("Planning failed (trial: " << trial + 1 << "/" << trials <<"). Increasing planning time to: " << (trial + 2) * planning_time << " seconds");
+                move_group.setPlanningTime((trial + 2) * planning_time);
             }
+            // Reset planning time
+            move_group.setPlanningTime(planning_time);
             return false;
         }
 };
