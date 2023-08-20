@@ -71,7 +71,12 @@ class CartesianMover : public LinearMover {
             ros::WallDuration(1.0).sleep();
 
             bool execution_success = move_group.execute(robot_trajectory_msg) == moveit::core::MoveItErrorCode::SUCCESS;
+
+            // Add the time
+            mv_analysis.toggleInfemumTime(false);
             mv_analysis.add(execution_success, begin, robot_trajectory);
+            mv_analysis.resetInfemumTime();
+
             return execution_success;
         }
 
@@ -109,7 +114,10 @@ class SmoothPlanMover : public LinearMover, protected Mover {
 
             bool execution_success = move_group.execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
 
+            // Add the time
+            mv_analysis.toggleInfemumTime(false);
             mv_analysis.add(execution_success, begin, move_group, plan);
+            mv_analysis.resetInfemumTime();
 
             // Reset to the default planner
             setPlannerProperties(move_group);

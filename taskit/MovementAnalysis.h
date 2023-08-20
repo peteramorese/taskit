@@ -27,6 +27,7 @@ class MovementAnalysis {
             , m_append(false)
             , m_auto_append(auto_append_)
             , m_infemum_time(infemum_time_)
+            , m_default_infemum_time(infemum_time_)
         {}
 
         /// @brief Create in-place properties of the robotic movement
@@ -96,14 +97,17 @@ class MovementAnalysis {
             }
         }
 
+        void toggleAppend(bool append) {m_append = append;}
+        void toggleInfemumTime(bool infemum_time) {m_infemum_time = infemum_time;}
+        void resetInfemumTime() {m_infemum_time = m_default_infemum_time;}
     private:
         void appendExisting(const MovementAnalysis& mv_analysis_append);
         void appendExisting(const taskit::MovementProperties& mv_props_append);
 
     private:
-        bool m_append;
+        bool m_append, m_infemum_time;
         const bool m_auto_append;
-        const bool m_infemum_time;
+        const bool m_default_infemum_time;
         taskit::MovementProperties& m_mv_props;
 
 };
