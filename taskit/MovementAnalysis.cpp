@@ -3,7 +3,6 @@
 namespace TaskIt {
 
 void MovementAnalysis::create(
-        taskit::MovementProperties& mv_props, 
         bool execution_success, 
         ros::Time start_time, 
         double path_length, 
@@ -12,20 +11,20 @@ void MovementAnalysis::create(
         double max_effort, 
         const std::vector<geometry_msgs::Pose>& eef_trajectory,
         const std::vector<double>& waypoint_durations) {
-    mv_props.execution_success = execution_success;
-    mv_props.execution_time = (ros::Time::now() - start_time).toSec();
-    mv_props.path_length = path_length;
-    mv_props.max_velocity = max_velocity;
-    mv_props.max_acceleration = max_acceleration;
-    mv_props.max_effort = max_effort;
-    mv_props.eef_trajectory = eef_trajectory;
-    mv_props.waypoint_durations = waypoint_durations;
+    m_mv_props.execution_success = execution_success;
+    m_mv_props.execution_time = (ros::Time::now() - start_time).toSec();
+    m_mv_props.path_length = path_length;
+    m_mv_props.max_velocity = max_velocity;
+    m_mv_props.max_acceleration = max_acceleration;
+    m_mv_props.max_effort = max_effort;
+    m_mv_props.eef_trajectory = eef_trajectory;
+    m_mv_props.waypoint_durations = waypoint_durations;
     ROS_ASSERT(eef_trajectory.size() == waypoint_durations.size());
 }
 
-void MovementAnalysis::create(taskit::MovementProperties& mv_props, bool execution_success, ros::Time start_time, const robot_trajectory::RobotTrajectory& r_traj) {
+void MovementAnalysis::create(bool execution_success, ros::Time start_time, const robot_trajectory::RobotTrajectory& r_traj) {
     // Trajectory path length
-    mv_props.path_length = robot_trajectory::path_length(r_traj);
+    m_mv_props.path_length = robot_trajectory::path_length(r_traj);
 
     // Max quantities for any joint along trajectory (velocity, acceleration, effort)
     double max_v = 0.0;
@@ -84,33 +83,35 @@ void MovementAnalysis::create(taskit::MovementProperties& mv_props, bool executi
         const Eigen::Affine3d& transform = state.getFrameTransform(TASKIT_EEF_LINK_ID);
         eef_trajectory.emplace_back(tf2::toMsg(transform));
     }
-    create(mv_props, execution_success, start_time, robot_trajectory::path_length(r_traj), max_v, max_a, max_e, eef_trajectory, waypoint_durations);
+    create(execution_success, start_time, robot_trajectory::path_length(r_traj), max_v, max_a, max_e, eef_trajectory, waypoint_durations);
 }
 
-void MovementAnalysis::create(taskit::MovementProperties& mv_props, bool execution_success, ros::Time start_time, const moveit::planning_interface::MoveGroupInterface& move_group, const moveit::planning_interface::MoveGroupInterface::Plan& motion_plan) {
+void MovementAnalysis::create(bool execution_success, ros::Time start_time, const moveit::planning_interface::MoveGroupInterface& move_group, const moveit::planning_interface::MoveGroupInterface::Plan& motion_plan) {
     robot_trajectory::RobotTrajectory r_traj(move_group.getRobotModel(), TASKIT_PLANNING_GROUP_ID);
     r_traj.setRobotTrajectoryMsg(*move_group.getCurrentState(), motion_plan.trajectory_);
-    create(mv_props, execution_success, start_time, r_traj);
+    create(execution_success, start_time, r_traj);
 }
 
-void MovementAnalysis::appendExisting(Argument& mv_arg, const taskit::MovementProperties& mv_props_append) {
-    taskit::MovementProperties& mv_props = mv_arg;
+void MovementAnalysis::appendExisting(const MovementAnalysis& mv_analysis_append) {
+    appendExisting(mv_analysis_append.m_mv_props);
+}
 
+void MovementAnalysis::appendExisting(const taskit::MovementProperties& mv_props_append) {
     // Both movements must be successful
-    mv_props.execution_success = mv_props.execution_success && mv_props_append.execution_success;
+    m_mv_props.execution_success = m_mv_props.execution_success && mv_props_append.execution_success;
     
     // If infemum time is true, use the appended execution time, otherwise sum the previous time with appended time
-    mv_props.execution_time = (!mv_arg.infemum_time) * mv_props.execution_time + mv_props_append.execution_time;
+    m_mv_props.execution_time = (!m_infemum_time) * m_mv_props.execution_time + mv_props_append.execution_time;
 
-    mv_props.path_length += mv_props_append.path_length;
-    if (mv_props.max_velocity < mv_props_append.max_velocity) 
-        mv_props.max_velocity = mv_props_append.max_velocity;
-    if (mv_props.max_acceleration < mv_props_append.max_acceleration) 
-        mv_props.max_acceleration = mv_props_append.max_acceleration;
-    if (mv_props.max_effort < mv_props_append.max_effort) 
-        mv_props.max_effort = mv_props_append.max_effort;
-    mv_props.eef_trajectory.insert(mv_props.eef_trajectory.end(), mv_props_append.eef_trajectory.begin(), mv_props_append.eef_trajectory.end());
-    mv_props.waypoint_durations.insert(mv_props.waypoint_durations.end(), mv_props_append.waypoint_durations.begin(), mv_props_append.waypoint_durations.end());
+    m_mv_props.path_length += mv_props_append.path_length;
+    if (m_mv_props.max_velocity < mv_props_append.max_velocity) 
+        m_mv_props.max_velocity = mv_props_append.max_velocity;
+    if (m_mv_props.max_acceleration < mv_props_append.max_acceleration) 
+        m_mv_props.max_acceleration = mv_props_append.max_acceleration;
+    if (m_mv_props.max_effort < mv_props_append.max_effort) 
+        m_mv_props.max_effort = mv_props_append.max_effort;
+    m_mv_props.eef_trajectory.insert(m_mv_props.eef_trajectory.end(), mv_props_append.eef_trajectory.begin(), mv_props_append.eef_trajectory.end());
+    m_mv_props.waypoint_durations.insert(m_mv_props.waypoint_durations.end(), mv_props_append.waypoint_durations.begin(), mv_props_append.waypoint_durations.end());
 }
 
 }

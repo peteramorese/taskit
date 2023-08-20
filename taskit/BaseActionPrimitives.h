@@ -48,19 +48,36 @@ class ActionPrimitive {
         const std::string m_topic;
 };
 
-//// Convenience class for moving the arm with the move group interface
-//class Mover {
-//    protected:
-//        Mover() = default;
-//
-//        void setScalingFactors() const {
-//
-//        }
-//    protected:
-//        std::string m_default_planning_time;
-//};
+// Convenience class for resetting arm movement properties
+class Mover {
+    protected:
+        Mover() = default;
 
-class Stow : public ActionPrimitive<taskit::Stow> {
+        void setPlannerProperties(moveit::planning_interface::MoveGroupInterface& move_group) const {
+            move_group.setPlannerId(ManipulatorProperties::getPlannerID(TASKIT_PLANNING_GROUP_ID));
+            move_group.setPlanningTime(ManipulatorProperties::getPlanningTime(TASKIT_PLANNING_GROUP_ID));
+        }
+
+        void setOptimalPlannerProperties(moveit::planning_interface::MoveGroupInterface& move_group) const {
+            move_group.setPlannerId(ManipulatorProperties::getOptimalPlannerID(TASKIT_PLANNING_GROUP_ID));
+            move_group.setPlanningTime(ManipulatorProperties::getOptimalPlanningTime(TASKIT_PLANNING_GROUP_ID));
+        }
+
+        void setScalingFactors(moveit::planning_interface::MoveGroupInterface& move_group) const {
+            move_group.setMaxVelocityScalingFactor(ManipulatorProperties::getMaxVelocityScale(TASKIT_PLANNING_GROUP_ID));
+            move_group.setMaxAccelerationScalingFactor(ManipulatorProperties::getMaxAccelerationScale(TASKIT_PLANNING_GROUP_ID));
+        }
+
+        bool planWithRetries(moveit::planning_interface::MoveGroupInterface& move_group, moveit::planning_interface::MoveGroupInterface::Plan& motion_plan) {
+            for (uint32_t trial = 0; trial < ManipulatorProperties::getPlannerRetries(TASKIT_PLANNING_GROUP_ID); ++trial) {
+                if(move_group.plan(motion_plan) == moveit::core::MoveItErrorCode::SUCCESS)
+                    return true;
+            }
+            return false;
+        }
+};
+
+class Stow : public ActionPrimitive<taskit::Stow>, protected Mover {
     public:
         Stow(const std::string& topic)
             : ActionPrimitive<taskit::Stow>(topic)
@@ -68,9 +85,12 @@ class Stow : public ActionPrimitive<taskit::Stow> {
 
         virtual bool operator()(ManipulatorNodeInterface&& interface, typename msg_t::Request& request, typename msg_t::Response& response) override {
             ros::Time begin = ros::Time::now();
-            MovementAnalysis::Argument mv_props(request.mv_props, false); // No appending (only one movement)
+            MovementAnalysis mv_analysis(response.mv_props, false); // No appending (only one movement)
 
             auto move_group = interface.move_group.lock();
+            setPlannerProperties(*move_group);
+            setScalingFactors(*move_group);
+
             interface.state.lock()->reset();
             
             move_group->clearPoseTargets();
@@ -78,10 +98,10 @@ class Stow : public ActionPrimitive<taskit::Stow> {
             move_group->setJointValueTarget(ManipulatorProperties::getStowJointValues(TASKIT_PLANNING_GROUP_ID));
             
             moveit::planning_interface::MoveGroupInterface::Plan plan;
-            response.plan_success = move_group->plan(plan) == moveit::core::MoveItErrorCode::SUCCESS;
+            response.plan_success = planWithRetries(*move_group, plan);
             bool execution_success = move_group->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
 
-            MovementAnalysis::make(mv_props, execution_success, begin, *move_group, plan);
+            mv_analysis.add(execution_success, begin, *move_group, plan);
             return true;
         }
 };
@@ -152,7 +172,7 @@ class SimpleGrasp : public ActionPrimitive<taskit::Grasp> {
 
         virtual bool operator()(ManipulatorNodeInterface&& interface, typename msg_t::Request& request, typename msg_t::Response& response) override {
             ros::Time begin = ros::Time::now();
-            MovementAnalysis::Argument mv_props(request.mv_props, false); // No appending (only one movement)
+            MovementAnalysis mv_analysis(response.mv_props, false); // No appending (only one movement)
 
             auto move_group = interface.move_group.lock();
             auto obj_group = interface.object_group.lock();
@@ -164,7 +184,7 @@ class SimpleGrasp : public ActionPrimitive<taskit::Grasp> {
                 spec.grip_force = 10.0f;
                 spec.grip_width_closed = 0.0f;
                 bool execution_success = m_gripper_handler->close(spec);
-                MovementAnalysis::make(mv_props, execution_success, begin);
+                mv_analysis.add(execution_success, begin);
                 return true;
             }
 
@@ -181,7 +201,7 @@ class SimpleGrasp : public ActionPrimitive<taskit::Grasp> {
             bool execution_success = m_gripper_handler->close(*(obj_group->getObject(obj_id).spec));
             move_group->attachObject(obj_id, m_attachment_link);
 
-            MovementAnalysis::make(mv_props, execution_success, begin);
+            mv_analysis.add(execution_success, begin);
             return true;
         }
 
@@ -200,7 +220,7 @@ class SimpleRelease : public ActionPrimitive<taskit::Release> {
 
         virtual bool operator()(ManipulatorNodeInterface&& interface, typename msg_t::Request& request, typename msg_t::Response& response) override {
             ros::Time begin = ros::Time::now();
-            MovementAnalysis::Argument mv_props(request.mv_props, false); // No appending (only one movement)
+            MovementAnalysis mv_analysis(response.mv_props, false); // No appending (only one movement)
 
             auto move_group = interface.move_group.lock();
             auto obj_group = interface.object_group.lock();
@@ -211,7 +231,7 @@ class SimpleRelease : public ActionPrimitive<taskit::Release> {
                     move_group->detachObject();
                 }
                 bool execution_success = m_gripper_handler->open(GripperSpecification{});
-                MovementAnalysis::make(mv_props, execution_success, begin);
+                mv_analysis.add(execution_success, begin);
                 return true;
             }
 
@@ -229,13 +249,14 @@ class SimpleRelease : public ActionPrimitive<taskit::Release> {
 
             if (!obj_group->hasObject(obj_id)) {
                 ROS_ERROR_STREAM("Object '" << obj_id << "' was not found");
+                mv_analysis.add(false, begin);
                 return false;
             }
 
             bool execution_success = m_gripper_handler->open(*(obj_group->getObject(obj_id).spec));
             move_group->detachObject(obj_id);
 
-            MovementAnalysis::make(mv_props, execution_success, begin);
+            mv_analysis.add(execution_success, begin);
             return true;
         }
 
@@ -243,7 +264,7 @@ class SimpleRelease : public ActionPrimitive<taskit::Release> {
         std::shared_ptr<GripperHandler<GRIPPER_USE_T>> m_gripper_handler;
 };
 
-class Transit : public ActionPrimitive<taskit::Transit> {
+class Transit : public ActionPrimitive<taskit::Transit>, protected Mover {
     public:
         Transit(const std::string& topic, double planning_time, uint8_t max_trials)
             : ActionPrimitive<taskit::Transit>(topic)
@@ -254,7 +275,7 @@ class Transit : public ActionPrimitive<taskit::Transit> {
 
         virtual bool operator()(ManipulatorNodeInterface&& interface, typename msg_t::Request& request, typename msg_t::Response& response) override {
             ros::Time begin = ros::Time::now();
-            MovementAnalysis::Argument mv_props(request.mv_props, false); // No appending (only one movement)
+            MovementAnalysis mv_analysis(response.mv_props, false); // No appending (only one movement)
 
             // Extract what we need
             auto move_group = interface.move_group.lock();
@@ -264,13 +285,16 @@ class Transit : public ActionPrimitive<taskit::Transit> {
             auto state = interface.state.lock();
             auto pci = interface.planning_scene_interface.lock();
 
+            setPlannerProperties(*move_group);
+            setScalingFactors(*move_group);
+
             response.plan_success = false;
             bool execution_success = false;
 
             // Make sure no objects are attached
             if (pci->getAttachedObjects().size()) {
                 ROS_ERROR_STREAM("Cannot 'transit' while gripping an object. Use 'transport' instead. Not executing");
-                MovementAnalysis::make(mv_props, execution_success, begin);
+                mv_analysis.add(execution_success, begin);
                 return false;
             }
 
@@ -290,7 +314,6 @@ class Transit : public ActionPrimitive<taskit::Transit> {
             uint8_t trial = 0;
             while (true) {
                 move_group->setStartStateToCurrentState();
-                moveit::planning_interface::MoveGroupInterface::Plan plan;
 
                 for (const auto& eef_pose_props : eef_poses) {
 
@@ -307,7 +330,8 @@ class Transit : public ActionPrimitive<taskit::Transit> {
                         vis->publishGoalMarker(eef_pose, "Planning...");
                     }
 
-                    response.plan_success = move_group->plan(plan) == moveit::core::MoveItErrorCode::SUCCESS;
+                    moveit::planning_interface::MoveGroupInterface::Plan plan;
+                    response.plan_success = planWithRetries(*move_group, plan);
                     ros::WallDuration(1.0).sleep();
                     if (response.plan_success) {
                         move_group->setMaxVelocityScalingFactor(m_max_velocity_scaling_factor);
@@ -324,14 +348,14 @@ class Transit : public ActionPrimitive<taskit::Transit> {
                             updateState(*state, request.destination_location, goal_pose_props.moving_to_object, pose_rot_type, eef_pose_props.placing_offset);
                         }
 
-                        MovementAnalysis::make(mv_props, execution_success, begin, *move_group, plan);
+                        mv_analysis.add(execution_success, begin, *move_group, plan);
                         return true;
                     }
                 }
 
                 ++trial;        
                 if (trial >= m_max_trials) {
-                    MovementAnalysis::make(mv_props, execution_success, begin);
+                    mv_analysis.add(execution_success, begin);
                     return true;
                 }
             }
@@ -460,6 +484,7 @@ class Transport : public Transit {
 
         virtual bool operator()(ManipulatorNodeInterface&& interface, typename msg_t::Request& request, typename msg_t::Response& response) override {
             ros::Time begin = ros::Time::now();
+            MovementAnalysis mv_analysis(response.mv_props, false); // No appending (only one movement)
 
             // Extract what we need
             auto move_group = interface.move_group.lock();
@@ -469,6 +494,9 @@ class Transport : public Transit {
             auto state = interface.state.lock();
             auto pci = interface.planning_scene_interface.lock();
 
+            setPlannerProperties(*move_group);
+            setScalingFactors(*move_group);
+
             response.plan_success = false;
             bool execution_success = false;
 
@@ -477,7 +505,7 @@ class Transport : public Transit {
             // Make sure at least one object is attached
             if (!attached_objects.size()) {
                 ROS_ERROR_STREAM("Did not find attached object (is the manipulator holding an object?), not executing");
-                MovementAnalysis::make(response.mv_props, execution_success, begin);
+                mv_analysis.add(execution_success, begin);
                 return false;
             }
 
@@ -485,7 +513,7 @@ class Transport : public Transit {
             GoalPoseProperties goal_pose_props = getGoalPose(*predicate_handler, *obj_group, request, attached_objects.begin()->first); 
             if (goal_pose_props.moving_to_object) {
                 ROS_ERROR_STREAM("Destination location '" << request.destination_location << "' is occupied by object: " << goal_pose_props.obj_id << ", not executing");
-                MovementAnalysis::make(response.mv_props, execution_success, begin);
+                mv_analysis.add(execution_success, begin);
                 return false;
             } else {
                 ROS_INFO_STREAM("Goal pose for location '" << request.destination_location <<"' extracted from predicate handler");
@@ -503,7 +531,6 @@ class Transport : public Transit {
             uint8_t trial = 0;
             while (true) {
                 move_group->setStartStateToCurrentState();
-                moveit::planning_interface::MoveGroupInterface::Plan plan;
 
                 for (const auto& eef_pose_props : eef_poses) {
 
@@ -523,7 +550,8 @@ class Transport : public Transit {
                         vis->publishGoalMarker(eef_pose, "Planning...");
                     }
 
-                    response.plan_success = move_group->plan(plan) == moveit::core::MoveItErrorCode::SUCCESS;
+                    moveit::planning_interface::MoveGroupInterface::Plan plan;
+                    response.plan_success = planWithRetries(*move_group, plan);
                     ros::WallDuration(1.0).sleep();
                     if (response.plan_success) {
                         move_group->setMaxVelocityScalingFactor(m_max_velocity_scaling_factor);
@@ -540,14 +568,14 @@ class Transport : public Transit {
                             // Update destination location, must be near object (holding), keep rotation type, keep placing offset
                             updateState(*state, request.destination_location, true, state->grasp_rotation_type, state->placing_offset);
                         }
-                        MovementAnalysis::make(response.mv_props, execution_success, begin, *move_group, plan);
+                        mv_analysis.add(execution_success, begin, *move_group, plan);
                         return true;
                     }
                 }
 
                 ++trial;        
                 if (trial >= m_max_trials) {
-                    MovementAnalysis::make(response.mv_props, execution_success, begin);
+                    mv_analysis.add(execution_success, begin);
                     return true;
                 }
             }

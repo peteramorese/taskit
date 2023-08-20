@@ -10,7 +10,7 @@ namespace ActionPrimitives {
 
 class LinearMover {
     public:
-        virtual bool move(MovementAnalysis::Argument& mv_props, moveit::planning_interface::MoveGroupInterface& move_group, const geometry_msgs::Point& dst_point) = 0;
+        virtual bool move(MovementAnalysis& mv_analysis, moveit::planning_interface::MoveGroupInterface& move_group, const geometry_msgs::Point& dst_point) = 0;
 };
 
 class CartesianMover : public LinearMover {
@@ -22,7 +22,7 @@ class CartesianMover : public LinearMover {
             , m_max_velocity_scale(ManipulatorProperties::getMaxVelocityScale(TASKIT_PLANNING_GROUP_ID))
         {}
 
-        virtual bool move(MovementAnalysis::Argument& mv_props, moveit::planning_interface::MoveGroupInterface& move_group, const geometry_msgs::Point& dst_point) override {
+        virtual bool move(MovementAnalysis& mv_analysis, moveit::planning_interface::MoveGroupInterface& move_group, const geometry_msgs::Point& dst_point) override {
 
             ros::Time begin = ros::Time::now();
             const geometry_msgs::Pose& curr_pose = move_group.getCurrentPose().pose;
@@ -53,7 +53,7 @@ class CartesianMover : public LinearMover {
                     fraction = move_group.computeCartesianPath(waypts, m_eef_step, m_jump_thresh, trajectory, false);
                     if (fraction <= 0.0) {
                         ROS_ERROR("Cartesian path computation failed!");
-                        MovementAnalysis::make(mv_props, false, begin);
+                        mv_analysis.add(false, begin);
                         return false;
                     }
                 }
@@ -71,7 +71,7 @@ class CartesianMover : public LinearMover {
             ros::WallDuration(1.0).sleep();
 
             bool execution_success = move_group.execute(robot_trajectory_msg) == moveit::core::MoveItErrorCode::SUCCESS;
-            MovementAnalysis::make(mv_props, execution_success, begin, robot_trajectory);
+            mv_analysis.add(execution_success, begin, robot_trajectory);
             return execution_success;
         }
 
@@ -83,53 +83,40 @@ class CartesianMover : public LinearMover {
         trajectory_processing::IterativeParabolicTimeParameterization m_iptp;
 };
 
-class SmoothPlanMover : public LinearMover {
+class SmoothPlanMover : public LinearMover, protected Mover {
     public:
-        SmoothPlanMover() 
-            : m_optimal_planner_id(ManipulatorProperties::getOptimalPlannerID(TASKIT_PLANNING_GROUP_ID))
-            , m_planning_time(10.0)
-        {}
+        SmoothPlanMover() {}
 
-        void setPlanningTime(double planning_time) {m_planning_time = planning_time;}
-
-        virtual bool move(MovementAnalysis::Argument& mv_props, moveit::planning_interface::MoveGroupInterface& move_group, const geometry_msgs::Point& dst_point) override {
+        virtual bool move(MovementAnalysis& mv_analysis, moveit::planning_interface::MoveGroupInterface& move_group, const geometry_msgs::Point& dst_point) override {
             ros::Time begin = ros::Time::now();
 
+            setScalingFactors(move_group);
+
             // Set the planner to an optimal planner
-            move_group.setPlannerId(m_optimal_planner_id);
-            move_group.setPlanningTime(m_planning_time);
+            setOptimalPlannerProperties(move_group);
 
             move_group.setStartStateToCurrentState();
             geometry_msgs::Pose goal_pose = move_group.getCurrentPose().pose;
             goal_pose.position = dst_point;
             move_group.setPoseTarget(goal_pose);
 
-            bool planning_success = false;
             moveit::planning_interface::MoveGroupInterface::Plan plan;
-            for (uint32_t trial = 0; trial < m_n_retries; ++trial) {
-                planning_success = move_group.plan(plan) == moveit::core::MoveItErrorCode::SUCCESS;
-                if (planning_success)
-                    break;
-            }
+            bool planning_success = planWithRetries(move_group, plan);
             if (!planning_success) {
-                MovementAnalysis::make(mv_props, false, begin);
+                mv_analysis.add(false, begin);
                 return false;
             }
 
             bool execution_success = move_group.execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
 
-            MovementAnalysis::make(mv_props, execution_success, begin, move_group, plan);
+            mv_analysis.add(execution_success, begin, move_group, plan);
 
             // Reset to the default planner
-            move_group.setPlannerId(ManipulatorProperties::getPlannerID(TASKIT_PLANNING_GROUP_ID));
+            setPlannerProperties(move_group);
 
             return execution_success;
         }
     
-    private:
-        std::string m_optimal_planner_id;
-        double m_planning_time;
-        uint32_t m_n_retries = 3;
 };
 
 std::shared_ptr<LinearMover> makeLinearMover() {
