@@ -20,7 +20,7 @@ void Visualizer::addAxes(visualization_msgs::MarkerArray& marker_array, const ge
     tf2::Quaternion goal_orientation = Quaternions::convert(pose.orientation);
     tf2::Vector3 in_btw_gripper_offset(0.0, 0.0, -ManipulatorProperties::getEndEffectorOffset(TASKIT_PLANNING_GROUP_ID));
     if (invert_default_down)
-        goal_orientation = Quaternions::getDefaultDown(TASKIT_PLANNING_GROUP_ID, true) * goal_orientation;
+        goal_orientation = goal_orientation * Quaternions::getDefaultDown(TASKIT_PLANNING_GROUP_ID, true);
 
     visualization_msgs::Marker& x_arrow = marker_array.markers[ind_offset + 0];
     x_arrow.header.frame_id = m_frame_id;

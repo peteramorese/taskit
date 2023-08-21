@@ -135,14 +135,12 @@ namespace TaskIt {
             /// @param rotation_type Rotation for the displaced pose about new position
             /// @param forward_default_down Apply the default down (true), or invert the default down (false)
             /// @return Displaced pose
-            static geometry_msgs::Pose translateEEFAlongPose(const std::string& planning_group, const tf2::Vector3& relative_displacement_vector, const geometry_msgs::Pose& pose_to_match, RotationType rotation_type, bool forward_default_down = true) {
+            static geometry_msgs::Pose translateEEFAlongPose(const std::string& planning_group, const tf2::Vector3& relative_displacement_vector, const geometry_msgs::Pose& pose_to_match, RotationType rotation_type) {
                 geometry_msgs::Pose pose;
                 tf2::Quaternion default_down = getDefaultDown(planning_group);
-                if (!forward_default_down)
-                    default_down[3] = -default_down[3];
                 tf2::Quaternion q_to_match;
                 tf2::fromMsg(pose_to_match.orientation, q_to_match);
-                tf2::Quaternion rotate_by =  q_to_match * getRotation(rotation_type);
+                tf2::Quaternion rotate_by = q_to_match * getRotation(rotation_type);
 
                 tf2::Vector3 disp_rotated = tf2::quatRotate(rotate_by, relative_displacement_vector);
                 pose.position.x = pose_to_match.position.x + disp_rotated[0]; 

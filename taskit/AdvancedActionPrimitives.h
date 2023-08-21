@@ -189,7 +189,7 @@ class LinearTransport : public Transport {
 
             // Get the goal pose from the request location. Use the 
             GoalPoseProperties goal_pose_props = getGoalPose(*predicate_handler, *obj_group, request, attached_objects.begin()->first); 
-            if (goal_pose_props.moving_to_object) {
+            if (goal_pose_props.moving_to_object && (attached_objects.find(goal_pose_props.obj_id) == attached_objects.end())) {
                 ROS_ERROR_STREAM("Destination location '" << request.destination_location << "' is occupied by object: " << goal_pose_props.obj_id << ", not executing");
                 mv_analysis.add(execution_success, begin);
                 return false;

@@ -15,9 +15,12 @@ stow_joint_values:
 
 # OMPL planner ID
 planner_id: RRTconnect
+planning_time: 3.0
 
 # OMPL optimal planner ID (used for smooth plan linear movement)
 optimal_planner_id: RRTstar
+optimal_planning_time: 3.0
+planner_retries: 1
 
 # Offset from the face of the object to the center of the EEF
 eef_offset: 0.095

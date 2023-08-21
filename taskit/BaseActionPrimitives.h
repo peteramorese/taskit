@@ -429,7 +429,8 @@ class Transit : public ActionPrimitive<taskit::Transit>, protected Mover {
             std::pair<bool, std::string> location_predicate = predicate_set.lookupLocationPredicate(request.destination_location);
 
             if (location_predicate.first) { // Object is in location
-                return GoalPoseProperties(obj_group.getObject(location_predicate.second).graspPose(), true, location_predicate.second);
+                return GoalPoseProperties(obj_group.getObject(location_predicate.second).pose(), true, location_predicate.second);
+                //return GoalPoseProperties(obj_group.getObject(location_predicate.second).graspPose(), true, location_predicate.second);
             } else { // No object, just to the location
                 if (attached_object_id.empty()) {
                     return GoalPoseProperties(predicate_handler.getLocationPose(request.destination_location), false, std::string());
@@ -522,7 +523,7 @@ class Transport : public Transit {
 
             // Get the goal pose from the request location. Use the 
             GoalPoseProperties goal_pose_props = getGoalPose(*predicate_handler, *obj_group, request, attached_objects.begin()->first); 
-            if (goal_pose_props.moving_to_object) {
+            if (goal_pose_props.moving_to_object && (attached_objects.find(goal_pose_props.obj_id) == attached_objects.end())) {
                 ROS_ERROR_STREAM("Destination location '" << request.destination_location << "' is occupied by object: " << goal_pose_props.obj_id << ", not executing");
                 mv_analysis.add(execution_success, begin);
                 return false;

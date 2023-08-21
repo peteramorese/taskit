@@ -15,7 +15,12 @@ bool SimulationPoseTracker::update(Object& object) const {
     // Get the pose from the planning scene interface
     std::map<std::string, geometry_msgs::Pose> objs = m_planning_scene_interface->getObjectPoses({object.id});
 
-    object.setPose(objs[object.id]);
+    auto it = objs.find(object.id);
+    if (it != objs.end()) {
+        object.setPose(it->second);
+    } else {
+        ROS_WARN("NOT FOUND");
+    }
     return true;
 }
 
