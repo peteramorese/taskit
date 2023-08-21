@@ -94,7 +94,7 @@ L0: {
   default: {
     x: 0.0,
     y: 0.40,
-    z: 0.0425,
+    z: 0.1425,
   },
   object_classes: [
     pitcher,
@@ -103,12 +103,12 @@ L0: {
   pitcher: {
     x: 0.0,
     y: 0.40,
-    z: 0.045,
+    z: 0.145,
   },
   small_cup: {
     x: 0.0,
     y: 0.40,
-    z: 0.0125,
+    z: 0.1125,
   },
   detection_radius: 0.10, 
   orientation_type: up_nx

@@ -98,7 +98,7 @@ namespace TaskIt {
             static tf2::Quaternion getRotation(RotationType rotation_type) {
                 tf2::Quaternion q_rot;
                 switch (rotation_type) {
-                    case RotationType::Pitch90:     { q_rot.setRPY(0.0, M_PI/2.0 + 0.2, 0.0); break;}
+                    case RotationType::Pitch90:     { q_rot.setRPY(0.0, M_PI/2.0, 0.0); break;}
                     case RotationType::Pitch180:    { q_rot.setRPY(0.0, M_PI, 0.0); break;}
                     case RotationType::Pitch270:    { q_rot.setRPY(0.0, 3.0*M_PI/2.0, 0.0); break;}
                     case RotationType::Yaw90:       { q_rot.setRPY(0.0, 0.0, M_PI/2.0); break;}

@@ -86,19 +86,13 @@ class Mover {
         }
 
         void visualizePlanGoal(const geometry_msgs::Pose& eef_pose, Visualizer& vis) {
-            DEBUG("b4 remove");
             vis.remove(Visualizer::MarkerType::Goal);
-            DEBUG("af remove");
             vis.publishEEFGoalPose(eef_pose, "Planning...");
-            DEBUG("af pub goal");
         }
 
         void visualizeExecuteGoal(const geometry_msgs::Pose& eef_pose, Visualizer& vis) {
-            DEBUG("b4 remove ex");
             vis.remove(Visualizer::MarkerType::Goal);
-            DEBUG("af remove ex");
             vis.publishEEFGoalPose(eef_pose, "Goal");
-            DEBUG("af pub goal ex");
         }
 };
 
