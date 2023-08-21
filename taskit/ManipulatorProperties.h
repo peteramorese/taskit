@@ -18,14 +18,20 @@ class ManipulatorProperties {
             nh.getParam(getParamName("stow_joint_values", arm_config_ns), s_values[planning_group].stow_joint_values);
             nh.getParam(getParamName("eef_offset", arm_config_ns), s_values[planning_group].eef_offset);
             nh.getParam(getParamName("vertical_placing_offset", arm_config_ns), s_values[planning_group].vertical_placing_offset);
-            nh.getParam(getParamName("linear_mover", arm_config_ns), s_values[planning_group].linear_mover);
+
             nh.getParam(getParamName("planner_id", arm_config_ns), s_values[planning_group].planner_id);
+            nh.param(getParamName("planning_time", arm_config_ns), s_values[planning_group].planning_time, 5.0);
             nh.param<std::string>(getParamName("optimal_planner_id", arm_config_ns), s_values[planning_group].optimal_planner_id, "RRTstar");
+            nh.param(getParamName("optimal_planning_time", arm_config_ns), s_values[planning_group].optimal_planning_time, 5.0);
+            nh.param<int>(getParamName("planner_retries", arm_config_ns), s_values[planning_group].planner_retries, 3);
+
+            nh.getParam(getParamName("linear_mover", arm_config_ns), s_values[planning_group].linear_mover);
             nh.param(getParamName("linear_safe", arm_config_ns), s_values[planning_group].linear_safe, true);
             nh.param(getParamName("linear_eef_step_size", arm_config_ns), s_values[planning_group].linear_eef_step_size, 0.0001);
             nh.param(getParamName("linear_jump_threshold", arm_config_ns), s_values[planning_group].linear_jump_threshold, 0.0001);
             nh.param(getParamName("linear_first_point_fraction", arm_config_ns), s_values[planning_group].linear_first_point_fraction, 0.05);
             nh.param(getParamName("linear_n_waypoints", arm_config_ns), s_values[planning_group].linear_n_waypoints, 5);
+
             nh.param(getParamName("max_acceleration_scale", arm_config_ns), s_values[planning_group].max_acceleration_scale, 0.05);
             nh.param(getParamName("max_velocity_scale", arm_config_ns), s_values[planning_group].max_velocity_scale, 0.5);
         }
@@ -34,14 +40,20 @@ class ManipulatorProperties {
         static const std::vector<double>& getStowJointValues(const std::string& planning_group) {return s_values.at(planning_group).stow_joint_values;}
         static double getEndEffectorOffset(const std::string& planning_group) {return s_values.at(planning_group).eef_offset;}
         static double getVerticalPlacingOffset(const std::string& planning_group) {return s_values.at(planning_group).vertical_placing_offset;}
-        static const std::string& getLinearMover(const std::string& planning_group) {return s_values.at(planning_group).linear_mover;}
+
         static const std::string& getPlannerID(const std::string& planning_group) {return s_values.at(planning_group).planner_id;}
+        static double getPlanningTime(const std::string& planning_group) {return s_values.at(planning_group).planning_time;}
         static const std::string& getOptimalPlannerID(const std::string& planning_group) {return s_values.at(planning_group).optimal_planner_id;}
+        static double getOptimalPlanningTime(const std::string& planning_group) {return s_values.at(planning_group).optimal_planning_time;}
+        static uint32_t getPlannerRetries(const std::string& planning_group) {return s_values.at(planning_group).planner_retries;}
+
+        static const std::string& getLinearMover(const std::string& planning_group) {return s_values.at(planning_group).linear_mover;}
         static bool enforceSafeLinearMovement(const std::string& planning_group) {return s_values.at(planning_group).linear_safe;}
         static double getLinearEEFStepSize(const std::string& planning_group) {return s_values.at(planning_group).linear_eef_step_size;}
         static double getLinearJumpThreshold(const std::string& planning_group) {return s_values.at(planning_group).linear_jump_threshold;}
         static double getLinearFirstPointFraction(const std::string& planning_group) {return s_values.at(planning_group).linear_first_point_fraction;}
         static uint32_t getLinearNumWaypoints(const std::string& planning_group) {return s_values.at(planning_group).linear_n_waypoints;}
+
         static double getMaxAccelerationScale(const std::string& planning_group) {return s_values.at(planning_group).max_acceleration_scale;}
         static double getMaxVelocityScale(const std::string& planning_group) {return s_values.at(planning_group).max_velocity_scale;}
 
@@ -51,14 +63,20 @@ class ManipulatorProperties {
             std::vector<double> stow_joint_values;
             double eef_offset;
             double vertical_placing_offset;
-            std::string linear_mover;
+
             std::string planner_id;
+            double planning_time;
             std::string optimal_planner_id;
+            double optimal_planning_time;
+            int planner_retries;
+
+            std::string linear_mover;
             bool linear_safe;
             double linear_eef_step_size;
             double linear_jump_threshold;
             double linear_first_point_fraction;
             int linear_n_waypoints;
+
             double max_acceleration_scale;
             double max_velocity_scale;
         };

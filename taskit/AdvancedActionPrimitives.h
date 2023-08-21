@@ -22,6 +22,7 @@ class LinearTransit : public Transit {
 
         virtual bool operator()(ManipulatorNodeInterface&& interface, msg_t::Request& request, msg_t::Response& response) override {
             ros::Time begin = ros::Time::now();
+            MovementAnalysis mv_analysis(response.mv_props, true, true); // Auto append, and infemum time
 
             // Extract what we need
             auto move_group = interface.move_group.lock();
@@ -31,13 +32,16 @@ class LinearTransit : public Transit {
             auto state = interface.state.lock();
             auto pci = interface.planning_scene_interface.lock();
 
+            setPlannerProperties(*move_group);
+            setScalingFactors(*move_group);
+
             response.plan_success = false;
             bool execution_success = false;
 
             // Make sure no objects are attached
             if (pci->getAttachedObjects().size()) {
                 ROS_ERROR_STREAM("Cannot 'transit' while gripping an object. Use 'transport' instead. Not executing");
-                makeMovementProperties(response.mv_props, execution_success, begin);
+                mv_analysis.add(execution_success, begin);
                 return false;
             }
 
@@ -65,14 +69,13 @@ class LinearTransit : public Transit {
                     dst_retreat_point.x -= m_retreat_distance * retreat_direction[0];
                     dst_retreat_point.y -= m_retreat_distance * retreat_direction[1];
                     dst_retreat_point.z -= m_retreat_distance * retreat_direction[2];
-                    if (!m_linear_mover->move(response.mv_props, *move_group, dst_retreat_point)) {
+                    if (!m_linear_mover->move(mv_analysis, *move_group, dst_retreat_point, vis)) {
                         // Failure
                         return true;
-                    }
-                }
+                    } 
+                } 
 
                 move_group->setStartStateToCurrentState();
-                moveit::planning_interface::MoveGroupInterface::Plan plan;
 
                 for (uint32_t i=0; i<eef_poses.size(); ++i) {
 
@@ -84,48 +87,34 @@ class LinearTransit : public Transit {
                     ros::WallDuration(1.0).sleep();
                     
                     // Visualize plan goal
-                    if (goal_pose_props.moving_to_object) {
-                        vis->publishGoalObjectMarker(approach_offset_eef_pose, goal_pose_props.pose, "Planning...");
-                    } else {
-                        vis->publishGoalMarker(approach_offset_eef_pose, "Planning...");
-                    }
+                    visualizePlanGoal(approach_offset_eef_pose, *vis);
 
-                    response.plan_success = move_group->plan(plan) == moveit::core::MoveItErrorCode::SUCCESS;
+                    moveit::planning_interface::MoveGroupInterface::Plan plan;
+                    response.plan_success = planWithRetries(*move_group, plan);
                     ros::WallDuration(1.0).sleep();
                     if (response.plan_success) {
                         move_group->setMaxVelocityScalingFactor(m_max_velocity_scaling_factor);
 
                         // Visualize actual goal
-                        if (goal_pose_props.moving_to_object) {
-                            vis->publishGoalObjectMarker(approach_offset_eef_pose, goal_pose_props.pose, "Goal");
-                        } else {
-                            vis->publishGoalMarker(approach_offset_eef_pose, "Goal");
-                        }
-
+                        visualizeExecuteGoal(approach_offset_eef_pose, *vis);
+                    
                         execution_success = move_group->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
 
-                        // Make the movement properties for the motion plan
-                        taskit::MovementProperties motion_plan_mv_props;
-                        makeMovementProperties(motion_plan_mv_props, execution_success, begin, *move_group, plan);
-
-                        // Append the movement properties for the motion plan
-                        appendMovementProperties(response.mv_props, motion_plan_mv_props);
+                        // Add the movement properties for the motion plan
+                        mv_analysis.add(execution_success, begin, *move_group, plan);
 
                         // If the execution succeeded, perform the cartesian approach
-                        taskit::MovementProperties approach_mv_props;
-                        if (execution_success && m_linear_mover->move(approach_mv_props, *move_group, eef_pose.position)) {
+                        if (execution_success && m_linear_mover->move(mv_analysis, *move_group, eef_pose.position, vis)) {
                             updateState(*state, request.destination_location, goal_pose_props.moving_to_object, eef_poses[i].rotation_type, eef_poses[i].placing_offset);
                         }
 
-                        // Append the movement properties for the cartesian movement
-                        appendMovementProperties(response.mv_props, approach_mv_props);
                         return true;
                     }
                 }
 
                 ++trial;        
                 if (trial >= m_max_trials) {
-                    makeMovementProperties(response.mv_props, execution_success, begin);
+                    mv_analysis.add(execution_success, begin);
                     return true;
                 }
             }
@@ -173,6 +162,7 @@ class LinearTransport : public Transport {
 
         virtual bool operator()(ManipulatorNodeInterface&& interface, msg_t::Request& request, msg_t::Response& response) override {
             ros::Time begin = ros::Time::now();
+            MovementAnalysis mv_analysis(response.mv_props, true, true); // Auto append, and infemum time
 
             // Extract what we need
             auto move_group = interface.move_group.lock();
@@ -182,6 +172,9 @@ class LinearTransport : public Transport {
             auto state = interface.state.lock();
             auto pci = interface.planning_scene_interface.lock();
 
+            setPlannerProperties(*move_group);
+            setScalingFactors(*move_group);
+
             response.plan_success = false;
             bool execution_success = false;
 
@@ -190,15 +183,15 @@ class LinearTransport : public Transport {
             // Make sure at least one object is attached
             if (!attached_objects.size()) {
                 ROS_WARN_STREAM("Did not find attached object (is the manipulator holding an object?), not executing");
-                makeMovementProperties(response.mv_props, execution_success, begin);
+                mv_analysis.add(execution_success, begin);
                 return false;
             }
 
             // Get the goal pose from the request location. Use the 
             GoalPoseProperties goal_pose_props = getGoalPose(*predicate_handler, *obj_group, request, attached_objects.begin()->first); 
-            if (goal_pose_props.moving_to_object) {
+            if (goal_pose_props.moving_to_object && (attached_objects.find(goal_pose_props.obj_id) == attached_objects.end())) {
                 ROS_ERROR_STREAM("Destination location '" << request.destination_location << "' is occupied by object: " << goal_pose_props.obj_id << ", not executing");
-                makeMovementProperties(response.mv_props, execution_success, begin);
+                mv_analysis.add(execution_success, begin);
                 return false;
             } else {
                 ROS_INFO_STREAM("Goal pose for location '" << request.destination_location <<"' extracted from predicate handler");
@@ -215,7 +208,6 @@ class LinearTransport : public Transport {
             uint8_t trial = 0;
             while (true) {
                 move_group->setStartStateToCurrentState();
-                moveit::planning_interface::MoveGroupInterface::Plan plan;
 
                 // If the eef is near an object, perform the retreat
                 if (state->near_object) {
@@ -223,7 +215,7 @@ class LinearTransport : public Transport {
                     dst_retreat_point.x += m_retreat_offset[0];
                     dst_retreat_point.y += m_retreat_offset[1];
                     dst_retreat_point.z += m_retreat_offset[2];
-                    if (!m_linear_mover->move(response.mv_props, *move_group, dst_retreat_point)) {
+                    if (!m_linear_mover->move(mv_analysis, *move_group, dst_retreat_point, vis)) {
                         // Failure
                         return true;
                     }
@@ -238,55 +230,43 @@ class LinearTransport : public Transport {
                     approach_offset_eef_pose.position.x += m_approach_offset[0];
                     approach_offset_eef_pose.position.y += m_approach_offset[1];
                     // Apply the vertical placing offset to the goal pose:
-                    approach_offset_eef_pose.position.z += m_approach_offset[2] + ManipulatorProperties::getVerticalPlacingOffset("panda_arm");
+                    approach_offset_eef_pose.position.z += m_approach_offset[2];
 
                     move_group->setPoseTarget(approach_offset_eef_pose);
                     ros::WallDuration(1.0).sleep();
                     
                     // Visualize plan goal
-                    if (goal_pose_props.moving_to_object) {
-                        vis->publishGoalObjectMarker(approach_offset_eef_pose, goal_pose_props.pose, "Planning...");
-                    } else {
-                        vis->publishGoalMarker(approach_offset_eef_pose, "Planning...");
-                    }
+                    visualizePlanGoal(approach_offset_eef_pose, *vis);
 
-                    response.plan_success = move_group->plan(plan) == moveit::core::MoveItErrorCode::SUCCESS;
+                    moveit::planning_interface::MoveGroupInterface::Plan plan;
+                    response.plan_success = planWithRetries(*move_group, plan);
                     ros::WallDuration(1.0).sleep();
                     if (response.plan_success) {
                         move_group->setMaxVelocityScalingFactor(m_max_velocity_scaling_factor);
 
                         // Visualize actual goal
-                        if (goal_pose_props.moving_to_object) {
-                            vis->publishGoalObjectMarker(approach_offset_eef_pose, goal_pose_props.pose, "Goal");
-                        } else {
-                            vis->publishGoalMarker(approach_offset_eef_pose, "Goal");
-                        }
+                        visualizeExecuteGoal(approach_offset_eef_pose, *vis);
 
                         execution_success = move_group->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
 
-                        // Make the movement properties for the motion plan
-                        taskit::MovementProperties motion_plan_mv_props;
-                        makeMovementProperties(motion_plan_mv_props, execution_success, begin, *move_group, plan);
-
-                        // Append the movement properties for the motion plan
-                        appendMovementProperties(response.mv_props, motion_plan_mv_props);
+                        // Add the movement properties for the motion plan
+                        mv_analysis.add(execution_success, begin, *move_group, plan);
 
                         // If the execution succeeded, perform the cartesian approach
-                        taskit::MovementProperties approach_mv_props;
-                        if (execution_success && m_linear_mover->move(approach_mv_props, *move_group, eef_pose.position)) {
+                        geometry_msgs::Point vertical_offset_position = eef_pose.position;
+                        vertical_offset_position.z += ManipulatorProperties::getVerticalPlacingOffset(TASKIT_PLANNING_GROUP_ID);
+                        if (execution_success && m_linear_mover->move(mv_analysis, *move_group, vertical_offset_position, vis)) {
                             // Update destination location, must be near object (holding), keep rotation type, keep placing offset
                             updateState(*state, request.destination_location, true, state->grasp_rotation_type, state->placing_offset);
                         }
 
-                        // Append the movement properties for the cartesian movement
-                        appendMovementProperties(response.mv_props, approach_mv_props);
                         return true;
                     }
                 }
 
                 ++trial;        
                 if (trial >= m_max_trials) {
-                    makeMovementProperties(response.mv_props, execution_success, begin);
+                    mv_analysis.add(execution_success, begin);
                     return true;
                 }
             }

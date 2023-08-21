@@ -18,7 +18,11 @@ namespace TaskIt {
                 UpX,
                 UpY,
                 SideX,
-                SideY
+                SideY,
+                UpNX,
+                UpNY,
+                SideNX,
+                SideNY,
             };
 
             enum class RotationType { 
@@ -42,6 +46,14 @@ namespace TaskIt {
                     return Type::SideX;
                 } else if (type_str == "side_y" || type_str == "SideY") {
                     return Type::SideY;
+                } else if (type_str == "up_nx" || type_str == "UpNX") {
+                    return Type::UpNX;
+                } else if (type_str == "up_ny" || type_str == "UpNY") {
+                    return Type::UpNY;
+                } else if (type_str == "side_nx" || type_str == "SideNX") {
+                    return Type::SideNX;
+                } else if (type_str == "side_ny" || type_str == "SideNY") {
+                    return Type::SideNY;
                 }
                 ROS_ERROR_STREAM("Unrecognized quaternion type '" << type_str << "'");
                 return Type::None;
@@ -70,6 +82,10 @@ namespace TaskIt {
                     case Type::UpY:         { q_rot.setRPY(0.0, 0.0, M_PI/2.0); break; }
                     case Type::SideX:       { q_rot.setRPY(0.0, -M_PI/2.0, 0.0); break; }
                     case Type::SideY:       { q_rot.setRPY(-M_PI/2.0, M_PI/2.0, 0.0); break; }
+                    case Type::UpNX:         { q_rot.setRPY(0.0, 0.0, M_PI); break; }
+                    case Type::UpNY:         { q_rot.setRPY(0.0, 0.0, -M_PI/2.0); break; }
+                    case Type::SideNX:       { q_rot.setRPY(0.0, -M_PI/2.0, M_PI); break; }
+                    case Type::SideNY:       { q_rot.setRPY(-M_PI/2.0, M_PI/2.0, M_PI); break; }
                     default:                { q_rot.setRPY(0.0, 0.0, 0.0); }
                 }
                 return q_rot * q_default_up;
@@ -93,7 +109,7 @@ namespace TaskIt {
                 return q_rot;
             }
 
-            static tf2::Quaternion getDefaultDown(const std::string& planning_group) {
+            static tf2::Quaternion getDefaultDown(const std::string& planning_group, bool invert = false) {
                 tf2::Quaternion to_default_down;
                 //ROS_ASSERT_MSG(s_default_down.find(planning_group) != s_default_down.end(), "Default down quaternion not found for planning group");
                 auto planning_group_properties = ManipulatorProperties::getDefaultDownRPY(planning_group);
@@ -102,6 +118,8 @@ namespace TaskIt {
                     planning_group_properties.at("pitch"), 
                     planning_group_properties.at("yaw")
                 );
+                if (invert)
+                    to_default_down[3] = -to_default_down[3];
                 return to_default_down;
             }
 
@@ -110,12 +128,19 @@ namespace TaskIt {
                 return tf2::quatRotate(eef_orientation, up);
             }
 
-            static geometry_msgs::Pose getPointAlongPose(const std::string& planning_group, const tf2::Vector3& relative_displacement_vector, const geometry_msgs::Pose& pose_to_match, RotationType rotation_type) {
+            /// @brief Translate an end effector pose by a displacement vector (applies default down rotation for planning group)
+            /// @param planning_group Planning group
+            /// @param relative_displacement_vector Vector that displaces the default down pose
+            /// @param pose_to_match Pose that is displaced
+            /// @param rotation_type Rotation for the displaced pose about new position
+            /// @param forward_default_down Apply the default down (true), or invert the default down (false)
+            /// @return Displaced pose
+            static geometry_msgs::Pose translateEEFAlongPose(const std::string& planning_group, const tf2::Vector3& relative_displacement_vector, const geometry_msgs::Pose& pose_to_match, RotationType rotation_type) {
                 geometry_msgs::Pose pose;
                 tf2::Quaternion default_down = getDefaultDown(planning_group);
                 tf2::Quaternion q_to_match;
                 tf2::fromMsg(pose_to_match.orientation, q_to_match);
-                tf2::Quaternion rotate_by =  q_to_match * getRotation(rotation_type);
+                tf2::Quaternion rotate_by = q_to_match * getRotation(rotation_type);
 
                 tf2::Vector3 disp_rotated = tf2::quatRotate(rotate_by, relative_displacement_vector);
                 pose.position.x = pose_to_match.position.x + disp_rotated[0]; 
@@ -127,6 +152,16 @@ namespace TaskIt {
                 orientation.normalize();
                 pose.orientation = convert(orientation);
                 return pose;
+            }
+
+            static void translatePose(geometry_msgs::Pose& pose_to_translate, const tf2::Vector3& relative_displacement_vector) {
+                tf2::Quaternion q_to_match;
+                tf2::fromMsg(pose_to_translate.orientation, q_to_match);
+
+                tf2::Vector3 disp_rotated = tf2::quatRotate(q_to_match, relative_displacement_vector);
+                pose_to_translate.position.x = pose_to_translate.position.x + disp_rotated[0]; 
+                pose_to_translate.position.y = pose_to_translate.position.y + disp_rotated[1];
+                pose_to_translate.position.z = pose_to_translate.position.z + disp_rotated[2];
             }
 
 

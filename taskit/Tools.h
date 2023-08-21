@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <iostream>
+#include <geometry_msgs/Pose.h>
 
 #define MI_DEBUG_TOOLS
 
@@ -24,5 +25,18 @@ static std::string getParamName(const std::string& param_name, std::string ns = 
     if (ns.back() != '/') ns.push_back('/');
     return ns + param_name;
 }
+
+static geometry_msgs::Pose neutralPose() {
+    geometry_msgs::Pose pose;
+    pose.position.x = 0.0;
+    pose.position.y = 0.0;
+    pose.position.z = 0.0;
+    pose.orientation.x = 0.0;
+    pose.orientation.y = 0.0;
+    pose.orientation.z = 0.0;
+    pose.orientation.w = 1.0;
+    return pose;
+}
+
 
 }

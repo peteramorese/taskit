@@ -3,8 +3,8 @@ add_library(TaskIt
     Object.cpp
     PoseTracker.cpp
     Visualizer.cpp
+    MovementAnalysis.cpp
 )
-#set_property(TARGET TaskIt PROPERTY CXX_STANDARD 17)
 target_link_libraries(TaskIt PUBLIC
     ${catkin_LIBRARIES} 
     ${Boost_LIBRARIES}

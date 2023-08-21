@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
 	const std::string ee_link = "panda_link8";
 	
 	// Make the simulation gripper handler
-	std::shared_ptr<GripperHandler<GripperUse::Simulation>> gripper_handler = std::make_shared<GripperHandler<GripperUse::Simulation>>(MI_FRANKA_GRIPPER_TOPIC, 5.0);
+	std::shared_ptr<GripperHandler<GripperUse::Simulation>> gripper_handler = std::make_shared<GripperHandler<GripperUse::Simulation>>(TASKIT_FRANKA_GRIPPER_TOPIC, 5.0);
 
 	// Get the linear mover
 	std::shared_ptr<ActionPrimitives::LinearMover> linear_mover = ActionPrimitives::makeLinearMover();
@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
 		decltype(linear_transit_side),
 		decltype(transport),
 		decltype(linear_transport)
-	> manipulator_node(node_handle, node_name, "panda_arm", "panda_link0", 
+	> manipulator_node(node_handle, node_name, TASKIT_PLANNING_GROUP_ID, TASKIT_BASE_LINK_ID, 
 		std::move(update_environment), 
 		std::move(get_object_locations),
 		std::move(stow), 
@@ -74,16 +74,19 @@ int main(int argc, char** argv) {
 	std::string pose_tracker_type;
 	if (node_handle->getParam("pose_tracker/type", pose_tracker_type)) {
 		if (pose_tracker_type == "simulation") {
-			pose_tracker = std::make_shared<SimulationPoseTracker>(*node_handle, manipulator_node.getInterface());
+			pose_tracker = std::make_shared<SimulationPoseTracker>(manipulator_node.getInterface());
 		} else if (pose_tracker_type == "vrpn") {
 			double sampling_duration = node_handle->param("pose_tracker/sampling_duration", 0.1);
 			pose_tracker = std::make_shared<VRPNPoseTracker>(node_handle, sampling_duration);
+		} else if (pose_tracker_type == "dynamic_vrpn") {
+			double sampling_duration = node_handle->param("pose_tracker/sampling_duration", 0.1);
+			pose_tracker = std::make_shared<DynamicVRPNPoseTracker>(node_handle, manipulator_node.getInterface(), sampling_duration);
 		} else {
 			ROS_ERROR_STREAM_NAMED(node_name, "Unrecognized pose tracker type '" << pose_tracker_type.c_str() << "'");
 		}
 	} else {
 		ROS_WARN_NAMED(node_name, "Did not find param 'pose_tracker', assuming type 'simulation'");
-		pose_tracker = std::make_shared<SimulationPoseTracker>(*node_handle, manipulator_node.getInterface());
+		pose_tracker = std::make_shared<SimulationPoseTracker>(manipulator_node.getInterface());
 	}
 	
 	// Wait for rviz topic to come up before creating scene

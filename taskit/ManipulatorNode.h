@@ -17,11 +17,12 @@
 #include <moveit/robot_model_loader/robot_model_loader.h>
 #include <moveit_visual_tools/moveit_visual_tools.h>
 
-// Manipulation Interface
+// TaskIt
+#include "Config.h"
 #include "ManipulatorNodeInterface.h"
 #include "Quaternions.h"
 #include "Tools.h"
-#include "PoseTracker.h"
+#include "PoseTracker.h" 
 #include "Object.h"
 #include "PredicateHandler.h"
 #include "Gripper.h"
@@ -52,7 +53,7 @@ class ManipulatorNode {
         ManipulatorNode(const std::shared_ptr<ros::NodeHandle>& node_handle, const std::string& node_name, const std::string& planning_group, const std::string& planning_frame_id, ACTION_PRIMITIVES_TYPES&&...action_primitives);
 
         ~ManipulatorNode() {
-            m_visualizer->removeAllMarkers();
+            m_visualizer->removeAll();
         }
 
         // Get the number of action primitives
@@ -70,20 +71,19 @@ class ManipulatorNode {
         // Visualize the goal markers. True by default
         inline void toggleAutoVisualize(bool auto_visualize) {m_auto_visualize = auto_visualize;}
 
-        //// Insert an object group that was manually created
-        //void insertObjectGroup(const std::shared_ptr<ObjectGroup>& obj_group) {m_obj_group = obj_group;}
-
         // Automatically create the objects based off the parameter server (workspace_ns: param namespace for static obstacles, objects_ns: namespace for dynamic objects and predicates)
         void createScene(const std::shared_ptr<PoseTracker>& pose_tracker, const std::string& environment_ns = "environment", const std::string& workspace_ns = "workspace", const std::string& objects_ns = "objects") {
+            m_workspace_obj_group.reset(new ObjectGroup);
+            m_workspace_obj_group->createObjects(*m_node_handle, workspace_ns);
+
             m_obj_group.reset(new ObjectGroup);
-            m_obj_group->createObjects(*m_node_handle, workspace_ns);
             m_obj_group->createObjects(*m_node_handle, objects_ns, pose_tracker);
 
             m_predicate_handler.reset(new PredicateHandler(m_obj_group));
             m_predicate_handler->createEnvironment(*m_node_handle, environment_ns);
             m_predicate_handler->setObjectPosesToLocations(*m_node_handle, objects_ns);
             updatePlanningScene(false, false);
-            if (m_auto_visualize) m_visualizer->publishLocationMarkers(*m_predicate_handler);
+            if (m_auto_visualize) m_visualizer->publishLocations(*m_predicate_handler);
         }
 
         // Update all of the object poses, and update the collision objects in the planning scene
@@ -114,7 +114,7 @@ class ManipulatorNode {
         // Specify a function that is called before an action is executed
         void setBeforeActionCallback(std::function<void()> beforeActionCall) {
             m_beforeActionCall = [this, beforeActionCall]() -> void {
-                if (m_auto_visualize) m_visualizer->removeMarkers(Visualizer::MarkerType::Goal);
+                if (m_auto_visualize) m_visualizer->remove(Visualizer::MarkerType::Goal);
                 beforeActionCall();
             };
         }
@@ -203,6 +203,7 @@ class ManipulatorNode {
         std::shared_ptr<moveit::planning_interface::MoveGroupInterface> m_move_group;
         std::shared_ptr<moveit::planning_interface::PlanningSceneInterface> m_planning_scene_interface;
         std::shared_ptr<ObjectGroup> m_obj_group;
+        std::shared_ptr<ObjectGroup> m_workspace_obj_group;
         std::shared_ptr<PredicateHandler> m_predicate_handler;
         std::shared_ptr<Visualizer> m_visualizer;
         std::shared_ptr<ManipulatorNodeState> m_state;
