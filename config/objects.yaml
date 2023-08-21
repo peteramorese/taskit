@@ -1,8 +1,8 @@
 object_ids:
   - mug
-  - pitcher
-  - small_cup
-  - lid
+#  - pitcher
+#  - small_cup
+#  - lid
 
 mug: {
   dimensions: {

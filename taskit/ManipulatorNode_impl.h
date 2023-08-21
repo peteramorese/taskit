@@ -66,7 +66,7 @@ ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::ManipulatorNode(const std::shared_p
 
     // Set the pre action call back
     m_beforeActionCall = [this]() -> void {
-        if (m_auto_visualize) m_visualizer->removeMarkers(Visualizer::MarkerType::Goal);
+        if (m_auto_visualize) m_visualizer->remove(Visualizer::MarkerType::Goal);
     };
 }
 

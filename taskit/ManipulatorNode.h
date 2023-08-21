@@ -53,7 +53,7 @@ class ManipulatorNode {
         ManipulatorNode(const std::shared_ptr<ros::NodeHandle>& node_handle, const std::string& node_name, const std::string& planning_group, const std::string& planning_frame_id, ACTION_PRIMITIVES_TYPES&&...action_primitives);
 
         ~ManipulatorNode() {
-            m_visualizer->removeAllMarkers();
+            m_visualizer->removeAll();
         }
 
         // Get the number of action primitives
@@ -83,7 +83,7 @@ class ManipulatorNode {
             m_predicate_handler->createEnvironment(*m_node_handle, environment_ns);
             m_predicate_handler->setObjectPosesToLocations(*m_node_handle, objects_ns);
             updatePlanningScene(false, false);
-            if (m_auto_visualize) m_visualizer->publishLocationMarkers(*m_predicate_handler);
+            if (m_auto_visualize) m_visualizer->publishLocations(*m_predicate_handler);
         }
 
         // Update all of the object poses, and update the collision objects in the planning scene
@@ -114,7 +114,7 @@ class ManipulatorNode {
         // Specify a function that is called before an action is executed
         void setBeforeActionCallback(std::function<void()> beforeActionCall) {
             m_beforeActionCall = [this, beforeActionCall]() -> void {
-                if (m_auto_visualize) m_visualizer->removeMarkers(Visualizer::MarkerType::Goal);
+                if (m_auto_visualize) m_visualizer->remove(Visualizer::MarkerType::Goal);
                 beforeActionCall();
             };
         }

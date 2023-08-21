@@ -2,6 +2,7 @@
 
 #include "visualization_msgs/MarkerArray.h"
 #include <geometry_msgs/Pose.h>
+#include <std_msgs/ColorRGBA.h>
 
 #include "PredicateHandler.h"
 
@@ -11,6 +12,7 @@ class Visualizer {
     public:
         enum class MarkerType {
             Goal,
+            Axes,
             Location,
         };
     public:
@@ -19,11 +21,14 @@ class Visualizer {
             , m_frame_id(frame_id)
         {}
 
-        void publishGoalMarker(const geometry_msgs::Pose& pose, const std::string& msg = "goal", float scale = 1.0f, bool keep_existing = false);
-        void publishGoalObjectMarker(const geometry_msgs::Pose& obj_pose, const geometry_msgs::Pose& goal_pose, const std::string& msg = "goal", float scale = 1.0f, uint32_t num_points = 20, bool keep_existing = false);
-        void publishLocationMarkers(const PredicateHandler& predicate_handler, float scale = 1.0f);
-        void removeMarkers(MarkerType marker_type);
-        void removeAllMarkers();
+        void addAxes(visualization_msgs::MarkerArray& marker_array, const geometry_msgs::Pose& pose, float scale, MarkerType type, bool invert_default_down = true);
+        void addText(visualization_msgs::MarkerArray& marker_array, const geometry_msgs::Pose& pose, float scale, MarkerType type, const std::string& msg, const std_msgs::ColorRGBA& color);
+        void addLocation(visualization_msgs::MarkerArray& marker_array, const geometry_msgs::Pose& pose, float scale, const std::string& name, float detection_radius, const std_msgs::ColorRGBA& color);
+        void publishEEFGoalPose(const geometry_msgs::Pose& pose, const std::string& msg = "goal", float scale = 1.0f);
+        //void publishGoalObjectMarker(const geometry_msgs::Pose& obj_pose, const geometry_msgs::Pose& goal_pose, const std::string& msg = "goal", float scale = 1.0f, uint32_t num_points = 20, bool keep_existing = false);
+        void publishLocations(const PredicateHandler& predicate_handler, float scale = 1.0f);
+        void remove(MarkerType marker_type);
+        void removeAll();
     private:
         uint32_t newId(MarkerType marker_type) {
             m_type_to_ids[marker_type].push_back(m_last_id);
@@ -31,7 +36,7 @@ class Visualizer {
         }
 
     private:
-        std::map<MarkerType, std::vector<uint32_t>> m_type_to_ids;
+        std::map<MarkerType, std::list<uint32_t>> m_type_to_ids;
         uint32_t m_last_id = 0;
         ros::Publisher m_visualization_marker_pub;
         std::string m_frame_id;

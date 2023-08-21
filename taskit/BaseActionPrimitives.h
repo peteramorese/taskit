@@ -84,6 +84,22 @@ class Mover {
             move_group.setPlanningTime(planning_time);
             return false;
         }
+
+        void visualizePlanGoal(const geometry_msgs::Pose& eef_pose, Visualizer& vis) {
+            DEBUG("b4 remove");
+            vis.remove(Visualizer::MarkerType::Goal);
+            DEBUG("af remove");
+            vis.publishEEFGoalPose(eef_pose, "Planning...");
+            DEBUG("af pub goal");
+        }
+
+        void visualizeExecuteGoal(const geometry_msgs::Pose& eef_pose, Visualizer& vis) {
+            DEBUG("b4 remove ex");
+            vis.remove(Visualizer::MarkerType::Goal);
+            DEBUG("af remove ex");
+            vis.publishEEFGoalPose(eef_pose, "Goal");
+            DEBUG("af pub goal ex");
+        }
 };
 
 class Stow : public ActionPrimitive<taskit::Stow>, protected Mover {
@@ -333,11 +349,7 @@ class Transit : public ActionPrimitive<taskit::Transit>, protected Mover {
                     ros::WallDuration(1.0).sleep();
                     
                     // Visualize plan goal
-                    if (goal_pose_props.moving_to_object) {
-                        vis->publishGoalObjectMarker(eef_pose, goal_pose_props.pose, "Planning...");
-                    } else {
-                        vis->publishGoalMarker(eef_pose, "Planning...");
-                    }
+                    visualizePlanGoal(eef_pose, *vis);
 
                     moveit::planning_interface::MoveGroupInterface::Plan plan;
                     response.plan_success = planWithRetries(*move_group, plan);
@@ -346,11 +358,7 @@ class Transit : public ActionPrimitive<taskit::Transit>, protected Mover {
                         move_group->setMaxVelocityScalingFactor(m_max_velocity_scaling_factor);
 
                         // Visualize actual goal
-                        if (goal_pose_props.moving_to_object) {
-                            vis->publishGoalObjectMarker(eef_pose, goal_pose_props.pose, "Goal");
-                        } else {
-                            vis->publishGoalMarker(eef_pose, "Goal");
-                        }
+                        visualizeExecuteGoal(eef_pose, *vis);
 
                         execution_success = move_group->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
                         if (execution_success) {
@@ -451,7 +459,7 @@ class Transit : public ActionPrimitive<taskit::Transit>, protected Mover {
                 }
                 double eef_offset = ManipulatorProperties::getEndEffectorOffset(TASKIT_PLANNING_GROUP_ID);
                 relative_offset[2] += distance_offset + eef_offset; // Apply distance and eef offset regardless
-                grasp_poses.emplace_back(Quaternions::getPointAlongPose(TASKIT_PLANNING_GROUP_ID, relative_offset, goal_pose_props.pose, rot_type), rot_type, relative_offset[2] - eef_offset);
+                grasp_poses.emplace_back(Quaternions::translateEEFAlongPose(TASKIT_PLANNING_GROUP_ID, relative_offset, goal_pose_props.pose, rot_type), rot_type, relative_offset[2] - eef_offset);
             }
             return grasp_poses;
         }
@@ -553,11 +561,7 @@ class Transport : public Transit {
                     ros::WallDuration(1.0).sleep();
                     
                     // Visualize plan goal
-                    if (goal_pose_props.moving_to_object) {
-                        vis->publishGoalObjectMarker(eef_pose, goal_pose_props.pose, "Planning...");
-                    } else {
-                        vis->publishGoalMarker(eef_pose, "Planning...");
-                    }
+                    visualizePlanGoal(eef_pose, *vis);
 
                     moveit::planning_interface::MoveGroupInterface::Plan plan;
                     response.plan_success = planWithRetries(*move_group, plan);
@@ -566,11 +570,7 @@ class Transport : public Transit {
                         move_group->setMaxVelocityScalingFactor(m_max_velocity_scaling_factor);
 
                         // Visualize actual goal
-                        if (goal_pose_props.moving_to_object) {
-                            vis->publishGoalObjectMarker(eef_pose, goal_pose_props.pose, "Goal");
-                        } else {
-                            vis->publishGoalMarker(eef_pose, "Goal");
-                        }
+                        visualizeExecuteGoal(eef_pose, *vis);
 
                         execution_success = move_group->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
                         if (execution_success) {

@@ -69,7 +69,7 @@ class LinearTransit : public Transit {
                     dst_retreat_point.x -= m_retreat_distance * retreat_direction[0];
                     dst_retreat_point.y -= m_retreat_distance * retreat_direction[1];
                     dst_retreat_point.z -= m_retreat_distance * retreat_direction[2];
-                    if (!m_linear_mover->move(mv_analysis, *move_group, dst_retreat_point)) {
+                    if (!m_linear_mover->move(mv_analysis, *move_group, dst_retreat_point, vis)) {
                         // Failure
                         return true;
                     } 
@@ -87,11 +87,7 @@ class LinearTransit : public Transit {
                     ros::WallDuration(1.0).sleep();
                     
                     // Visualize plan goal
-                    if (goal_pose_props.moving_to_object) {
-                        vis->publishGoalObjectMarker(approach_offset_eef_pose, goal_pose_props.pose, "Planning...");
-                    } else {
-                        vis->publishGoalMarker(approach_offset_eef_pose, "Planning...");
-                    }
+                    visualizePlanGoal(approach_offset_eef_pose, *vis);
 
                     moveit::planning_interface::MoveGroupInterface::Plan plan;
                     response.plan_success = planWithRetries(*move_group, plan);
@@ -100,19 +96,15 @@ class LinearTransit : public Transit {
                         move_group->setMaxVelocityScalingFactor(m_max_velocity_scaling_factor);
 
                         // Visualize actual goal
-                        if (goal_pose_props.moving_to_object) {
-                            vis->publishGoalObjectMarker(approach_offset_eef_pose, goal_pose_props.pose, "Goal");
-                        } else {
-                            vis->publishGoalMarker(approach_offset_eef_pose, "Goal");
-                        }
-
+                        visualizeExecuteGoal(approach_offset_eef_pose, *vis);
+                    
                         execution_success = move_group->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
 
                         // Add the movement properties for the motion plan
                         mv_analysis.add(execution_success, begin, *move_group, plan);
 
                         // If the execution succeeded, perform the cartesian approach
-                        if (execution_success && m_linear_mover->move(mv_analysis, *move_group, eef_pose.position)) {
+                        if (execution_success && m_linear_mover->move(mv_analysis, *move_group, eef_pose.position, vis)) {
                             updateState(*state, request.destination_location, goal_pose_props.moving_to_object, eef_poses[i].rotation_type, eef_poses[i].placing_offset);
                         }
 
@@ -223,7 +215,7 @@ class LinearTransport : public Transport {
                     dst_retreat_point.x += m_retreat_offset[0];
                     dst_retreat_point.y += m_retreat_offset[1];
                     dst_retreat_point.z += m_retreat_offset[2];
-                    if (!m_linear_mover->move(mv_analysis, *move_group, dst_retreat_point)) {
+                    if (!m_linear_mover->move(mv_analysis, *move_group, dst_retreat_point, vis)) {
                         // Failure
                         return true;
                     }
@@ -244,11 +236,7 @@ class LinearTransport : public Transport {
                     ros::WallDuration(1.0).sleep();
                     
                     // Visualize plan goal
-                    if (goal_pose_props.moving_to_object) {
-                        vis->publishGoalObjectMarker(approach_offset_eef_pose, goal_pose_props.pose, "Planning...");
-                    } else {
-                        vis->publishGoalMarker(approach_offset_eef_pose, "Planning...");
-                    }
+                    visualizePlanGoal(approach_offset_eef_pose, *vis);
 
                     moveit::planning_interface::MoveGroupInterface::Plan plan;
                     response.plan_success = planWithRetries(*move_group, plan);
@@ -257,11 +245,7 @@ class LinearTransport : public Transport {
                         move_group->setMaxVelocityScalingFactor(m_max_velocity_scaling_factor);
 
                         // Visualize actual goal
-                        if (goal_pose_props.moving_to_object) {
-                            vis->publishGoalObjectMarker(approach_offset_eef_pose, goal_pose_props.pose, "Goal");
-                        } else {
-                            vis->publishGoalMarker(approach_offset_eef_pose, "Goal");
-                        }
+                        visualizeExecuteGoal(approach_offset_eef_pose, *vis);
 
                         execution_success = move_group->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
 
@@ -271,7 +255,7 @@ class LinearTransport : public Transport {
                         // If the execution succeeded, perform the cartesian approach
                         geometry_msgs::Point vertical_offset_position = eef_pose.position;
                         vertical_offset_position.z += ManipulatorProperties::getVerticalPlacingOffset(TASKIT_PLANNING_GROUP_ID);
-                        if (execution_success && m_linear_mover->move(mv_analysis, *move_group, vertical_offset_position)) {
+                        if (execution_success && m_linear_mover->move(mv_analysis, *move_group, vertical_offset_position, vis)) {
                             // Update destination location, must be near object (holding), keep rotation type, keep placing offset
                             updateState(*state, request.destination_location, true, state->grasp_rotation_type, state->placing_offset);
                         }

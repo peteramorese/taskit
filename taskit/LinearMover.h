@@ -10,7 +10,7 @@ namespace ActionPrimitives {
 
 class LinearMover {
     public:
-        virtual bool move(MovementAnalysis& mv_analysis, moveit::planning_interface::MoveGroupInterface& move_group, const geometry_msgs::Point& dst_point) = 0;
+        virtual bool move(MovementAnalysis& mv_analysis, moveit::planning_interface::MoveGroupInterface& move_group, const geometry_msgs::Point& dst_point, const std::shared_ptr<Visualizer>& vis = nullptr) = 0;
 };
 
 class CartesianMover : public LinearMover {
@@ -22,7 +22,7 @@ class CartesianMover : public LinearMover {
             , m_max_velocity_scale(ManipulatorProperties::getMaxVelocityScale(TASKIT_PLANNING_GROUP_ID))
         {}
 
-        virtual bool move(MovementAnalysis& mv_analysis, moveit::planning_interface::MoveGroupInterface& move_group, const geometry_msgs::Point& dst_point) override {
+        virtual bool move(MovementAnalysis& mv_analysis, moveit::planning_interface::MoveGroupInterface& move_group, const geometry_msgs::Point& dst_point, const std::shared_ptr<Visualizer>& vis = nullptr) override {
 
             ros::Time begin = ros::Time::now();
             const geometry_msgs::Pose& curr_pose = move_group.getCurrentPose().pose;
@@ -92,7 +92,7 @@ class SmoothPlanMover : public LinearMover, protected Mover {
     public:
         SmoothPlanMover() {}
 
-        virtual bool move(MovementAnalysis& mv_analysis, moveit::planning_interface::MoveGroupInterface& move_group, const geometry_msgs::Point& dst_point) override {
+        virtual bool move(MovementAnalysis& mv_analysis, moveit::planning_interface::MoveGroupInterface& move_group, const geometry_msgs::Point& dst_point, const std::shared_ptr<Visualizer>& vis = nullptr) override {
             ros::Time begin = ros::Time::now();
 
             setScalingFactors(move_group);
@@ -105,12 +105,18 @@ class SmoothPlanMover : public LinearMover, protected Mover {
             goal_pose.position = dst_point;
             move_group.setPoseTarget(goal_pose);
 
+            if (vis)
+                visualizePlanGoal(goal_pose, *vis);
+
             moveit::planning_interface::MoveGroupInterface::Plan plan;
             bool planning_success = planWithRetries(move_group, plan);
             if (!planning_success) {
                 mv_analysis.add(false, begin);
                 return false;
             }
+
+            if (vis)
+                visualizeExecuteGoal(goal_pose, *vis);
 
             bool execution_success = move_group.execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
 

@@ -135,7 +135,7 @@ L1: {
     z: 0.0125,
   },
   detection_radius: 0.10, 
-  orientation_type: up_x
+  orientation_type: up_y
 }
 
 L2: { 
