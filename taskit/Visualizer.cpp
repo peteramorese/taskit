@@ -19,6 +19,8 @@ void Visualizer::addAxes(visualization_msgs::MarkerArray& marker_array, const ge
 
     tf2::Quaternion goal_orientation = Quaternions::convert(pose.orientation);
     tf2::Vector3 in_btw_gripper_offset(0.0, 0.0, -ManipulatorProperties::getEndEffectorOffset(TASKIT_PLANNING_GROUP_ID));
+
+    // If invert default down, apply a rotation for the inverted default down quaternion
     if (invert_default_down)
         goal_orientation = goal_orientation * Quaternions::getDefaultDown(TASKIT_PLANNING_GROUP_ID, true);
 
@@ -30,11 +32,9 @@ void Visualizer::addAxes(visualization_msgs::MarkerArray& marker_array, const ge
     x_arrow.type = visualization_msgs::Marker::ARROW;
     x_arrow.action = visualization_msgs::Marker::ADD;
 
-    //geometry_msgs::Pose x_pose;
     x_arrow.pose.position = pose.position;
     x_arrow.pose.orientation = Quaternions::convert(goal_orientation);
     Quaternions::translatePose(x_arrow.pose, in_btw_gripper_offset);
-    //x_arrow.pose.orientation = Quaternions::convert(goal_orientation);
 
     x_arrow.scale.x = scale * 0.10;
     x_arrow.scale.y = scale * 0.01;
@@ -53,12 +53,10 @@ void Visualizer::addAxes(visualization_msgs::MarkerArray& marker_array, const ge
     y_arrow.action = visualization_msgs::Marker::ADD;
     y_arrow.pose.position = pose.position;
 
-    //geometry_msgs::Pose y_pose;
     y_arrow.pose.position = pose.position;
     y_arrow.pose.orientation = Quaternions::convert(goal_orientation);
     Quaternions::translatePose(y_arrow.pose, in_btw_gripper_offset);
     y_arrow.pose.orientation = Quaternions::convert(goal_orientation * Quaternions::getRotation(Quaternions::RotationType::Yaw90));
-    //y_arrow.pose = Quaternions::getPointAlongPose(TASKIT_PLANNING_GROUP_ID, in_btw_gripper_offset, pose, Quaternions::RotationType::Yaw90, true);
 
     y_arrow.scale.x = scale * 0.10;
     y_arrow.scale.y = scale * 0.01;
@@ -77,12 +75,10 @@ void Visualizer::addAxes(visualization_msgs::MarkerArray& marker_array, const ge
     z_arrow.action = visualization_msgs::Marker::ADD;
     z_arrow.pose.position = pose.position;
 
-    //geometry_msgs::Pose z_pose;
     z_arrow.pose.position = pose.position;
     z_arrow.pose.orientation = Quaternions::convert(goal_orientation);
     Quaternions::translatePose(z_arrow.pose, in_btw_gripper_offset);
     z_arrow.pose.orientation = Quaternions::convert(goal_orientation * Quaternions::getRotation(Quaternions::RotationType::Pitch270));
-    //z_arrow.pose = Quaternions::getPointAlongPose(TASKIT_PLANNING_GROUP_ID, in_btw_gripper_offset, pose, Quaternions::RotationType::Pitch270, true);
 
     z_arrow.scale.x = scale * 0.10;
     z_arrow.scale.y = scale * 0.01;

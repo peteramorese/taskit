@@ -48,7 +48,7 @@ class ActionPrimitive {
         const std::string m_topic;
 };
 
-// Convenience class for resetting arm movement properties
+// Convenience class that adds methods useful for moving
 class Mover {
     protected:
         Mover() = default;
@@ -429,8 +429,7 @@ class Transit : public ActionPrimitive<taskit::Transit>, protected Mover {
             std::pair<bool, std::string> location_predicate = predicate_set.lookupLocationPredicate(request.destination_location);
 
             if (location_predicate.first) { // Object is in location
-                return GoalPoseProperties(obj_group.getObject(location_predicate.second).pose(), true, location_predicate.second);
-                //return GoalPoseProperties(obj_group.getObject(location_predicate.second).graspPose(), true, location_predicate.second);
+                return GoalPoseProperties(obj_group.getObject(location_predicate.second).graspPose(), true, location_predicate.second);
             } else { // No object, just to the location
                 if (attached_object_id.empty()) {
                     return GoalPoseProperties(predicate_handler.getLocationPose(request.destination_location), false, std::string());

@@ -25,7 +25,6 @@ class Visualizer {
         void addText(visualization_msgs::MarkerArray& marker_array, const geometry_msgs::Pose& pose, float scale, MarkerType type, const std::string& msg, const std_msgs::ColorRGBA& color);
         void addLocation(visualization_msgs::MarkerArray& marker_array, const geometry_msgs::Pose& pose, float scale, const std::string& name, float detection_radius, const std_msgs::ColorRGBA& color);
         void publishEEFGoalPose(const geometry_msgs::Pose& pose, const std::string& msg = "goal", float scale = 1.0f);
-        //void publishGoalObjectMarker(const geometry_msgs::Pose& obj_pose, const geometry_msgs::Pose& goal_pose, const std::string& msg = "goal", float scale = 1.0f, uint32_t num_points = 20, bool keep_existing = false);
         void publishLocations(const PredicateHandler& predicate_handler, float scale = 1.0f);
         void remove(MarkerType marker_type);
         void removeAll();
