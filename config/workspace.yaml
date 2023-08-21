@@ -1,16 +1,22 @@
 object_ids:
-  - "ground"
+  - ground
 
 object_types:
-  - "box"
+  - box
 
 ground: {
-  x: 0.0,
-  y: 0.0,
-  z: -0.05,
-  l: 1.5,
-  w: 1.5,
-  h: 0.1,
+  position: {
+    x: 0.0,
+    y: 0.0,
+    z: -0.05,
+  },
+  dimensions: {
+    l: 1.5,
+    w: 1.5,
+    h: 0.1,
+  },
+  primitive_type: box,
+  orientation_type: up_x,
 }
 
 object_orientation_types:

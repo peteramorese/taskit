@@ -43,22 +43,37 @@ void makeMovementProperties(taskit::MovementProperties& mv_props, bool execution
     double max_e = 0.0;
     for (std::size_t i = 0; i < r_traj.getWayPointCount(); ++i) {
         const moveit::core::RobotState& state = r_traj.getWayPoint(i);
-        ROS_ASSERT_MSG(state.hasVelocities() && state.hasAccelerations() && state.hasEffort(), "State is missing at least one of: velocities, accelerations, effort");
-        const double* velocities = state.getVariableVelocities();
-        const double* accelerations = state.getVariableAccelerations();
-        const double* efforts = state.getVariableEffort();
-        for (std::size_t j = 0; j < state.getVariableCount(); ++j) {
-            double velocity = std::abs(velocities[j]);
-            double acceleration = std::abs(accelerations[j]);
-            double effort = std::abs(efforts[j]);
-            if (velocity > max_v) {
-                max_v = velocity;
+
+        // Determine max velocity for any joint and state
+        if (state.hasVelocities()) {
+            const double* velocities = state.getVariableVelocities();
+            for (std::size_t j = 0; j < state.getVariableCount(); ++j) {
+                double velocity = std::abs(velocities[j]);
+                if (velocity > max_v) {
+                    max_v = velocity;
+                }
             }
-            if (acceleration > max_a) {
-                max_a = acceleration;
+        }
+
+        // Determine max velocity for any joint and state
+        if (state.hasAccelerations()) {
+            const double* accelerations = state.getVariableAccelerations();
+            for (std::size_t j = 0; j < state.getVariableCount(); ++j) {
+                double acceleration = std::abs(accelerations[j]);
+                if (acceleration > max_a) {
+                    max_a = acceleration;
+                }
             }
-            if (effort > max_e) {
-                max_e = effort;
+        }
+
+        // Determine max effort for any joint and state
+        if (state.hasEffort()) {
+            const double* efforts = state.getVariableEffort();
+            for (std::size_t j = 0; j < state.getVariableCount(); ++j) {
+                double effort = std::abs(efforts[j]);
+                if (effort > max_e) {
+                    max_e = effort;
+                }
             }
         }
     }

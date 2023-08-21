@@ -116,7 +116,7 @@ void Visualizer::publishLocationMarkers(const PredicateHandler& predicate_handle
         center.id = newId(MarkerType::Location);
         center.type = visualization_msgs::Marker::SPHERE;
         center.action = visualization_msgs::Marker::ADD;
-        center.pose = location.pose;
+        center.pose = location.defaultPose();
         center.scale.x = scale * 0.03;
         center.scale.y = scale * 0.03;
         center.scale.z = scale * 0.03;
@@ -132,7 +132,7 @@ void Visualizer::publishLocationMarkers(const PredicateHandler& predicate_handle
         detection_zone.id = newId(MarkerType::Location);
         detection_zone.type = visualization_msgs::Marker::SPHERE;
         detection_zone.action = visualization_msgs::Marker::ADD;
-        detection_zone.pose = location.pose;
+        detection_zone.pose = location.defaultPose();
         detection_zone.scale.x = location.detection_radius;
         detection_zone.scale.y = location.detection_radius;
         detection_zone.scale.z = location.detection_radius;
@@ -148,7 +148,7 @@ void Visualizer::publishLocationMarkers(const PredicateHandler& predicate_handle
         text.id = newId(MarkerType::Location);
         text.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
         text.action = visualization_msgs::Marker::ADD;
-        text.pose = location.pose;
+        text.pose = location.defaultPose();
         text.pose.position.z += 0.04;
         text.scale.x = scale * 0.07;
         text.scale.y = scale * 0.07;

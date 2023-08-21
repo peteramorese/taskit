@@ -17,6 +17,7 @@ class ManipulatorProperties {
             nh.getParam(getParamName("default_down_quaternion", arm_config_ns), s_values[planning_group].default_down);
             nh.getParam(getParamName("stow_joint_values", arm_config_ns), s_values[planning_group].stow_joint_values);
             nh.getParam(getParamName("eef_offset", arm_config_ns), s_values[planning_group].eef_offset);
+            nh.getParam(getParamName("vertical_placing_offset", arm_config_ns), s_values[planning_group].vertical_placing_offset);
             nh.getParam(getParamName("linear_mover", arm_config_ns), s_values[planning_group].linear_mover);
             nh.getParam(getParamName("planner_id", arm_config_ns), s_values[planning_group].planner_id);
             nh.param<std::string>(getParamName("optimal_planner_id", arm_config_ns), s_values[planning_group].optimal_planner_id, "RRTstar");
@@ -32,6 +33,7 @@ class ManipulatorProperties {
         static const std::map<std::string, double>& getDefaultDownRPY(const std::string& planning_group) {return s_values.at(planning_group).default_down;}
         static const std::vector<double>& getStowJointValues(const std::string& planning_group) {return s_values.at(planning_group).stow_joint_values;}
         static double getEndEffectorOffset(const std::string& planning_group) {return s_values.at(planning_group).eef_offset;}
+        static double getVerticalPlacingOffset(const std::string& planning_group) {return s_values.at(planning_group).vertical_placing_offset;}
         static const std::string& getLinearMover(const std::string& planning_group) {return s_values.at(planning_group).linear_mover;}
         static const std::string& getPlannerID(const std::string& planning_group) {return s_values.at(planning_group).planner_id;}
         static const std::string& getOptimalPlannerID(const std::string& planning_group) {return s_values.at(planning_group).optimal_planner_id;}
@@ -48,6 +50,7 @@ class ManipulatorProperties {
             std::map<std::string, double> default_down;
             std::vector<double> stow_joint_values;
             double eef_offset;
+            double vertical_placing_offset;
             std::string linear_mover;
             std::string planner_id;
             std::string optimal_planner_id;

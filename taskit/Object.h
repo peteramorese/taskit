@@ -17,7 +17,7 @@
 namespace TaskIt {
 
 
-using ObjectConfig = std::map<std::string, float>;
+using ObjectDimensionConfig = std::map<std::string, float>;
 
 // Object specifications
 
@@ -68,7 +68,7 @@ struct SingleObjectSpecification : ObjectSpecification {
 
     protected:
         virtual moveit_msgs::CollisionObject convert() const = 0;
-        virtual void constructFromConfig(const ObjectConfig& config) = 0;
+        virtual void constructFromConfig(const ObjectDimensionConfig& config) = 0;
 };
 
 struct BoxObjectSpecification : SingleObjectSpecification {
@@ -77,7 +77,7 @@ struct BoxObjectSpecification : SingleObjectSpecification {
     double height = 0.05;
 
     BoxObjectSpecification() = default;
-    BoxObjectSpecification(const ObjectConfig& config) {constructFromConfig(config);}
+    BoxObjectSpecification(const ObjectDimensionConfig& config) {constructFromConfig(config);}
     virtual float getLengthOffset() const override {return length / 2.0;}
     virtual float getWidthOffset() const override {return width / 2.0;}
     virtual float getHeightOffset() const override {return height / 2.0;}
@@ -92,13 +92,13 @@ struct BoxObjectSpecification : SingleObjectSpecification {
             return col_obj;
         }
 
-        virtual void constructFromConfig(const ObjectConfig& config) override {
+        virtual void constructFromConfig(const ObjectDimensionConfig& config) override {
             try {
                 length = config.at("l");
                 width = config.at("w");
                 height = config.at("h");
             } catch (const std::exception& e) {
-                ROS_ERROR("Config parameters do not match");
+                ROS_ERROR("Config parameters do not match (need 'l', 'w', 'h' for box)");
             }
         }
 };
@@ -107,7 +107,7 @@ struct SphereObjectSpecification : SingleObjectSpecification {
     double radius = 0.05;
 
     SphereObjectSpecification() = default;
-    SphereObjectSpecification(const ObjectConfig& config) {constructFromConfig(config);}
+    SphereObjectSpecification(const ObjectDimensionConfig& config) {constructFromConfig(config);}
     virtual float getLengthOffset() const override {return radius;}
     virtual float getWidthOffset() const override {return radius;}
     virtual float getHeightOffset() const override {return radius;}
@@ -122,11 +122,11 @@ struct SphereObjectSpecification : SingleObjectSpecification {
             return col_obj;
         }
 
-        virtual void constructFromConfig(const ObjectConfig& config) override {
+        virtual void constructFromConfig(const ObjectDimensionConfig& config) override {
             try {
                 radius = config.at("r");
             } catch (const std::exception& e) {
-                ROS_ERROR("Config parameters do not match");
+                ROS_ERROR("Config parameters do not match (need 'r' for sphere)");
             }
         }
 };
@@ -136,7 +136,7 @@ struct CylinderObjectSpecification : SingleObjectSpecification {
     double radius = 0.05;
 
     CylinderObjectSpecification() = default;
-    CylinderObjectSpecification(const ObjectConfig& config) {constructFromConfig(config);}
+    CylinderObjectSpecification(const ObjectDimensionConfig& config) {constructFromConfig(config);}
     virtual float getLengthOffset() const override {return radius;}
     virtual float getWidthOffset() const override {return radius;}
     virtual float getHeightOffset() const override {return height / 2.0;}
@@ -151,17 +151,17 @@ struct CylinderObjectSpecification : SingleObjectSpecification {
             return col_obj;
         }
 
-        virtual void constructFromConfig(const ObjectConfig& config) override {
+        virtual void constructFromConfig(const ObjectDimensionConfig& config) override {
             try {
                 height = config.at("h");
                 radius = config.at("r");
             } catch (const std::exception& e) {
-                ROS_ERROR("Config parameters do not match");
+                ROS_ERROR("Config parameters do not match (need 'h', 'r' for sphere)");
             }
         }
 };
 
-static std::shared_ptr<ObjectSpecification> makeObjectSpecification(ObjectPrimitive primitive, const ObjectConfig& config) {
+static std::shared_ptr<ObjectSpecification> makeObjectSpecification(ObjectPrimitive primitive, const ObjectDimensionConfig& config) {
     switch (primitive) {
         case ObjectPrimitive::Box: return std::make_shared<BoxObjectSpecification>(config);
         case ObjectPrimitive::Sphere: return std::make_shared<SphereObjectSpecification>(config);
@@ -171,7 +171,7 @@ static std::shared_ptr<ObjectSpecification> makeObjectSpecification(ObjectPrimit
     return std::shared_ptr<ObjectSpecification>{};
 }
 
-static std::shared_ptr<ObjectSpecification> makeObjectSpecification(const std::string& primitive_str, const ObjectConfig& config) {
+static std::shared_ptr<ObjectSpecification> makeObjectSpecification(const std::string& primitive_str, const ObjectDimensionConfig& config) {
     return makeObjectSpecification(getObjectPrimitiveType(primitive_str), config);
 }
 
@@ -183,6 +183,9 @@ struct Object {
         std::shared_ptr<ObjectSpecification> spec;
         std::shared_ptr<PoseTracker> tracker;
 
+        inline const static std::string s_default_class = "default";
+
+        std::string class_id = s_default_class;
     private:
         geometry_msgs::Pose m_pose;
         Quaternions::Type m_orientation_type;
@@ -190,22 +193,14 @@ struct Object {
     public:
         Object() = delete;
 
-        Object(const std::string& id_, const std::shared_ptr<ObjectSpecification>& spec_, const ObjectConfig& config, Quaternions::Type orientation_type, const std::shared_ptr<PoseTracker>& tracker_ = nullptr)  
+        Object(const std::string& id_, const std::shared_ptr<ObjectSpecification>& spec_, Quaternions::Type orientation_type, const std::shared_ptr<PoseTracker>& tracker_ = nullptr, const std::string& class_id = s_default_class)  
             : id(id_)
             , spec(spec_)
             , tracker(tracker_)
+            , class_id(class_id)
             , m_orientation_type(orientation_type)
         {
-            setPoseFromConfig(config);
-        }
-
-        Object(const std::string& id_, const std::shared_ptr<ObjectSpecification>& spec_, const geometry_msgs::Pose& pose_, Quaternions::Type orientation_type, const std::shared_ptr<PoseTracker>& tracker_ = nullptr)  
-            : id(id_)
-            , spec(spec_)
-            , tracker(tracker_)
-            , m_orientation_type(orientation_type)
-        {
-            setPose(pose_);
+            setPoseToNeutral();
         }
 
         bool isStatic() const {return !tracker;}
@@ -227,26 +222,15 @@ struct Object {
             return grasp_pose;
         }
 
-        void setPoseFromConfig(const ObjectConfig& config) {
-            geometry_msgs::Pose pose;
-            if (config.find("x") != config.end()) {
-                pose.position.x = config.at("x"); 
-                pose.position.y = config.at("y");
-                pose.position.z = config.at("z");
-            } else {
-                ROS_ASSERT_MSG(config.find("y") == config.end() && config.find("x") == config.end(), "Must provide (x, y, z) for the object, or leave all three fields empty");
-                ROS_WARN_STREAM("No (x, y, z) coordinate provided for object '" << id <<"', assuming 0.0");
-                pose.position.x = 0.0f;
-                pose.position.y = 0.0f;
-                pose.position.z = 0.0f;
-            }
-            pose.orientation.x = 0.0f;
-            pose.orientation.y = 0.0f;
-            pose.orientation.z = 0.0f;
-            pose.orientation.w = 1.0f;
-            setPose(pose);
+        void setPoseToNeutral() {
+            m_pose.position.x = 0.0f;
+            m_pose.position.y = 0.0f;
+            m_pose.position.z = 0.0f;
+            m_pose.orientation.x = 0.0f;
+            m_pose.orientation.y = 0.0f;
+            m_pose.orientation.z = 0.0f;
+            m_pose.orientation.w = 1.0f;
         }
-
 
         moveit_msgs::CollisionObject getCollisionObject(const std::string& frame_id) const {
             moveit_msgs::CollisionObject col_obj = spec->getCollisionObject(m_pose);
@@ -296,13 +280,13 @@ class ObjectGroup {
             return collision_objs;
         }
 
-        void addObject(const std::string& id, const std::shared_ptr<ObjectSpecification>& spec) {
-            this->m_objects.emplace(std::piecewise_construct, std::forward_as_tuple(id), std::forward_as_tuple(id, spec, geometry_msgs::Pose{}, Quaternions::Type::UpX));
-        }
+        //void addObject(const std::string& id, const std::shared_ptr<ObjectSpecification>& spec) {
+        //    this->m_objects.emplace(std::piecewise_construct, std::forward_as_tuple(id), std::forward_as_tuple(id, spec, geometry_msgs::Pose{}, Quaternions::Type::UpX));
+        //}
 
-        void addObject(const std::string& id, const std::shared_ptr<ObjectSpecification>& spec, const geometry_msgs::Pose& pose, Quaternions::Type orientation_type) {
-            this->m_objects.emplace(std::piecewise_construct, std::forward_as_tuple(id), std::forward_as_tuple(id, spec, pose, orientation_type));
-        }
+        //void addObject(const std::string& id, const std::shared_ptr<ObjectSpecification>& spec, const geometry_msgs::Pose& pose, Quaternions::Type orientation_type) {
+        //    this->m_objects.emplace(std::piecewise_construct, std::forward_as_tuple(id), std::forward_as_tuple(id, spec, pose, orientation_type));
+        //}
 
         void insertObject(const Object& obj) {
             m_objects.insert(std::make_pair(obj.id, obj));
