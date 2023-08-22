@@ -152,7 +152,7 @@ struct Object {
 
         geometry_msgs::Pose graspPose() const {
             geometry_msgs::Pose grasp_pose = m_pose;
-            grasp_pose.orientation = Quaternions::convert(Quaternions::get(m_orientation_type) * Quaternions::convert(m_pose.orientation));
+            grasp_pose.orientation = Quaternions::convert(Quaternions::convert(m_pose.orientation) * Quaternions::get(m_orientation_type));
             return grasp_pose;
         }
 

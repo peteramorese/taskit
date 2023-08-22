@@ -147,7 +147,6 @@ namespace TaskIt {
                 pose.position.y = pose_to_match.position.y + disp_rotated[1];
                 pose.position.z = pose_to_match.position.z + disp_rotated[2];
 
-                //tf2::Quaternion orientation = rotate_by * default_down;
                 tf2::Quaternion orientation = q_to_match * getRotation(rotation_type) * default_down;
                 orientation.normalize();
                 pose.orientation = convert(orientation);
