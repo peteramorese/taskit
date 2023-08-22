@@ -75,17 +75,17 @@ void PredicateHandler::setObjectPosesToLocations(const ros::NodeHandle& nh, cons
         if (nh.getParam(getParamName(obj->id, objects_ns) + "/initial_location", initial_location)) {
             ROS_ASSERT_MSG(m_locations.find(initial_location) != m_locations.end(), "Unrecognized object initial location");
             
-            //
-            geometry_msgs::Pose loc_pose = getLocationPose(initial_location, obj->class_id);
-            tf2::Quaternion q_noise;
-            q_noise.setRPY(0.2, 0.0, 0.2);
-            tf2::Quaternion q = Quaternions::convert(loc_pose.orientation) * q_noise;
-            q.normalize();
-            loc_pose.orientation = Quaternions::convert(q);
-            //
+            ////
+            //geometry_msgs::Pose loc_pose = getLocationPose(initial_location, obj->class_id);
+            //tf2::Quaternion q_noise;
+            //q_noise.setRPY(0.2, 0.0, 0.2);
+            //tf2::Quaternion q = Quaternions::convert(loc_pose.orientation) * q_noise;
+            //q.normalize();
+            //loc_pose.orientation = Quaternions::convert(q);
+            //obj->setPose(loc_pose);
+            ////
 
-            obj->setPose(loc_pose);
-            //obj->setPose(getLocationPose(initial_location, obj->class_id));
+            obj->setPose(getLocationPose(initial_location, obj->class_id));
         }
 
     }
