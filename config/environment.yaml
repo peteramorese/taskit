@@ -1,133 +1,173 @@
 location_names: 
-  - "Else_1"
-  - "Else_2"
-  - "Else_3"
-  - "HL0"
-  - "HL1"
-  - "HL2"
-  - "HL3"
+  - "dw_l"
+  - "dw_c"
+  - "dw_r"
+  - "dw_top"
+  - "L0"
   - "L1"
   - "L2"
-  - "L3"
-  - "O1"
-  - "O2"
-  - "O3"
+  - "lid_loc"
 
-### else location where A1 and A3 are placed and I_1 is placed
-Else_1: { 
-  x: 0.40,
-  y: 0.10,
-  z: 0.03, 
-  r: 0.10, 
+dw_l: { 
+  default: {
+    x: 0.4,
+    y: -0.076,
+    z: 0.055,
+  },
+  object_classes: [
+    pitcher,
+    small_cup
+  ],
+  pitcher: {
+    x: 0.4,
+    y: -0.076,
+    z: 0.0605,
+  },
+  small_cup: {
+    x: 0.4,
+    y: -0.08,
+    z: 0.0275,
+  },
+  detection_radius: 0.20, 
+  orientation_type: up_ny
 }
 
-
-Else_2: { 
-  x: 0.60,
-  y: 0.10,
-  z: 0.03, 
-  r: 0.10, 
+dw_c: { 
+  default: {
+    x: 0.4,
+    y: 0.0,
+    z: 0.055,
+  },
+  object_classes: [
+    pitcher,
+    small_cup
+  ],
+  pitcher: {
+    x: 0.4,
+    y: 0.0,
+    z: 0.0605,
+  },
+  small_cup: {
+    x: 0.4,
+    y: 0.0,
+    z: 0.0275,
+  },
+  detection_radius: 0.20, 
+  orientation_type: up_y
 }
 
-
-Else_3: { 
-  x: 0.50,
-  y: 0.30,
-  z: 0.03, 
-  r: 0.10, 
+dw_r: { 
+  default: {
+    x: 0.4,
+    y: 0.08,
+    z: 0.055,
+  },
+  object_classes: [
+    pitcher,
+    small_cup
+  ],
+  pitcher: {
+    x: 0.4,
+    y: 0.08,
+    z: 0.0605,
+  },
+  small_cup: {
+    x: 0.4,
+    y: 0.08,
+    z: 0.0275,
+  },
+  detection_radius: 0.20, 
+  orientation_type: up_y
 }
 
-
-# These are locations where the robot and Human can build - Keeping a distance 15 cm between 
-HL0: { 
-  x: 0.25,
-  y: 0.40,
-  z: 0.04, 
-  r: 0.10, 
+dw_top: { 
+  default: {
+    x: 0.4,
+    y: 0.00,
+    z: 0.19,
+  },
+  detection_radius: 0.20, 
+  orientation_type: up_x
 }
 
-
-HL1: { 
-  x: 0.10,
-  y: 0.40,
-  z: 0.04, 
-  r: 0.10, 
+L0: { 
+  default: {
+    x: 0.0,
+    y: 0.40,
+    z: 0.1425,
+  },
+  object_classes: [
+    pitcher,
+    small_cup
+  ],
+  pitcher: {
+    x: 0.0,
+    y: 0.40,
+    z: 0.145,
+  },
+  small_cup: {
+    x: 0.0,
+    y: 0.40,
+    z: 0.1125,
+  },
+  detection_radius: 0.10, 
+  orientation_type: up_nx
 }
 
-HL2: { 
-  x: -0.05,
-  y: 0.40,
-  z: 0.04, 
-  r: 0.10, 
-}
-
-HL3: { 
-  x: -0.20,
-  y: 0.40,
-  z: 0.04, 
-  r: 0.10, 
-}
-
-# Locations where only the robot can move objects
 L1: { 
-  x: -0.50,
-  y: 0.40,
-  z: 0.04, 
-  r: 0.10, 
+  default: {
+    x: -0.20,
+    y: 0.40,
+    z: 0.0425,
+  },
+  object_classes: [
+    pitcher,
+    small_cup
+  ],
+  pitcher: {
+    x: -0.20,
+    y: 0.40,
+    z: 0.045,
+  },
+  small_cup: {
+    x: -0.20,
+    y: 0.40,
+    z: 0.0125,
+  },
+  detection_radius: 0.10, 
+  orientation_type: up_y
 }
-
 
 L2: { 
-  x: -0.50,
-  y: 0.25,
-  z: 0.04, 
-  r: 0.10, 
+  default: {
+    x: -0.40,
+    y: 0.40,
+    z: 0.0425,
+  },
+  object_classes: [
+    pitcher,
+    small_cup
+  ],
+  pitcher: {
+    x: -0.40,
+    y: 0.40,
+    z: 0.045,
+  },
+  small_cup: {
+    x: -0.40,
+    y: 0.40,
+    z: 0.0125,
+  },
+  detection_radius: 0.10, 
+  orientation_type: up_x
 }
 
-
-L3: { 
-  x: -0.50,
-  y: -0.05,
-  z: 0.04, 
-  r: 0.10, 
+lid_loc: { 
+  default: {
+    x: -0.40,
+    y: -0.40,
+    z: 0.035,
+  },
+  detection_radius: 0.10, 
+  orientation_type: up_x
 }
-
-
-# Locations where the static obstacles are placed
-O1: { 
-  x: -0.35,
-  y: 0.40,
-  z: 0.04, 
-  r: 0.10, 
-}
-
-O2: { 
-  x: -0.65,
-  y: 0.40,
-  z: 0.04, 
-  r: 0.10, 
-}
-
-
-O3: { 
-  x: -0.50,
-  y: 0.10,
-  z: 0.04, 
-  r: 0.10, 
-}
-
-# affects how the hand approaches the empty location
-location_orientation_types:
-  - up_x
-  - up_x
-  - up_x
-  - up_x
-  - up_x
-  - up_x
-  - up_x
-  - up_x
-  - up_x
-  - up_x
-  - up_x
-  - up_x
-  - up_x

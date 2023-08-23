@@ -1,100 +1,65 @@
 object_ids:
-  - A_1
-  - A_2
-  - A_3
-  - I_1
-  - B_1   # static obstacle
-  - L_1   # static obstacle
-  - R_1
-  - R_2   # static obstacle
+  - mug
+#  - pitcher
+#  - small_cup
+#  - lid
 
-
-object_types:
-  - "box"
-  - "box"
-  - "box"
-  - "box"
-  - "box"
-  - "box"
-  - "box"
-  - "box"
-
-# Original size 6 cm. Shrinking dynamic objects by 1 cm. This to avoid panda finger ocllision and panda start state colliding with ground error.
-# These error are primarly caused due to inaccurate tracking by Vicon.
-A_1: {
-  l: 0.055,
-  w: 0.055,
-  h: 0.055,
+mug: {
+  dimensions: {
+    height: 0.080,
+    radius: 0.0384,
+    handle_length: 0.035,
+    handle_width: 0.015,
+    flange_height: 0.005,
+    flange_width: 0.004
+  },
+  primitive_type: cup,
+  orientation_type: up_x,
+  initial_location: L0,
+  # default class
 }
 
-
-A_2: {
-  l: 0.055,
-  w: 0.055,
-  h: 0.055,
+pitcher: {
+  dimensions: {
+    height: 0.091,
+    radius: 0.0375,
+    handle_length: 0.03,
+    handle_width: 0.015,
+    flange_height: 0.0,
+    flange_width: 0.00
+  },
+  primitive_type: cup,
+  orientation_type: up_x,
+  initial_location: L1,
+  class: pitcher 
 }
 
-
-A_3: {
-  l: 0.055,
-  w: 0.055,
-  h: 0.055,
+small_cup: {
+  dimensions: {
+    radius: 0.0255,
+    height: 0.025,
+    handle_length: 0.0,
+    handle_width: 0.0,
+    flange_height: 0.002,
+    flange_width: 0.005
+  },
+  primitive_type: cup,
+  orientation_type: up_x,
+  initial_location: L2,
+  class: small_cup 
 }
 
-
-I_1: {
-  l: 0.055,
-  w: 0.055,
-  h: 0.055,
-}
-
-# Keepin static obstacles at 6 cm to avoid collision
-L_1: {
-  l: 0.06,
-  w: 0.06,
-  h: 0.06,
-}
-
-
-B_1: {
-  l: 0.06,
-  w: 0.06,
-  h: 0.06,
-}
-
-
-R_1: {
-  l: 0.055,
-  w: 0.055,
-  h: 0.055,
-}
-
-
-R_2: {
-  l: 0.06,
-  w: 0.06,
-  h: 0.06,
-}
-
-# Affects how the object is grabbed
-object_orientation_types:
-  - up_x
-  - up_x
-  - up_x
-  - up_x
-  - up_x
-  - up_x
-  - up_x
-  - up_x
-
-
-initial_locations: {
-  A_1: "Else_2",
-  A_2: "Else_1",
-  A_3: "HL0",
-  I_1: "Else_3",
-  L_1: "O1",
-  B_1: "O2",
-  R_1: "HL3",
-  R_2: "O1",
+lid: {
+  dimensions: {
+    lid_length: 0.27,
+    lid_width: 0.435,
+    lid_height: 0.01,
+    handle_length: 0.06,
+    handle_width: 0.06,
+    handle_height: 0.06
+  },
+  primitive_type: lid,
+  orientation_type: up_x,
+  initial_location: lid_loc,
+  class: default
 }

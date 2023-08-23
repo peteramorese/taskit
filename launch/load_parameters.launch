@@ -1,6 +1,6 @@
 <launch>
   <arg name="config_directory" default="$(find taskit)/config" />
-  <arg name="arm_cfg" default="$(find taskit)/config/panda_arm_config.yaml" />
+  <arg name="arm_config" default="$(find taskit)/config/panda_arm_config.yaml" />
   <group ns="environment">
     <rosparam file="$(arg config_directory)/environment.yaml" />
   </group>
@@ -11,6 +11,6 @@
     <rosparam file="$(arg config_directory)/objects.yaml" />
   </group>
   <group ns="arm_config">
-    <rosparam file="$(arg arm_cfg)" />
+    <rosparam file="$(arg arm_config)" />
   </group>
 </launch>

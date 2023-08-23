@@ -66,15 +66,17 @@ ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::ManipulatorNode(const std::shared_p
 
     // Set the pre action call back
     m_beforeActionCall = [this]() -> void {
-        if (m_auto_visualize) m_visualizer->removeMarkers(Visualizer::MarkerType::Goal);
+        if (m_auto_visualize) m_visualizer->remove(Visualizer::MarkerType::Goal);
     };
 }
 
 
 
 template <class...ACTION_PRIMITIVES_TYPES>
-bool ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::updatePlanningScene(bool ignore_static) {
-    return m_obj_group->updatePosesWithPlanningScene(*m_planning_scene_interface, m_move_group->getPlanningFrame(), ignore_static);
+bool ManipulatorNode<ACTION_PRIMITIVES_TYPES...>::updatePlanningScene(bool ignore_static, bool update_poses) {
+    bool success = m_workspace_obj_group->updatePlanningScene(*m_planning_scene_interface, m_move_group->getPlanningFrame(), ignore_static, update_poses);
+    success = success && m_obj_group->updatePlanningScene(*m_planning_scene_interface, m_move_group->getPlanningFrame(), ignore_static, update_poses);
+    return success;
 }
 
 

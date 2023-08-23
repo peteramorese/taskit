@@ -70,5 +70,7 @@ catkin_install_python(PROGRAMS python_srv_node/robot_srv_client.py DESTINATION $
 
 set(TASKIT_LIBRARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/taskit)
 
+add_definitions(-DROS_ASSERT_ENABLED)
+
 add_subdirectory(taskit)
 add_subdirectory(src)

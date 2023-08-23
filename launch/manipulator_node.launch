@@ -9,6 +9,7 @@
   <arg name="use_gui" default="false" />
   <arg name="robot_ip" default="franka-aria.colorado.edu" />
   <arg name="config_directory" default="$(find taskit)/config" />
+  <arg name="arm_config" default="$(find taskit)/config/panda_arm_config.yaml" />
 
   <arg name="pipeline" default="ompl" />
 
@@ -54,6 +55,7 @@
 
   <include file="$(find taskit)/launch/load_parameters.launch">
     <arg name="config_directory" value="$(arg config_directory)"/>
+    <arg name="arm_config" value="$(arg arm_config)"/>
   </include>
 
   <!-- If pose_tracker is vrpn, launch the vrpn node -->
