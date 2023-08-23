@@ -1,6 +1,5 @@
 object_ids:
   - ground
-  - dishwasher
 
 ground: {
   position: {
@@ -15,23 +14,4 @@ ground: {
   },
   primitive_type: box,
   orientation_type: up_x,
-}
-
-dishwasher: {
-  position: {
-    x: 0.4,
-    y: 0.0,
-    z: 0.0775,
-  },
-  dimensions: {
-    length: 0.27,
-    width: 0.41,
-    height: 0.155,
-    base_thickness: 0.015,
-    #base_thickness: 0.005,
-    front_wall_thickness: 0.02,
-    side_wall_thickness: 0.025,
-  },
-  primitive_type: bin,
-  orientation_type: up_x
 }

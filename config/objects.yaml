@@ -1,65 +1,107 @@
 object_ids:
-  - mug
-#  - pitcher
-#  - small_cup
-#  - lid
+  - A_1
+  - A_2
+  - A_3
+  - I_1
+  - B_1   # static obstacle
+  - L_1   # static obstacle
+  - R_1
+  - R_2   # static obstacle
 
-mug: {
+
+# Original size 6 cm. Shrinking dynamic objects by 1 cm. This to avoid panda finger ocllision and panda start state colliding with ground error.
+# These error are primarly caused due to inaccurate tracking by Vicon.
+A_1: {
   dimensions: {
-    height: 0.080,
-    radius: 0.0384,
-    handle_length: 0.035,
-    handle_width: 0.015,
-    flange_height: 0.005,
-    flange_width: 0.004
+    length: 0.055,
+    width: 0.055,
+    height: 0.055,
   },
-  primitive_type: cup,
+  primitive_type: box,
   orientation_type: up_x,
-  initial_location: L0,
-  # default class
+  initial_location: Else_2
 }
 
-pitcher: {
+
+A_2: {
   dimensions: {
-    height: 0.091,
-    radius: 0.0375,
-    handle_length: 0.03,
-    handle_width: 0.015,
-    flange_height: 0.0,
-    flange_width: 0.00
+    length: 0.055,
+    width: 0.055,
+    height: 0.055,
   },
-  primitive_type: cup,
+  primitive_type: box,
   orientation_type: up_x,
-  initial_location: L1,
-  class: pitcher 
+  initial_location: Else_1
 }
 
-small_cup: {
+
+A_3: {
   dimensions: {
-    radius: 0.0255,
-    height: 0.025,
-    handle_length: 0.0,
-    handle_width: 0.0,
-    flange_height: 0.002,
-    flange_width: 0.005
+    length: 0.055,
+    width: 0.055,
+    height: 0.055,
   },
-  primitive_type: cup,
+  primitive_type: box,
   orientation_type: up_x,
-  initial_location: L2,
-  class: small_cup 
+  initial_location: HL0
 }
 
-lid: {
+
+I_1: {
   dimensions: {
-    lid_length: 0.27,
-    lid_width: 0.435,
-    lid_height: 0.01,
-    handle_length: 0.06,
-    handle_width: 0.06,
-    handle_height: 0.06
+    length: 0.055,
+    width: 0.055,
+    height: 0.055,
   },
-  primitive_type: lid,
+  primitive_type: box,
   orientation_type: up_x,
-  initial_location: lid_loc,
-  class: default
+  initial_location: Else_3
+}
+
+# Keepin static obstacles at 6 cm to avoid collision
+L_1: {
+  dimensions: {
+    length: 0.06,
+    width: 0.06,
+    height: 0.06,
+  },
+  primitive_type: box,
+  orientation_type: up_x,
+  initial_location: O1
+}
+
+
+B_1: {
+  dimensions: {
+    length: 0.06,
+    width: 0.06,
+    height: 0.06,
+  },
+  primitive_type: box,
+  orientation_type: up_x,
+  initial_location: O2
+}
+
+
+R_1: {
+  dimensions: {
+    length: 0.055,
+    width: 0.055,
+    height: 0.055,
+  },
+  primitive_type: box,
+  orientation_type: up_x,
+  initial_location: HL3
+}
+
+
+R_2: {
+  dimensions: {
+    length: 0.06,
+    width: 0.06,
+    height: 0.06,
+  },
+  primitive_type: box,
+  orientation_type: up_x,
+  initial_location: O3
 }

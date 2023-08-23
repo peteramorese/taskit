@@ -29,8 +29,8 @@ eef_offset: 0.095
 vertical_placing_offset: 0.005
 
 # Movement scale constraints
-max_acceleration_scale: 0.3
-max_velocity_scale: 0.9
+max_acceleration_scale: 0.1
+max_velocity_scale: 0.7
 
 # Linear Mover type (cartesian, smoothplan)
 linear_mover: smoothplan
