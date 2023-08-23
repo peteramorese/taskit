@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from taskit.srv import GraspSrv, ReleaseSrv, StowSrv, TransitSrv, UpdateEnvSrv
+from taskit.srv import Grasp, Release, Stow, Transit, UpdateEnv
 import rospy
 
 ### Service call names when running the real robot
@@ -39,28 +39,28 @@ def send_transport_command_to_robot(loc: str) -> bool:
 	rospy.wait_for_service("/manipulator_node/action_primitive/linear_transport")
 
 	# create a handle for calling the service
-	transport_handle = rospy.ServiceProxy("/manipulator_node/action_primitive/linear_transport", TransitSrv)
+	transport_handle = rospy.ServiceProxy("/manipulator_node/action_primitive/linear_transport", Transit)
 	# Return three parsms - execution success, plan_success, and execution_time 
 	t = transport_handle(loc)
-	return t.execution_success
+	return t.plan_success
 
 
 
 def send_transit_command_to_robot(loc: str) -> bool:
 	#  convenience method that blocks until the service named is available
 	
-	rospy.wait_for_service("/manipulator_node/action_primitive/linear_transit")
+	rospy.wait_for_service("/manipulator_node/action_primitive/linear_transit_up")
 
 	# create a handle for calling the service
-	transit_handle = rospy.ServiceProxy("/manipulator_node/action_primitive/linear_transit", TransitSrv)
+	transit_handle = rospy.ServiceProxy("/manipulator_node/action_primitive/linear_transit", Transit)
 	# else:
 	# rospy.wait_for_service("/manipulator_node/action_primitive/transit_up")
 	# # create a handle for calling the service
-	# transit_handle = rospy.ServiceProxy("/manipulator_node/action_primitive/transit_up", TransitSrv)
+	# transit_handle = rospy.ServiceProxy("/manipulator_node/action_primitive/transit_up", Transit)
 
 	# Return three parsms - execution success, plan_success, and execution_time 
 	t = transit_handle(loc)
-	return t.execution_success
+	return t.plan_success
 
 
 def send_grasp_command_to_robot(obj_id: str) -> bool:
@@ -68,10 +68,10 @@ def send_grasp_command_to_robot(obj_id: str) -> bool:
 	rospy.wait_for_service("/manipulator_node/action_primitive/grasp")
 
 	# create a handle for calling the service
-	grasp_handle = rospy.ServiceProxy("/manipulator_node/action_primitive/grasp", GraspSrv)
+	grasp_handle = rospy.ServiceProxy("/manipulator_node/action_primitive/grasp", Grasp)
 	# Return two params - success, and execution_time 
 	t = grasp_handle(obj_id)
-	return t.success
+	return t.mv_props.execution_success
 
 
 def send_release_command_to_robot(obj_id: str) -> bool:
@@ -79,17 +79,17 @@ def send_release_command_to_robot(obj_id: str) -> bool:
 	rospy.wait_for_service("/manipulator_node/action_primitive/grasp")
 
 	# create a handle for calling the service
-	release_handle = rospy.ServiceProxy("/manipulator_node/action_primitive/release", ReleaseSrv)
+	release_handle = rospy.ServiceProxy("/manipulator_node/action_primitive/release", Release)
 	# Return two params - success, and execution_time 
 	t = release_handle(obj_id)
-	return t.success
+	return t.mv_props.execution_success
 	
 
 
 if __name__ == "__main__":
 
 	# to robustify this code, we can regularly call update_environment. Currently, the VICON tracking is very reliable.
-	success = send_commands_to_robot(obj_id='A_2',start_loc='Else_1', end_loc='L3')
+	success = send_commands_to_robot(obj_id='A_2',start_loc='Else_1', end_loc='L1')
 	if success:
 		print("Done with the planning.")
 	else:
