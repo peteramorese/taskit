@@ -134,4 +134,4 @@ RUN echo 'alias run_robot_wo_vicon="roslaunch taskit manipulator_node.launch sim
 RUN echo 'alias run_sim_w_vicon="roslaunch taskit manipulator_node.launch sim:=true pose_tracker:=vrpn"' >> ~/.bashrc
 
 # Run sim without vicon
-RUN echo 'alias run_sim_wo_vicon="roslaunch taskit manipulator_node.launch sim:=false"' >> ~/.bashrc
+RUN echo 'alias run_sim_wo_vicon="roslaunch taskit manipulator_node.launch sim:=true"' >> ~/.bashrc
