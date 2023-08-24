@@ -28,9 +28,21 @@ struct GripperHandler;
 template<>
 class GripperHandler<GripperUse::Simulation> {
     public:
-        GripperHandler(const std::string& gripper_topic, double timeout) {}
-        bool close(const GripperSpecification& grip_spec) {return true;}
-        bool open(const GripperSpecification& grip_spec) {return true;}
+        GripperHandler(const std::string& gripper_topic, double timeout, double fake_execution_time = 1.5) {}
+
+        bool close(const GripperSpecification& grip_spec) {
+            // Sleep for roughly the amount of time the FrankaHand takes
+            ros::WallDuration(m_fake_execution_time).sleep();
+            return true;
+        }
+
+        bool open(const GripperSpecification& grip_spec) {
+            // Sleep for roughly the amount of time the FrankaHand takes
+            ros::WallDuration(m_fake_execution_time).sleep();
+            return true;
+        }
+    private:
+        double m_fake_execution_time;
 };
 
 #ifdef TASKIT_USE_FRANKA_GRIPPER
