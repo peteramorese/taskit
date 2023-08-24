@@ -20,6 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
 	genmsg
 	actionlib_msgs
 	message_generation
+	std_srvs
 )
 
 #find_package(Franka REQUIRED)
@@ -66,7 +67,13 @@ catkin_package(
 	#  DEPENDS system_lib
 )
 
-catkin_install_python(PROGRAMS python_srv_node/robot_srv_client.py DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+# CMakeLists.txt should install all the scripts explictly using the special install
+# function catkin_install_python. This will make sure that shebang lines are updated to use
+# the specific Python version used at configure time.
+catkin_install_python(PROGRAMS 
+		iros23_exp_scripts/simple_pick_place.py
+		iros23_exp_scripts/regret_coop_str.py
+ 		DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 set(TASKIT_LIBRARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/taskit)
 
