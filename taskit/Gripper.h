@@ -28,7 +28,8 @@ struct GripperHandler;
 template<>
 class GripperHandler<GripperUse::Simulation> {
     public:
-        GripperHandler(const std::string& gripper_topic, double timeout, double fake_execution_time = 1.5) {}
+        GripperHandler(const std::string& gripper_topic, double timeout, double fake_execution_time = 1.5) 
+            : m_fake_execution_time(fake_execution_time) {}
 
         bool close(const GripperSpecification& grip_spec) {
             // Sleep for roughly the amount of time the FrankaHand takes
