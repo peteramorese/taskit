@@ -73,6 +73,10 @@ catkin_package(
 catkin_install_python(PROGRAMS 
 		iros23_exp_scripts/simple_pick_place.py
 		iros23_exp_scripts/regret_coop_str.py
+		iros23_exp_scripts/regret_adv_str.py
+		iros23_exp_scripts/regret_human_1_step_coop_str.py
+		iros23_exp_scripts/regret_human_2_step_coop_str.py
+		iros23_exp_scripts/adv_str.py
  		DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 set(TASKIT_LIBRARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/taskit)
