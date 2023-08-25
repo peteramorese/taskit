@@ -113,7 +113,7 @@ if __name__ == "__main__":
 	send_commands_to_robot(obj_id='I_1',start_loc='Else_3', end_loc='HL2')
 
 	send_commands_to_robot(obj_id='A_1',start_loc='Else_2', end_loc='HL3')
-
+	send_transit_command_to_robot('Ready')
 	stow_robot()
 
 	print("Done with the planning.")

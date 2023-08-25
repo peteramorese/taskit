@@ -15,6 +15,8 @@ def send_commands_to_robot(obj_id: str, start_loc: str, end_loc: str):
 	A helper function that run a set of pick and place for object
 	"""
 
+	s1 = s2 = s3 = s4 = True
+
 	s1 = send_transit_command_to_robot(start_loc)
 	if s1:
 		update_env_status()
@@ -110,10 +112,12 @@ if __name__ == "__main__":
 
 	# Robot then transit to R at HL2 and the same time human moves R further left to HL1 (desird loc)
 	send_transit_command_to_robot(loc='HL2')
+	update_env_status()
+	
 	send_commands_to_robot(obj_id='I_1',start_loc='Else_3', end_loc='HL2')
 
 	send_commands_to_robot(obj_id='A_1',start_loc='Else_2', end_loc='HL3')
-
+	send_transit_command_to_robot('Ready')
 	stow_robot()
 
 	print("Done with the planning.")

@@ -12,7 +12,20 @@ location_names:
   - "O1"
   - "O2"
   - "O3"
+  - "Ready"
 
+
+### REady position
+
+Ready: {
+  default: {
+    x: 0.31,
+    y: 0,
+    z: 0.46,
+  },
+  detection_radius: 0.10, 
+  orientation_type: up_x
+}
 
 ### else location where A1 and A2 are placed and I_1 is placed
 Else_1: {
