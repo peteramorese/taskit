@@ -113,10 +113,24 @@ RUN apt-get update && apt-get install -y \
 #RUN git submodule update --init --recursive
 WORKDIR /root/ws
 
-COPY . /root/ws/src/taskit/
+ADD ./ /root/ws/src/taskit/
 
 RUN catkin config --install --extend /opt/ros/${ROS_DISTRO} --cmake-args -DCMAKE_BUILD_TYPE=Release 
 
 # Build the workspace
 RUN catkin build
 RUN echo 'source ~/ws/devel/setup.bash' >> ~/.bashrc
+
+### Adding aliases 
+
+# Run robot with vicon
+RUN echo 'alias run_robot_w_vicon="roslaunch taskit manipulator_node.launch sim:=false pose_tracker:=vrpn"' >> ~/.bashrc
+
+# Run robot without vicon
+RUN echo 'alias run_robot_wo_vicon="roslaunch taskit manipulator_node.launch sim:=false"' >> ~/.bashrc
+
+# Run sim with vicon
+RUN echo 'alias run_sim_w_vicon="roslaunch taskit manipulator_node.launch sim:=true pose_tracker:=vrpn"' >> ~/.bashrc
+
+# Run sim without vicon
+RUN echo 'alias run_sim_wo_vicon="roslaunch taskit manipulator_node.launch sim:=true"' >> ~/.bashrc
