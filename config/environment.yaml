@@ -1,173 +1,257 @@
 location_names: 
-  - "dw_l"
-  - "dw_c"
-  - "dw_r"
-  - "dw_top"
-  - "L0"
-  - "L1"
-  - "L2"
-  - "lid_loc"
+  - "Else_0"
+  - "Else_1"
+  - "Else_2"
+  - "Else_3"
+  - "Else_4"
+  - "Else_5"
+  - "Else_6"
+  - "Else_7"
+  - "Else_8"
+  - "Else_9"
+  - "Ready"
 
-dw_l: { 
-  default: {
-    x: 0.4,
-    y: -0.076,
-    z: 0.055,
-  },
-  object_classes: [
-    pitcher,
-    small_cup
-  ],
-  pitcher: {
-    x: 0.4,
-    y: -0.076,
-    z: 0.0605,
-  },
-  small_cup: {
-    x: 0.4,
-    y: -0.08,
-    z: 0.0275,
-  },
-  detection_radius: 0.20, 
-  orientation_type: up_ny
-}
 
-dw_c: { 
+### Ready position
+Ready: {
   default: {
-    x: 0.4,
-    y: 0.0,
-    z: 0.055,
-  },
-  object_classes: [
-    pitcher,
-    small_cup
-  ],
-  pitcher: {
-    x: 0.4,
-    y: 0.0,
-    z: 0.0605,
-  },
-  small_cup: {
-    x: 0.4,
-    y: 0.0,
-    z: 0.0275,
-  },
-  detection_radius: 0.20, 
-  orientation_type: up_y
-}
-
-dw_r: { 
-  default: {
-    x: 0.4,
-    y: 0.08,
-    z: 0.055,
-  },
-  object_classes: [
-    pitcher,
-    small_cup
-  ],
-  pitcher: {
-    x: 0.4,
-    y: 0.08,
-    z: 0.0605,
-  },
-  small_cup: {
-    x: 0.4,
-    y: 0.08,
-    z: 0.0275,
-  },
-  detection_radius: 0.20, 
-  orientation_type: up_y
-}
-
-dw_top: { 
-  default: {
-    x: 0.4,
-    y: 0.00,
-    z: 0.19,
-  },
-  detection_radius: 0.20, 
-  orientation_type: up_x
-}
-
-L0: { 
-  default: {
-    x: 0.0,
-    y: 0.40,
-    z: 0.1425,
-  },
-  object_classes: [
-    pitcher,
-    small_cup
-  ],
-  pitcher: {
-    x: 0.0,
-    y: 0.40,
-    z: 0.145,
-  },
-  small_cup: {
-    x: 0.0,
-    y: 0.40,
-    z: 0.1125,
-  },
-  detection_radius: 0.10, 
-  orientation_type: up_nx
-}
-
-L1: { 
-  default: {
-    x: -0.20,
-    y: 0.40,
-    z: 0.0425,
-  },
-  object_classes: [
-    pitcher,
-    small_cup
-  ],
-  pitcher: {
-    x: -0.20,
-    y: 0.40,
-    z: 0.045,
-  },
-  small_cup: {
-    x: -0.20,
-    y: 0.40,
-    z: 0.0125,
-  },
-  detection_radius: 0.10, 
-  orientation_type: up_y
-}
-
-L2: { 
-  default: {
-    x: -0.40,
-    y: 0.40,
-    z: 0.0425,
-  },
-  object_classes: [
-    pitcher,
-    small_cup
-  ],
-  pitcher: {
-    x: -0.40,
-    y: 0.40,
-    z: 0.045,
-  },
-  small_cup: {
-    x: -0.40,
-    y: 0.40,
-    z: 0.0125,
+    x: 0.31,
+    y: 0,
+    z: 0.46,
   },
   detection_radius: 0.10, 
   orientation_type: up_x
 }
 
-lid_loc: { 
+### else location where A1 and A2 are placed and I_1 is placed
+
+####### X-axis <----0 #####
+#######             | #####
+#######             v #####
+################# Y-axis ##
+##### Setup ######
+##### E_0 | E_1 | E_2 #####
+##### E_3 | E_4 | E_5 #####
+##### E_6 | E_7 | E_8 #####
+##### E_9   #####
+
+# E_0 := X = 0.6; Y = -0.45; E_1 := X = 0.45; E_2:= X = 0.30
+# E_3 := X = 0.6; Y = -0.30; E_4 := X = 0.45; E_5:= X = 0.30
+# E_6 := X = 0.6; Y = -0.15; E_7 := X = 0.45; E_8:= X = 0.30
+# E_9 := X = 0.15; Y = -0.45;
+
+
+Else_0: {
   default: {
-    x: -0.40,
-    y: -0.40,
-    z: 0.035,
+    x: 0.60,
+    y: -0.45,
+    z: 0.03, 
   },
   detection_radius: 0.10, 
   orientation_type: up_x
 }
+
+Else_1: {
+  default: {
+    x: 0.45,
+    y: -0.45,
+    z: 0.03, 
+  },
+  detection_radius: 0.10,
+  orientation_type: up_x
+}
+
+
+Else_2: {
+  default: {
+    x: 0.30,
+    y: -0.45,
+    z: 0.03,  
+  },
+  detection_radius: 0.10,
+  orientation_type: up_x
+}
+
+Else_3: {
+  default: {
+    x: 0.60,
+    y: -0.30,
+    z: 0.03,  
+  },
+  detection_radius: 0.10,
+  orientation_type: up_x
+}
+
+
+Else_4: {
+  default: {
+    x: 0.45,
+    y: -0.30,
+    z: 0.03,  
+  },
+  detection_radius: 0.10,
+  orientation_type: up_x
+}
+
+
+Else_5: {
+  default: {
+    x: 0.30,
+    y: -0.30,
+    z: 0.03,  
+  },
+  detection_radius: 0.10,
+  orientation_type: up_x
+}
+
+
+Else_6: {
+  default: {
+    x: 0.60,
+    y: -0.15,
+    z: 0.03,  
+  },
+  detection_radius: 0.10,
+  orientation_type: up_x
+}
+
+
+Else_7: {
+  default: {
+    x: 0.45,
+    y: -0.15,
+    z: 0.03,  
+  },
+  detection_radius: 0.10,
+  orientation_type: up_x
+}
+
+
+Else_8: {
+  default: {
+    x: 0.30,
+    y: -0.15,
+    z: 0.03,  
+  },
+  detection_radius: 0.10,
+  orientation_type: up_x
+}
+
+
+Else_9: {
+  default: {
+    x: 0.15,
+    y: -0.45,
+    z: 0.03,  
+  },
+  detection_radius: 0.10,
+  orientation_type: up_x
+}
+
+# # These are locations where the robot and Human can build - Keeping a distance 15 cm between 
+# HL0: {
+#   default: {
+#     x: 0.25,
+#     y: 0.40,
+#     z: 0.03,
+#   },
+#   detection_radius: 0.10,
+#   orientation_type: up_x 
+# }
+
+
+# HL1: {
+#   default: {
+#     x: 0.10,
+#     y: 0.40,
+#     z: 0.03, 
+#   },
+#   detection_radius: 0.10,
+#   orientation_type: up_x
+# }
+
+# HL2: {
+#   default: {
+#     x: -0.05,
+#     y: 0.40,
+#     z: 0.03,
+#   },
+#   detection_radius: 0.10,
+#   orientation_type: up_x
+# }
+
+# HL3: {
+#   default: {
+#     x: -0.20,
+#     y: 0.40,
+#     z: 0.03,
+#   },
+#   detection_radius: 0.10,
+#   orientation_type: up_x 
+# }
+
+# # Locations where only the robot can move objects
+# L1: {
+#   default: {
+#     x: -0.50,
+#     y: 0.40,
+#     z: 0.03,
+#   },
+#   detection_radius: 0.10,
+#   orientation_type: up_x 
+# }
+
+
+# L2: {
+#   default: {
+#     x: -0.50,
+#     y: 0.25,
+#     z: 0.03,
+#   },
+#   detection_radius: 0.10,
+#   orientation_type: up_x 
+# }
+
+
+# L3: {
+#   default: {
+#     x: -0.50,
+#     y: -0.05,
+#     z: 0.03,  
+#   },
+#   detection_radius: 0.10,
+#   orientation_type: up_x 
+# }
+
+
+# Locations where the static obstacles are placed
+# O1: {
+#   default: {
+#     x: -0.35,
+#     y: 0.40,
+#     z: 0.04,
+#   },
+#   detection_radius: 0.10,
+#   orientation_type: up_x
+# }
+
+# O2: {
+#   default: {
+#     x: -0.65,
+#     y: 0.40,
+#     z: 0.04,
+#   },
+#   detection_radius: 0.10,
+#   orientation_type: up_x
+# }
+
+
+# O3: {
+#   default: {
+#     x: -0.50,
+#     y: 0.10,
+#     z: 0.04,
+#   },
+#   detection_radius: 0.10,
+#   orientation_type: up_x 
+# }
