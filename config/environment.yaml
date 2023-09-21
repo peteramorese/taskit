@@ -8,9 +8,17 @@ location_names:
   - "Else_6"
   - "Else_7"
   - "Else_8"
-  - "Else_9"
+  # - "Else_9"
   - "Ready"
-
+  - "cell_0"
+  - "cell_1"
+  - "cell_2"
+  - "cell_3"
+  - "cell_4"
+  - "cell_5"
+  - "cell_6"
+  - "cell_7"
+  - "cell_8"
 
 ### Ready position
 Ready: {
@@ -25,7 +33,7 @@ Ready: {
 
 ### else location where A1 and A2 are placed and I_1 is placed
 
-####### X-axis <----0 #####
+####### X-axis <----x #####
 #######             | #####
 #######             v #####
 ################# Y-axis ##
@@ -40,12 +48,13 @@ Ready: {
 # E_6 := X = 0.6; Y = -0.15; E_7 := X = 0.45; E_8:= X = 0.30
 # E_9 := X = 0.15; Y = -0.45;
 
-
+### orientation determined the approach taken by the robot
+# in moving to an object placed at that location
 Else_0: {
   default: {
     x: 0.60,
     y: -0.45,
-    z: 0.03, 
+    z: 0.075, 
   },
   detection_radius: 0.10, 
   orientation_type: up_x
@@ -55,7 +64,7 @@ Else_1: {
   default: {
     x: 0.45,
     y: -0.45,
-    z: 0.03, 
+    z: 0.075, 
   },
   detection_radius: 0.10,
   orientation_type: up_x
@@ -66,7 +75,7 @@ Else_2: {
   default: {
     x: 0.30,
     y: -0.45,
-    z: 0.03,  
+    z: 0.075,  
   },
   detection_radius: 0.10,
   orientation_type: up_x
@@ -76,7 +85,7 @@ Else_3: {
   default: {
     x: 0.60,
     y: -0.30,
-    z: 0.03,  
+    z: 0.075,  
   },
   detection_radius: 0.10,
   orientation_type: up_x
@@ -87,7 +96,7 @@ Else_4: {
   default: {
     x: 0.45,
     y: -0.30,
-    z: 0.03,  
+    z: 0.075,  
   },
   detection_radius: 0.10,
   orientation_type: up_x
@@ -98,10 +107,10 @@ Else_5: {
   default: {
     x: 0.30,
     y: -0.30,
-    z: 0.03,  
+    z: 0.075,  
   },
   detection_radius: 0.10,
-  orientation_type: up_x
+  orientation_type: up_y
 }
 
 
@@ -109,10 +118,10 @@ Else_6: {
   default: {
     x: 0.60,
     y: -0.15,
-    z: 0.03,  
+    z: 0.075,  
   },
   detection_radius: 0.10,
-  orientation_type: up_x
+  orientation_type: up_y
 }
 
 
@@ -120,10 +129,10 @@ Else_7: {
   default: {
     x: 0.45,
     y: -0.15,
-    z: 0.03,  
+    z: 0.075,  
   },
   detection_radius: 0.10,
-  orientation_type: up_x
+  orientation_type: up_y
 }
 
 
@@ -131,127 +140,117 @@ Else_8: {
   default: {
     x: 0.30,
     y: -0.15,
-    z: 0.03,  
+    z: 0.075,  
   },
   detection_radius: 0.10,
-  orientation_type: up_x
+  orientation_type: up_y
 }
 
 
-Else_9: {
+# Else_9: {
+#   default: {
+#     x: 0.15,
+#     y: -0.45,
+#     z: 0.075,  
+#   },
+#   detection_radius: 0.10,
+#   orientation_type: up_x
+# }
+
+####################### Actual Tic-Tac-Toe placement cells
+
+cell_0: {
   default: {
-    x: 0.15,
-    y: -0.45,
-    z: 0.03,  
+    x: 0.6,
+    y: 0.15,
+    z: 0.075, 
+  },
+  detection_radius: 0.10, 
+  orientation_type: up_x
+}
+
+cell_1: {
+  default: {
+    x: 0.45,
+    y: 0.15,
+    z: 0.075, 
   },
   detection_radius: 0.10,
   orientation_type: up_x
 }
 
-# # These are locations where the robot and Human can build - Keeping a distance 15 cm between 
-# HL0: {
-#   default: {
-#     x: 0.25,
-#     y: 0.40,
-#     z: 0.03,
-#   },
-#   detection_radius: 0.10,
-#   orientation_type: up_x 
-# }
+
+cell_2: {
+  default: {
+    x: 0.30,
+    y: 0.15,
+    z: 0.075,  
+  },
+  detection_radius: 0.10,
+  orientation_type: up_x
+}
+
+cell_3: {
+  default: {
+    x: 0.60,
+    y: 0.30,
+    z: 0.075,  
+  },
+  detection_radius: 0.10,
+  orientation_type: up_x
+}
 
 
-# HL1: {
-#   default: {
-#     x: 0.10,
-#     y: 0.40,
-#     z: 0.03, 
-#   },
-#   detection_radius: 0.10,
-#   orientation_type: up_x
-# }
-
-# HL2: {
-#   default: {
-#     x: -0.05,
-#     y: 0.40,
-#     z: 0.03,
-#   },
-#   detection_radius: 0.10,
-#   orientation_type: up_x
-# }
-
-# HL3: {
-#   default: {
-#     x: -0.20,
-#     y: 0.40,
-#     z: 0.03,
-#   },
-#   detection_radius: 0.10,
-#   orientation_type: up_x 
-# }
-
-# # Locations where only the robot can move objects
-# L1: {
-#   default: {
-#     x: -0.50,
-#     y: 0.40,
-#     z: 0.03,
-#   },
-#   detection_radius: 0.10,
-#   orientation_type: up_x 
-# }
+cell_4: {
+  default: {
+    x: 0.45,
+    y: 0.30,
+    z: 0.075,  
+  },
+  detection_radius: 0.10,
+  orientation_type: up_x
+}
 
 
-# L2: {
-#   default: {
-#     x: -0.50,
-#     y: 0.25,
-#     z: 0.03,
-#   },
-#   detection_radius: 0.10,
-#   orientation_type: up_x 
-# }
+cell_5: {
+  default: {
+    x: 0.30,
+    y: 0.30,
+    z: 0.075,  
+  },
+  detection_radius: 0.10,
+  orientation_type: up_x
+}
 
 
-# L3: {
-#   default: {
-#     x: -0.50,
-#     y: -0.05,
-#     z: 0.03,  
-#   },
-#   detection_radius: 0.10,
-#   orientation_type: up_x 
-# }
+cell_6: {
+  default: {
+    x: 0.60,
+    y: 0.45,
+    z: 0.075,  
+  },
+  detection_radius: 0.10,
+  orientation_type: up_x
+}
 
 
-# Locations where the static obstacles are placed
-# O1: {
-#   default: {
-#     x: -0.35,
-#     y: 0.40,
-#     z: 0.04,
-#   },
-#   detection_radius: 0.10,
-#   orientation_type: up_x
-# }
-
-# O2: {
-#   default: {
-#     x: -0.65,
-#     y: 0.40,
-#     z: 0.04,
-#   },
-#   detection_radius: 0.10,
-#   orientation_type: up_x
-# }
+cell_7: {
+  default: {
+    x: 0.45,
+    y: 0.45,
+    z: 0.075,  
+  },
+  detection_radius: 0.10,
+  orientation_type: up_x
+}
 
 
-# O3: {
-#   default: {
-#     x: -0.50,
-#     y: 0.10,
-#     z: 0.04,
-#   },
-#   detection_radius: 0.10,
-#   orientation_type: up_x 
-# }
+cell_8: {
+  default: {
+    x: 0.30,
+    y: 0.45,
+    z: 0.075,  
+  },
+  detection_radius: 0.10,
+  orientation_type: up_x
+}

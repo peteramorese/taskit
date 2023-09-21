@@ -3,7 +3,7 @@ object_ids:
   - pink_box_2
   - pink_box_3
   - pink_box_4
-  - pink_box_5
+  # - pink_box_5
   - blue_box_1
   - blue_box_2
   - blue_box_3
@@ -11,13 +11,14 @@ object_ids:
   - blue_box_5
 
 
-# Original size 15 x 4.5 x 4.5 cm. Shrinking dynamic objects by 0.5 cm. This to avoid panda finger ocllision and panda start state colliding with ground error.
-# These error are primarly caused due to inaccurate tracking by Vicon.
+# Original size 15 x 4.5 x 4.5 cm. 
+
+## Bloating the human markers by 5 mm to act as padding for collision checking
 pink_box_1: {
   dimensions: {
-    length: 0.045,
-    width: 0.045,
-    height: 0.15,
+    length: 0.055,
+    width: 0.055,
+    height: 0.155,
   },
   primitive_type: box,
   orientation_type: up_x,
@@ -26,9 +27,9 @@ pink_box_1: {
 
 pink_box_2: {
   dimensions: {
-    length: 0.045,
-    width: 0.045,
-    height: 0.15,
+    length: 0.055,
+    width: 0.055,
+    height: 0.155,
   },
   primitive_type: box,
   orientation_type: up_x,
@@ -37,9 +38,9 @@ pink_box_2: {
 
 pink_box_3: {
   dimensions: {
-    length: 0.045,
-    width: 0.045,
-    height: 0.15,
+    length: 0.055,
+    width: 0.055,
+    height: 0.155,
   },
   primitive_type: box,
   orientation_type: up_x,
@@ -48,78 +49,81 @@ pink_box_3: {
 
 pink_box_4: {
   dimensions: {
-    length: 0.045,
-    width: 0.045,
-    height: 0.15,
-  },
-  primitive_type: box,
-  orientation_type: up_x,
-  initial_location: Else_3
-}
-
-pink_box_5: {
-  dimensions: {
-    length: 0.045,
-    width: 0.045,
-    height: 0.15,
-  },
-  primitive_type: box,
-  orientation_type: up_x,
-  initial_location: Else_4
-}
-
-blue_box_1: {
-  dimensions: {
-    length: 0.045,
-    width: 0.045,
-    height: 0.15,
+    length: 0.055,
+    width: 0.055,
+    height: 0.155,
   },
   primitive_type: box,
   orientation_type: up_x,
   initial_location: Else_5
 }
 
+# pink_box_5: {
+#   dimensions: {
+#     length: 0.055,
+#     width: 0.055,
+#     height: 0.155,
+#   },
+#   primitive_type: box,
+#   orientation_type: up_x,
+#   initial_location: Else_5
+# }
 
-blue_box_2: {
+# Shrinking dynamic objects by 0.5 cm. This to avoid panda finger ocllision and panda start state colliding with ground error.
+# These error are primarly caused due to inaccurate tracking by Vicon.
+
+blue_box_1: {
   dimensions: {
-    length: 0.045,
-    width: 0.045,
-    height: 0.15,
+    length: 0.042,
+    width: 0.042,
+    height: 0.14,
   },
   primitive_type: box,
   orientation_type: up_x,
   initial_location: Else_6
 }
 
-blue_box_3: {
+
+blue_box_2: {
   dimensions: {
-    length: 0.045,
-    width: 0.045,
-    height: 0.15,
+    length: 0.042,
+    width: 0.042,
+    height: 0.14,
   },
   primitive_type: box,
   orientation_type: up_x,
   initial_location: Else_7
 }
 
-blue_box_4: {
+blue_box_3: {
   dimensions: {
-    length: 0.045,
-    width: 0.045,
-    height: 0.15,
+    length: 0.042,
+    width: 0.042,
+    height: 0.14,
   },
   primitive_type: box,
   orientation_type: up_x,
   initial_location: Else_8
 }
 
-blue_box_5: {
+blue_box_4: {
   dimensions: {
-    length: 0.045,
-    width: 0.045,
-    height: 0.15,
+    length: 0.042,
+    width: 0.042,
+    height: 0.14,
   },
   primitive_type: box,
   orientation_type: up_x,
-  initial_location: Else_9
+  initial_location: Else_3
+}
+
+blue_box_5: {
+  dimensions: {
+    length: 0.042,
+    width: 0.042,
+    height: 0.13,
+  },
+  primitive_type: box,
+  orientation_type: up_x,
+  initial_location: Else_4
 }
