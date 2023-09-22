@@ -71,6 +71,11 @@ catkin_package(
 # the specific Python version used at configure time.
 catkin_install_python(PROGRAMS 
 		icra24_exp_scripts/ttt_robotwin_no_stochasticity.py
+		icra24_exp_scripts/ttt_robotwin_robot_stochasticity.py
+		icra24_exp_scripts/ttt_robotwin_human_stochasticity.py
+		icra24_exp_scripts/ttt_humanwin_no_stochasticity.py
+		icra24_exp_scripts/ttt_humanwin_robot_stochasticity.py
+		icra24_exp_scripts/ttt_humanwin_human_stochasticity.py
  		DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 set(TASKIT_LIBRARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/taskit)
