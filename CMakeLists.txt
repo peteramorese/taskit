@@ -66,6 +66,13 @@ catkin_package(
 	#  DEPENDS system_lib
 )
 
+# CMakeLists.txt should install all the scripts explictly using the special install
+# function catkin_install_python. This will make sure that shebang lines are updated to use
+# the specific Python version used at configure time.
+catkin_install_python(PROGRAMS 
+		icra24_exp_scripts/ttt_robotwin_no_stochasticity.py
+ 		DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
 set(TASKIT_LIBRARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/taskit)
 
 add_definitions(-DROS_ASSERT_ENABLED)

@@ -22,7 +22,7 @@ pink_box_1: {
   },
   primitive_type: box,
   orientation_type: up_x,
-  initial_location: Else_0
+  initial_location: Else_6
 }
 
 pink_box_2: {
@@ -33,7 +33,7 @@ pink_box_2: {
   },
   primitive_type: box,
   orientation_type: up_x,
-  initial_location: Else_1
+  initial_location: Else_7
 }
 
 pink_box_3: {
@@ -44,7 +44,7 @@ pink_box_3: {
   },
   primitive_type: box,
   orientation_type: up_x,
-  initial_location: Else_2
+  initial_location: Else_8
 }
 
 pink_box_4: {
@@ -80,7 +80,7 @@ blue_box_1: {
   },
   primitive_type: box,
   orientation_type: up_x,
-  initial_location: Else_6
+  initial_location: Else_0
 }
 
 
@@ -92,7 +92,7 @@ blue_box_2: {
   },
   primitive_type: box,
   orientation_type: up_x,
-  initial_location: Else_7
+  initial_location: Else_1
 }
 
 blue_box_3: {
@@ -103,7 +103,7 @@ blue_box_3: {
   },
   primitive_type: box,
   orientation_type: up_x,
-  initial_location: Else_8
+  initial_location: Else_2
 }
 
 blue_box_4: {
