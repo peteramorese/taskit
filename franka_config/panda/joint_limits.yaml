@@ -7,8 +7,8 @@ joint1:
 
 joint2:
   limit:
-    lower:     -1.6628
-    upper:      1.6628
+    lower:     -1.3628 # these values were edited to facilitate fewer joint locks
+    upper:      1.3628 # these values were edited to facilitate fewer joint locks
     velocity:   2.1750
     effort:    87.0
 

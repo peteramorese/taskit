@@ -114,7 +114,9 @@ bool DynamicVRPNPoseTracker::update(Object& object) const {
 
     // Get the measured pose from the VRPN data
     geometry_msgs::Pose measured_pose;
-    if (getPose(object, measured_pose, 1.0) && isMeasuredPoseValid(simulation_pose, measured_pose)) {
+    bool object_found = getPose(object, measured_pose, 1.0);
+    bool pose_is_valid = isMeasuredPoseValid(simulation_pose, measured_pose);
+    if (object_found && pose_is_valid) {
         // If the object data was found, and the pose is near the simulation pose, set the objects pose to the measured pose
         object.setPose(measured_pose);
     } else {

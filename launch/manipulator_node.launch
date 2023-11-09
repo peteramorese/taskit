@@ -63,6 +63,11 @@
     <include file="$(find taskit)/launch/vicon_franka_vrpn.launch"/>
   </group>
 
+  <!-- If pose_tracker is dynamic_vrpn, launch the vrpn node -->
+  <group if="$(eval pose_tracker == 'dynamic_vrpn')">
+    <include file="$(find taskit)/launch/vicon_franka_vrpn.launch"/>
+  </group>
+
   <!-- If in simulation, use the _sim binaries and publish fake joint states -->
   <group if="$(arg sim)">
 
