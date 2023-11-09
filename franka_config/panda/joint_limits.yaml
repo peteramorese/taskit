@@ -42,7 +42,7 @@ joint6:
 
 joint7:
   limit:
-    lower:     -2.7973
-    upper:      2.7973
+    lower:     -2.5973
+    upper:      2.5973
     velocity:   2.6100
     effort:    12.0
