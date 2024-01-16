@@ -1,82 +1,29 @@
 object_ids:
-  - mug
-  - pitcher
-  - lid
-  #- small_cup
+  - B_0
+  - B_1
 
-mug: {
+
+# Original size 6 cm. Shrinking dynamic objects by 1 cm. This to avoid panda finger ocllision and panda start state colliding with ground error.
+# These error are primarly caused due to inaccurate tracking by Vicon.
+B_0: {
   dimensions: {
-    height: 0.123,
-    radius: 0.033,
-    #handle_length: 0.00,
-    #handle_width: 0.00,
-    #flange_height: 0.000,
-    #flange_width: 0.000
+    length: 0.055,
+    width: 0.055,
+    height: 0.155,
   },
-  primitive_type: cylinder,
+  primitive_type: box,
   orientation_type: up_x,
-  initial_location: floor_0,
-  # default class
+  initial_location: L0
 }
 
-#thick_mug: {
-#  dimensions: {
-#    height: 0.080,
-#    #radius: 0.038,
-#    radius: 0.036,
-#    handle_length: 0.035,
-#    handle_width: 0.015,
-#    flange_height: 0.005,
-#    flange_width: 0.004
-#  },
-#  primitive_type: cup,
-#  orientation_type: up_x,
-#  initial_location: floor_0,
-#  # default class
-#}
 
-pitcher: {
+B_1: {
   dimensions: {
-    height: 0.091,
-    #radius: 0.0375,
-    radius: 0.0355,
-    handle_length: 0.03,
-    handle_width: 0.015,
-    flange_height: 0.0,
-    flange_width: 0.00
+    length: 0.055,
+    width: 0.055,
+    height: 0.155,
   },
-  primitive_type: cup,
+  primitive_type: box,
   orientation_type: up_x,
-  initial_location: floor_1,
-  class: pitcher 
-}
-
-#small_cup: {
-#  dimensions: {
-#    radius: 0.0255,
-#    height: 0.025,
-#    handle_length: 0.0,
-#    handle_width: 0.0,
-#    flange_height: 0.002,
-#    flange_width: 0.005
-#  },
-#  primitive_type: cup,
-#  orientation_type: up_x,
-#  initial_location: L0,
-#  class: small_cup 
-#}
-
-lid: {
-  dimensions: {
-    lid_length: 0.27,
-    lid_width: 0.435,
-    lid_height: 0.01,
-    handle_length: 0.057,
-    handle_width: 0.057,
-    handle_height: 0.057
-  },
-  primitive_type: lid,
-  orientation_type: up_x,
-  initial_location: lid_loc,
-  class: default
+  initial_location: HL0
 }

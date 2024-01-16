@@ -1,7 +1,5 @@
 object_ids:
   - ground
-  - dishwasher
-  - drying_rack
 
 ground: {
   position: {
@@ -16,38 +14,4 @@ ground: {
   },
   primitive_type: box,
   orientation_type: up_x,
-}
-
-dishwasher: {
-  position: {
-    x: 0.4,
-    y: 0.2,
-    z: 0.0775,
-  },
-  dimensions: {
-    length: 0.27,
-    width: 0.41,
-    height: 0.155,
-    base_thickness: 0.015,
-    #base_thickness: 0.005,
-    front_wall_thickness: 0.01,
-    side_wall_thickness: 0.025,
-  },
-  primitive_type: bin,
-  orientation_type: up_x
-}
-
-drying_rack: {
-  position: {
-    x: 0.3,
-    y: -0.37,
-    z: 0.2525,
-  },
-  dimensions: {
-    length: 0.395,
-    width: 0.395,
-    height: 0.505,
-  },
-  primitive_type: box,
-  orientation_type: up_x
 }
