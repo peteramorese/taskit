@@ -198,9 +198,20 @@ class SetObjectLocations : public ActionPrimitive<taskit::SetObjectLocations> {
             auto& pci = *interface.planning_scene_interface.lock();
 
             auto attached_objects = pci.getAttachedObjects();
+
+            const PredicateHandler::PredicateSet predicates = pred_handler->getPredicates();
+
             for (uint32_t i = 0; i < request.object_ids.size(); ++i) {
                 Object& object = obj_group->getObject(request.object_ids[i]);
                 const std::string& set_location = request.object_locations[i];
+
+                std::pair<bool, std::string> predicate = predicates.lookupLocationPredicate(set_location);
+                if (predicate.first) {
+                    if (predicate.second == object.id)
+                        continue;
+                    ROS_ERROR_STREAM("Attepmted to set object '" << object.id << "' to location '" << set_location << "', but object '" << predicate.second << "' is already there");
+                    return false;
+                }
 
                 if (pred_handler->getLocations().find(set_location) == pred_handler->getLocations().end()) {
                     ROS_ERROR_STREAM("Location '" << set_location << "' not recognized");
