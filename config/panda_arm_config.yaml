@@ -14,23 +14,25 @@ stow_joint_values:
   - 0.785398
 
 # OMPL planner ID
-planner_id: RRTconnect
-planning_time: 3.0
+planner_id: PRMstar
+planning_time: 10.0
 
 # OMPL optimal planner ID (used for smooth plan linear movement)
-optimal_planner_id: RRTstar
-optimal_planning_time: 3.0
-planner_retries: 1
+optimal_planner_id: PRMstar
+optimal_planning_time: 6.0
+
+planner_retries: 20
 
 # Offset from the face of the object to the center of the EEF
-eef_offset: 0.095
+eef_offset: 0.085
+#eef_offset: 0.095
 
 # Vertical offset applied to the goal pose when transporting an object to a location
 vertical_placing_offset: 0.005
 
 # Movement scale constraints
-max_acceleration_scale: 0.3
-max_velocity_scale: 0.9
+max_acceleration_scale: 0.2
+max_velocity_scale: 0.1
 
 # Linear Mover type (cartesian, smoothplan)
 linear_mover: smoothplan

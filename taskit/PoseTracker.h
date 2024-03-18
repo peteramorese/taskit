@@ -69,7 +69,7 @@ class DynamicVRPNPoseTracker : public SimulationPoseTracker, public VRPNPoseTrac
     
     private:
         double m_translation_thresh = 0.3; // m
-        double m_rotation_thresh = 0.09; // rad
+        double m_rotation_thresh = 0.5; // rad
 };
 
 

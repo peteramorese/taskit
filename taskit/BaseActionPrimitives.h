@@ -256,10 +256,16 @@ class SimpleGrasp : public ActionPrimitive<taskit::Grasp> {
             if (request.obj_id.empty()) {
                 std::pair<bool, std::string> curr_location_predicate = predicate_handler->getPredicates().lookupLocationPredicate(state->curr_location_name);
                 obj_id = curr_location_predicate.second;
-                ROS_ASSERT_MSG(curr_location_predicate.first, "Object not found in current location");
+                if (!curr_location_predicate.first) {
+                    ROS_ERROR("Object not found in current location");
+                    return false;
+                }
                 ROS_INFO_STREAM("Found object '" << curr_location_predicate.second << "' to pickup");
             } else {
-                ROS_ASSERT_MSG(obj_group->hasObject(request.obj_id), "Object not found");
+                if (!obj_group->hasObject(request.obj_id)) {
+                    ROS_ERROR("Object not found");
+                    return false;
+                }
                 obj_id = request.obj_id;
             }
             bool execution_success = m_gripper_handler->close(*(obj_group->getObject(obj_id).spec));
@@ -304,10 +310,16 @@ class SimpleRelease : public ActionPrimitive<taskit::Release> {
             std::string obj_id;
             if (!request.obj_id.empty()) {
                 auto it = attached_objects.find(request.obj_id);
-                ROS_ASSERT_MSG(it != attached_objects.end(), "Release object is not currently attached");
+                if (it == attached_objects.end()) {
+                    ROS_ERROR("Release object is not currently attached");
+                    return false;
+                }
                 obj_id = it->first;
             } else {
-                ROS_ASSERT_MSG(!attached_objects.empty(), "No objects attached, cannot release");
+                if (attached_objects.empty()) {
+                    ROS_ERROR("No objects attached, cannot release");
+                    return false;
+                }
                 obj_id = attached_objects.begin()->first;
             }
 
