@@ -73,8 +73,6 @@ using ObjSpecPtr = std::shared_ptr<ObjectSpecification>;
 
 class ObjectSpecificationFactory {
     public:
-        static void hello(const std::string& test) {}
-
         template <class SPEC_T>
         static void registerType(const std::string& spec_type_id) {
             m_creators[spec_type_id] = [](const ObjectDimensionConfig& cfg) -> ObjSpecPtr {return std::make_shared<SPEC_T>(cfg);};

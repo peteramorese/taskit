@@ -24,6 +24,7 @@ int main(int argc, char** argv) {
 	// Construct action primitives
 	ActionPrimitives::UpdateEnvironment update_environment("update_environment");
 	ActionPrimitives::GetObjectLocations get_object_locations("get_object_locations");
+	ActionPrimitives::SetObjectLocations set_object_locations("set_object_locations");
 	ActionPrimitives::Stow stow("stow");
 	ActionPrimitives::SimpleGrasp<GripperUse::Simulation> grasp("grasp", gripper_handler, ee_link);
 	ActionPrimitives::SimpleRelease<GripperUse::Simulation> release("release", gripper_handler);
@@ -39,6 +40,7 @@ int main(int argc, char** argv) {
 	ManipulatorNode<
 	 	decltype(update_environment),
 		decltype(get_object_locations),
+		decltype(set_object_locations),
 	 	decltype(stow),
 		decltype(grasp), 
 		decltype(release), 
@@ -53,6 +55,7 @@ int main(int argc, char** argv) {
 	> manipulator_node(node_handle, node_name, TASKIT_PLANNING_GROUP_ID, TASKIT_BASE_LINK_ID, 
 		std::move(update_environment), 
 		std::move(get_object_locations),
+		std::move(set_object_locations),
 		std::move(stow), 
 		std::move(grasp), 
 		std::move(release), 

@@ -1,0 +1,8 @@
+# Ordered array of object IDs to set the location of; NOTE: object_locations hold the locations of the respective object IDs in object_ids
+string[] object_ids
+
+# Ordered array of set-location labels corresponding to each object id in object_locations
+string[] object_locations
+---
+# Object was found and moved to new location
+bool success
