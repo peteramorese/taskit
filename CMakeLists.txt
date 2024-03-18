@@ -36,6 +36,7 @@ add_service_files(
 	DIRECTORY srv
 	FILES
 	GetObjectLocations.srv
+	SetObjectLocations.srv
 	Stow.srv
 	Grasp.srv
 	Release.srv

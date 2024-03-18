@@ -26,6 +26,7 @@
 #include "taskit/Transit.h"
 #include "taskit/UpdateEnv.h"
 #include "taskit/GetObjectLocations.h"
+#include "taskit/SetObjectLocations.h"
 
 namespace TaskIt {
 namespace ActionPrimitives {
@@ -176,6 +177,50 @@ class GetObjectLocations : public ActionPrimitive<taskit::GetObjectLocations> {
             if (!response.found_all) {
                 response.object_locations.clear();
             }
+            return true;
+        }
+};
+
+class SetObjectLocations : public ActionPrimitive<taskit::SetObjectLocations> {
+    public:
+        SetObjectLocations(const std::string& topic)
+            : ActionPrimitive<taskit::SetObjectLocations>(topic)
+            {}
+
+        virtual bool operator()(ManipulatorNodeInterface&& interface, typename msg_t::Request& request, typename msg_t::Response& response) override {
+            if (request.object_ids.size() != request.object_locations.size()) {
+                ROS_ERROR_STREAM("Number of objects in 'object_ids' does not match number of locations in 'object_locations'");
+                return false;
+            }
+            auto move_group = interface.move_group.lock();
+            auto obj_group = interface.object_group.lock();
+            auto pred_handler = interface.predicate_handler.lock();
+            auto& pci = *interface.planning_scene_interface.lock();
+
+            auto attached_objects = pci.getAttachedObjects();
+
+            const PredicateHandler::PredicateSet predicates = pred_handler->getPredicates();
+
+            for (uint32_t i = 0; i < request.object_ids.size(); ++i) {
+                Object& object = obj_group->getObject(request.object_ids[i]);
+                const std::string& set_location = request.object_locations[i];
+
+                std::pair<bool, std::string> predicate = predicates.lookupLocationPredicate(set_location);
+                if (predicate.first) {
+                    if (predicate.second == object.id)
+                        continue;
+                    ROS_ERROR_STREAM("Attepmted to set object '" << object.id << "' to location '" << set_location << "', but object '" << predicate.second << "' is already there");
+                    return false;
+                }
+
+                if (pred_handler->getLocations().find(set_location) == pred_handler->getLocations().end()) {
+                    ROS_ERROR_STREAM("Location '" << set_location << "' not recognized");
+                    return false;
+                }
+
+                object.setPose(pred_handler->getLocationPose(set_location, object.class_id));
+            }
+            response.success = obj_group->updatePlanningScene(pci, move_group->getPlanningFrame(), true, false);
             return true;
         }
 };
