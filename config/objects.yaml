@@ -13,7 +13,7 @@ b0: {
   },
   primitive_type: box,
   orientation_type: up_x,
-  initial_location: l0
+  initial_location: else1
 }
 
 b1: {

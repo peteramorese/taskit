@@ -1,7 +1,7 @@
 location_names: 
-  - "Else_1"
-  - "Else_2"
-  - "Else_3"
+  - "else1"
+  - "else2"
+  - "else3"
   - "l0"
   - "l1"
   - "l2"
@@ -12,8 +12,7 @@ location_names:
   - "l9"
   - "Ready"
 
-### REady position
-
+### Ready position - default end effector position
 Ready: {
   default: {
     x: 0.31,
@@ -24,8 +23,8 @@ Ready: {
   orientation_type: up_x
 }
 
-### else location where A1 and A2 are placed and I_1 is placed
-Else_1: {
+### else location objects are initially placed
+else1: {
   default: {
     x: 0.40,
     y: 0.10,
@@ -35,7 +34,7 @@ Else_1: {
   orientation_type: up_x
 }
 
-Else_2: {
+else2: {
   default: {
     x: 0.60,
     y: 0.10,
@@ -46,7 +45,7 @@ Else_2: {
 }
 
 
-Else_3: {
+else3: {
   default: {
     x: 0.50,
     y: 0.30,
