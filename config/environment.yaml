@@ -1,228 +1,72 @@
 location_names: 
-  - "dw_l"
-  #- "dw_c"
-  - "dw_r"
-  - "dw_top"
-  - "lid_loc"
-  - "dry"
-  - "floor_0"
-  - "floor_1"
-  - "rack_0"
-  - "rack_1"
+  - "L0"
+  - "L1"
+  - "HL0"
+  - "HL1"
+  - "HL2"
+  - "HL3"
 
-dw_l: { 
-  default: {
-    x: 0.4,
-    y: 0.12,
-    z: 0.078,
-  },
-  object_classes: [
-    pitcher,
-    small_cup
-  ],
-  pitcher: {
-    x: 0.4,
-    y: 0.12,
-    z: 0.0605,
-  },
-  small_cup: {
-    x: 0.4,
-    y: 0.12,
-    z: 0.0275,
-  },
-  detection_radius: 0.10, 
-  orientation_type: up_ny
-}
 
-dw_c: { 
+L0: {
   default: {
-    x: 0.4,
-    y: 0.2,
-    z: 0.078,
+    x: -0.05,
+    y: 0.40,
+    z: 0.075,
   },
-  object_classes: [
-    pitcher,
-    small_cup
-  ],
-  pitcher: {
-    x: 0.4,
-    y: 0.2,
-    z: 0.0605,
-  },
-  small_cup: {
-    x: 0.4,
-    y: 0.2,
-    z: 0.0275,
-  },
-  detection_radius: 0.10, 
-  orientation_type: up_y
-}
-
-dw_r: { 
-  default: {
-    x: 0.4,
-    y: 0.28,
-    z: 0.078,
-  },
-  object_classes: [
-    pitcher,
-    small_cup
-  ],
-  pitcher: {
-    x: 0.4,
-    y: 0.28,
-    z: 0.0605,
-  },
-  small_cup: {
-    x: 0.4,
-    y: 0.28,
-    z: 0.0275,
-  },
-  detection_radius: 0.10, 
-  orientation_type: up_y
-}
-
-dw_top: { 
-  default: {
-    x: 0.4,
-    y: 0.20,
-    z: 0.195,
-  },
-  detection_radius: 0.10, 
+  detection_radius: 0.10,
   orientation_type: up_x
 }
 
-lid_loc: { 
+L1: {
   default: {
-    x: -0.40,
-    y: -0.40,
-    z: 0.04,
-  },
-  detection_radius: 0.10, 
-  orientation_type: up_x
-}
-
-dry: { 
-  default: {
-    x: 0.00,
+    x: -0.20,
     y: 0.40,
-    z: 0.0625,
+    z: 0.075,
   },
-  object_classes: [
-    pitcher,
-    small_cup
-  ],
-  pitcher: {
-    x: 0.00,
-    y: 0.40,
-    z: 0.045,
-  },
-  small_cup: {
-    x: 0.00,
-    y: 0.40,
-    z: 0.0125,
-  },
-  detection_radius: 0.10, 
-  orientation_type: up_nx
+  detection_radius: 0.10,
+  orientation_type: up_x 
 }
 
-
-floor_0: {
+HL3: {
   default: {
     x: -0.50,
-    y: 0.50,
-    z: 0.0625,
+    y: 0.25,
+    z: 0.075,
   },
-  object_classes: [
-    pitcher,
-    small_cup
-  ],
-  pitcher: {
-    x: -0.50,
-    y: 0.50,
-    z: 0.045,
-  },
-  small_cup: {
-    x: -0.50,
-    y: 0.50,
-    z: 0.0125,
-  },
-  detection_radius: 0.10, 
-  orientation_type: up_nx
-
+  detection_radius: 0.10,
+  orientation_type: up_x 
 }
 
-floor_1: {
+
+
+HL2: {
   default: {
     x: -0.50,
-    y: 0.30,
-    z: 0.0625,
+    y: 0.10,
+    z: 0.075,
   },
-  object_classes: [
-    pitcher,
-    small_cup
-  ],
-  pitcher: {
-    x: -0.50,
-    y: 0.30,
-    z: 0.045,
-  },
-  small_cup: {
-    x: -0.50,
-    y: 0.30,
-    z: 0.0125,
-  },
-  detection_radius: 0.10, 
-  orientation_type: up_nx
-
+  detection_radius: 0.10,
+  orientation_type: up_x 
 }
 
-rack_0: {
+HL1: {
   default: {
-    x: 0.4,
-    y: -0.27,
-    z: 0.5675,
+    x: -0.50,
+    y: -0.05,
+    z: 0.075,
   },
-  object_classes: [
-    pitcher,
-    small_cup
-  ],
-  pitcher: {
-    x: 0.4,
-    y: -0.27,
-    z: 0.55,
-  },
-  small_cup: {
-    x: 0.4,
-    y: -0.27,
-    z: 0.5175,
-  },
-
-  detection_radius: 0.10, 
-  orientation_type: up_nx
+  detection_radius: 0.10,
+  orientation_type: up_x 
 }
 
-rack_1: {
+HL0: {
   default: {
-    x: 0.2,
-    y: -0.47,
-    z: 0.5675,
+    x: -0.50,
+    y: -0.20,
+    z: 0.075,  
   },
-  object_classes: [
-    pitcher,
-    small_cup
-  ],
-  pitcher: {
-    x: 0.2,
-    y: -0.47,
-    z: 0.55,
-  },
-  small_cup: {
-    x: 0.2,
-    y: -0.47,
-    z: 0.5175,
-  },
-  detection_radius: 0.10, 
-  orientation_type: up_nx
-
+  detection_radius: 0.10,
+  orientation_type: up_x 
 }
+
+
