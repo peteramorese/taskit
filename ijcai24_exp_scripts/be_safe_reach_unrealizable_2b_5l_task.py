@@ -98,7 +98,7 @@ if __name__ == "__main__":
 	update_env_status()
 
 	# to robustify this code, we can regularly call update_environment. Currently, the VICON tracking is very reliable.
-	# send_commands_to_robot(obj_id='',start_loc='HL0', end_loc='L2')
+	send_commands_to_robot(obj_id='',start_loc='HL0', end_loc='L2')
 	 
 	send_commands_to_robot(obj_id='',start_loc='L0', end_loc='L1')
 

@@ -71,6 +71,7 @@ catkin_package(
 # the specific Python version used at configure time.
 catkin_install_python(PROGRAMS 
 	ijcai24_exp_scripts/be_reach_unrealizable_2b_5l_task.py
+	ijcai24_exp_scripts/be_safe_reach_unrealizable_2b_5l_task.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 set(TASKIT_LIBRARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/taskit)
