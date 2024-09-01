@@ -25,5 +25,5 @@ B_1: {
   },
   primitive_type: box,
   orientation_type: up_x,
-  initial_location: HL0
+  initial_location: HL3
 }
