@@ -72,6 +72,7 @@ catkin_package(
 # the specific Python version used at configure time.
 catkin_install_python(PROGRAMS 
 	aaai25_exp_scripts/adm_str_2b_6l_task.py
+	aaai25_exp_scripts/adm_win_str_2b_6l_task.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 set(TASKIT_LIBRARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/taskit)

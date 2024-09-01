@@ -109,13 +109,13 @@ if __name__ == "__main__":
 
 	# to robustify this code, we can regularly call update_environment. Currently, the VICON tracking is very reliable.
 
-	# pick and place b0 from l0 to HL3
+	# pick and place b0 from l0 to l1
 	send_transit_command_to_robot(loc='L0')
 	send_grasp_command_to_robot(obj_id='b0')
 	
-	# human move - coop HL3 to HL2
-	send_human_move_command(box="B_1", loc="HL2")
-	send_transport_command_to_robot(loc='HL3')
+	# human move for fun
+	send_human_move_command(box="B_1", loc="HL0")
+	send_transport_command_to_robot(loc='L1')
 	send_release_command_to_robot(obj_id='b0')
 
 	stow_robot()
