@@ -6,6 +6,7 @@ The Robot accordingly finishes the task in the Robot region. Note: This is ident
 the Regret_adv_str file.
 '''
 import sys
+import time
 from taskit.srv import Grasp, Release, Stow, Transit, UpdateEnv, SetObjectLocations
 import rospy
 
@@ -110,12 +111,22 @@ if __name__ == "__main__":
 	# to robustify this code, we can regularly call update_environment. Currently, the VICON tracking is very reliable.
 
 	# pick and place b0 from l0 to l1
+	send_human_move_command(box="B_0", loc="L1")
+	send_transit_command_to_robot(loc='L1')
+	# take screenshot here
+	send_human_move_command(box="B_0", loc="L0")
 	send_transit_command_to_robot(loc='L0')
+	# take another screen shot here
+	send_human_move_command(box="B_0", loc="L1")
+	time.sleep(5.0)
+	send_human_move_command(box="B_0", loc="L0")
+	# let it grab and take screenshot
 	send_grasp_command_to_robot(obj_id='b0')
 	
 	# human move for fun
-	send_human_move_command(box="B_1", loc="HL0")
+	# send_human_move_command(box="B_1", loc="HL0")
 	send_transport_command_to_robot(loc='L1')
+	# take a screenshot here. - before releasing
 	send_release_command_to_robot(obj_id='b0')
 
 	stow_robot()

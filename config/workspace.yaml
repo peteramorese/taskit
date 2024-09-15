@@ -1,32 +1,15 @@
 object_ids:
   - groundrobot
-  - groundhuman
 
 groundrobot: {
   position: {
-    x: -0.075,
-    y: 0.4,
-    z: -0.05,
-  },
-  dimensions: {
-    length: 0.5,
-    width: 0.2,
-    height: 0.1,
-  },
-  primitive_type: box,
-  orientation_type: up_x,
-}
-
-
-groundhuman: {
-  position: {
-    x: -0.5,
-    y: 0.025,
+    x: 0.6,
+    y: 0.0,
     z: -0.05,
   },
   dimensions: {
     length: 0.3,
-    width: 0.5,
+    width: 0.7,
     height: 0.1,
   },
   primitive_type: box,
