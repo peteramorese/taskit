@@ -73,6 +73,7 @@ catkin_package(
 catkin_install_python(PROGRAMS 
 	aaai25_exp_scripts/adm_str_2b_6l_task.py
 	aaai25_exp_scripts/adm_win_str_2b_6l_task.py
+	aaai25_exp_scripts/adm_rat_3b_7l_task.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 set(TASKIT_LIBRARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/taskit)
