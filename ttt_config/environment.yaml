@@ -1,0 +1,256 @@
+location_names: 
+  - "Else_0"
+  - "Else_1"
+  - "Else_2"
+  - "Else_3"
+  - "Else_4"
+  - "Else_5"
+  - "Else_6"
+  - "Else_7"
+  - "Else_8"
+  # - "Else_9"
+  # - "Ready"
+  - "cell_0"
+  - "cell_1"
+  - "cell_2"
+  - "cell_3"
+  - "cell_4"
+  - "cell_5"
+  - "cell_6"
+  - "cell_7"
+  - "cell_8"
+
+### Ready position
+Ready: {
+  default: {
+    x: 0.31,
+    y: 0,
+    z: 0.46,
+  },
+  detection_radius: 0.10, 
+  orientation_type: up_x
+}
+
+### else location where A1 and A2 are placed and I_1 is placed
+
+####### X-axis <----x #####
+#######             | #####
+#######             v #####
+################# Y-axis ##
+##### Setup ######
+##### E_0 | E_1 | E_2 #####
+##### E_3 | E_4 | E_5 #####
+##### E_6 | E_7 | E_8 #####
+##### E_9   #####
+
+# E_0 := X = 0.6; Y = -0.45; E_1 := X = 0.45; E_2:= X = 0.30
+# E_3 := X = 0.6; Y = -0.30; E_4 := X = 0.45; E_5:= X = 0.30
+# E_6 := X = 0.6; Y = -0.15; E_7 := X = 0.45; E_8:= X = 0.30
+# E_9 := X = 0.15; Y = -0.45;
+
+### orientation determined the approach taken by the robot
+# in moving to an object placed at that location
+Else_0: {
+  default: {
+    x: 0.60,
+    y: -0.45,
+    z: 0.075, 
+  },
+  detection_radius: 0.10, 
+  orientation_type: up_x
+}
+
+Else_1: {
+  default: {
+    x: 0.45,
+    y: -0.45,
+    z: 0.075, 
+  },
+  detection_radius: 0.10,
+  orientation_type: up_x
+}
+
+
+Else_2: {
+  default: {
+    x: 0.30,
+    y: -0.45,
+    z: 0.075,  
+  },
+  detection_radius: 0.10,
+  orientation_type: up_x
+}
+
+Else_3: {
+  default: {
+    x: 0.60,
+    y: -0.30,
+    z: 0.075,  
+  },
+  detection_radius: 0.10,
+  orientation_type: up_x
+}
+
+
+Else_4: {
+  default: {
+    x: 0.45,
+    y: -0.30,
+    z: 0.075,  
+  },
+  detection_radius: 0.10,
+  orientation_type: up_x
+}
+
+
+Else_5: {
+  default: {
+    x: 0.30,
+    y: -0.30,
+    z: 0.075,  
+  },
+  detection_radius: 0.10,
+  orientation_type: up_y
+}
+
+
+Else_6: {
+  default: {
+    x: 0.60,
+    y: -0.15,
+    z: 0.075,  
+  },
+  detection_radius: 0.10,
+  orientation_type: up_y
+}
+
+
+Else_7: {
+  default: {
+    x: 0.45,
+    y: -0.15,
+    z: 0.075,  
+  },
+  detection_radius: 0.10,
+  orientation_type: up_y
+}
+
+
+Else_8: {
+  default: {
+    x: 0.30,
+    y: -0.15,
+    z: 0.075,  
+  },
+  detection_radius: 0.10,
+  orientation_type: up_y
+}
+
+
+# Else_9: {
+#   default: {
+#     x: 0.15,
+#     y: -0.45,
+#     z: 0.075,  
+#   },
+#   detection_radius: 0.10,
+#   orientation_type: up_x
+# }
+
+####################### Actual Tic-Tac-Toe placement cells
+
+cell_0: {
+  default: {
+    x: 0.6,
+    y: 0.15,
+    z: 0.075, 
+  },
+  detection_radius: 0.10, 
+  orientation_type: up_x
+}
+
+cell_1: {
+  default: {
+    x: 0.45,
+    y: 0.15,
+    z: 0.075, 
+  },
+  detection_radius: 0.10,
+  orientation_type: up_x
+}
+
+
+cell_2: {
+  default: {
+    x: 0.30,
+    y: 0.15,
+    z: 0.075,  
+  },
+  detection_radius: 0.10,
+  orientation_type: up_x
+}
+
+cell_3: {
+  default: {
+    x: 0.60,
+    y: 0.30,
+    z: 0.075,  
+  },
+  detection_radius: 0.10,
+  orientation_type: up_x
+}
+
+
+cell_4: {
+  default: {
+    x: 0.45,
+    y: 0.30,
+    z: 0.075,  
+  },
+  detection_radius: 0.10,
+  orientation_type: up_x
+}
+
+
+cell_5: {
+  default: {
+    x: 0.30,
+    y: 0.30,
+    z: 0.075,  
+  },
+  detection_radius: 0.10,
+  orientation_type: up_x
+}
+
+
+cell_6: {
+  default: {
+    x: 0.60,
+    y: 0.45,
+    z: 0.075,  
+  },
+  detection_radius: 0.10,
+  orientation_type: up_x
+}
+
+
+cell_7: {
+  default: {
+    x: 0.45,
+    y: 0.45,
+    z: 0.075,  
+  },
+  detection_radius: 0.10,
+  orientation_type: up_x
+}
+
+
+cell_8: {
+  default: {
+    x: 0.30,
+    y: 0.45,
+    z: 0.075,  
+  },
+  detection_radius: 0.10,
+  orientation_type: up_x
+}

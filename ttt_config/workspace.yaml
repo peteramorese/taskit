@@ -1,0 +1,326 @@
+object_ids:
+  - else0
+  - else1
+  - else2
+  - else3
+  - else4
+  - else5
+  - else6
+  - else7
+  - else8
+  - cell0
+  - cell1
+  - cell2
+  - cell3
+  - cell4
+  - cell5
+  - cell6
+  - cell7
+  - cell8
+
+
+# ground: {
+#   position: {
+#     x: 0.0,
+#     y: 0.0,
+#     z: -0.05,
+#   },
+#   dimensions: {
+#     length: 1.5,
+#     width: 1.5,
+#     height: 0.1,
+#   },
+#   primitive_type: box,
+#   orientation_type: up_x,
+# }
+
+
+
+else0: {
+  position: {
+    x: 0.60,
+    y: -0.45,
+    z: -0.05, 
+  },
+  dimensions: {
+    length: 0.1,
+    width: 0.1,
+    height: 0.1,
+  },
+  primitive_type: box,
+  orientation_type: up_x,
+}
+
+
+else1: {
+  position: {
+    x: 0.45,
+    y: -0.45,
+    z: -0.05, 
+  },
+  dimensions: {
+    length: 0.1,
+    width: 0.1,
+    height: 0.1,
+  },
+  primitive_type: box,
+  orientation_type: up_x,
+}
+
+
+else2: {
+  position: {
+    x: 0.30,
+    y: -0.45,
+    z: -0.05, 
+  },
+  dimensions: {
+    length: 0.1,
+    width: 0.1,
+    height: 0.1,
+  },
+  primitive_type: box,
+  orientation_type: up_x,
+}
+
+else3: {
+  position: {
+    x: 0.60,
+    y: -0.30,
+    z: -0.05, 
+  },
+  dimensions: {
+    length: 0.1,
+    width: 0.1,
+    height: 0.1,
+  },
+  primitive_type: box,
+  orientation_type: up_x,
+}
+
+
+else4: {
+  position: {
+    x: 0.45,
+    y: -0.30,
+    z: -0.05, 
+  },
+  dimensions: {
+    length: 0.1,
+    width: 0.1,
+    height: 0.1,
+  },
+  primitive_type: box,
+  orientation_type: up_x,
+}
+
+
+else5: {
+  position: {
+    x: 0.30,
+    y: -0.30,
+    z: -0.05, 
+  },
+  dimensions: {
+    length: 0.1,
+    width: 0.1,
+    height: 0.1,
+  },
+  primitive_type: box,
+  orientation_type: up_x,
+}
+
+
+else6: {
+  position: {
+    x: 0.60,
+    y: -0.15,
+    z: -0.05, 
+  },
+  dimensions: {
+    length: 0.1,
+    width: 0.1,
+    height: 0.1,
+  },
+  primitive_type: box,
+  orientation_type: up_x,
+}
+
+
+else7: {
+  position: {
+    x: 0.45,
+    y: -0.15,
+    z: -0.05, 
+  },
+  dimensions: {
+    length: 0.1,
+    width: 0.1,
+    height: 0.1,
+  },
+  primitive_type: box,
+  orientation_type: up_x,
+}
+
+
+else8: {
+  position: {
+    x: 0.30,
+    y: -0.15,
+    z: -0.05, 
+  },
+  dimensions: {
+    length: 0.1,
+    width: 0.1,
+    height: 0.1,
+  },
+  primitive_type: box,
+  orientation_type: up_x,
+}
+
+
+##### Tic-Tac-Toe Board
+
+cell0: {
+  position: {
+    x: 0.6,
+    y: 0.15,
+    z: -0.05, 
+  },
+  dimensions: {
+    length: 0.1,
+    width: 0.1,
+    height: 0.1,
+  },
+  primitive_type: box,
+  orientation_type: up_x,
+}
+
+
+cell1: {
+  position: {
+    x: 0.45,
+    y: 0.15,
+    z: -0.05, 
+  },
+  dimensions: {
+    length: 0.1,
+    width: 0.1,
+    height: 0.1,
+  },
+  primitive_type: box,
+  orientation_type: up_x,
+}
+
+
+cell2: {
+  position: {
+    x: 0.30,
+    y: 0.15,
+    z: -0.05, 
+  },
+  dimensions: {
+    length: 0.1,
+    width: 0.1,
+    height: 0.1,
+  },
+  primitive_type: box,
+  orientation_type: up_x,
+}
+
+
+
+cell3: {
+  position: {
+    x: 0.60,
+    y: 0.30,
+    z: -0.05, 
+  },
+  dimensions: {
+    length: 0.1,
+    width: 0.1,
+    height: 0.1,
+  },
+  primitive_type: box,
+  orientation_type: up_x,
+}
+
+
+cell4: {
+  position: {
+    x: 0.45,
+    y: 0.30,
+    z: -0.05, 
+  },
+  dimensions: {
+    length: 0.1,
+    width: 0.1,
+    height: 0.1,
+  },
+  primitive_type: box,
+  orientation_type: up_x,
+}
+
+
+cell5: {
+  position: {
+    x: 0.30,
+    y: 0.30,
+    z: -0.05, 
+  },
+  dimensions: {
+    length: 0.1,
+    width: 0.1,
+    height: 0.1,
+  },
+  primitive_type: box,
+  orientation_type: up_x,
+}
+
+
+cell6: {
+  position: {
+    x: 0.60,
+    y: 0.45,
+    z: -0.05, 
+  },
+  dimensions: {
+    length: 0.1,
+    width: 0.1,
+    height: 0.1,
+  },
+  primitive_type: box,
+  orientation_type: up_x,
+}
+
+
+cell7: {
+  position: {
+    x: 0.45,
+    y: 0.45,
+    z: -0.05, 
+  },
+  dimensions: {
+    length: 0.1,
+    width: 0.1,
+    height: 0.1,
+  },
+  primitive_type: box,
+  orientation_type: up_x,
+}
+
+
+cell8: {
+  position: {
+    x: 0.30,
+    y: 0.45,
+    z: -0.05, 
+  },
+  dimensions: {
+    length: 0.1,
+    width: 0.1,
+    height: 0.1,
+  },
+  primitive_type: box,
+  orientation_type: up_x,
+}
