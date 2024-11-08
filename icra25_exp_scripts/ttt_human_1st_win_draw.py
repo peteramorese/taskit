@@ -2,10 +2,12 @@
 
 """
 ****************************** F(win) **************************************************
-****************************** Robot -1st **********************************************
-This rollout shows both strategy and overly optimistic moves. The robot in 3 step play strategically. 
-Then, in the 5th move is optimistic.
+****************************** Human -1st **********************************************
+This rollout shows Sys is playing overly optimistic moves. 
+The Sys is picking moves indifferently as all state values are infinity even when the Env player is not playing hopelessly.
+This means, the only way Sys can win the game is when Env makes a mistake.
 """
+
 import sys
 import time
 from taskit.srv import Grasp, Release, Stow, Transit, UpdateEnv, SetObjectLocations
@@ -108,14 +110,15 @@ if __name__ == "__main__":
 
 	# init and update the status of all the boxes
 	update_env_status()
-
-	# to robustify this code, we can regularly call update_environment. Currently, the VICON tracking is very reliable.
-	send_commands_to_robot(obj_id='',start_loc='Else_0', end_loc='cell_0')
 	send_human_move_command(box="pink_box_1", loc="cell_4")
-	send_commands_to_robot(obj_id='',start_loc='Else_1', end_loc='cell_8')
-	send_human_move_command(box="pink_box_2", loc="cell_1")
+	send_commands_to_robot(obj_id='',start_loc='Else_0', end_loc='cell_0')
+	send_human_move_command(box="pink_box_2", loc="cell_7")
+	send_commands_to_robot(obj_id='',start_loc='Else_1', end_loc='cell_1')
+	send_human_move_command(box="pink_box_3", loc="cell_2")
 	send_commands_to_robot(obj_id='',start_loc='Else_2', end_loc='cell_6')
-	send_human_move_command(box="pink_box_3", loc="cell_7")
+	send_human_move_command(box="pink_box_4", loc="cell_3")
+	send_commands_to_robot(obj_id='',start_loc='Else_3', end_loc='cell_5')
+	send_human_move_command(box="pink_box_5", loc="cell_8")
 	stow_robot()
 
 	print("Done with the planning.")

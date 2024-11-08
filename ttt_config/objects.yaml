@@ -3,13 +3,12 @@ object_ids:
   - pink_box_2
   - pink_box_3
   - pink_box_4
-  # - pink_box_5
+  - pink_box_5
   - blue_box_1
   - blue_box_2
   - blue_box_3
   - blue_box_4
   - blue_box_5
-
 
 # Original size 15 x 4.5 x 4.5 cm. 
 
@@ -58,19 +57,17 @@ pink_box_4: {
   initial_location: Else_5
 }
 
-# pink_box_5: {
-#   dimensions: {
-#     length: 0.055,
-#     width: 0.055,
-#     height: 0.155,
-#   },
-#   primitive_type: box,
-#   orientation_type: up_x,
-#   initial_location: Else_5
-# }
 
-# Shrinking dynamic objects by 0.5 cm. This to avoid panda finger ocllision and panda start state colliding with ground error.
-# These error are primarly caused due to inaccurate tracking by Vicon.
+pink_box_5: {
+  dimensions: {
+    length: 0.055,
+    width: 0.055,
+    height: 0.155,
+  },
+  primitive_type: box,
+  orientation_type: up_x,
+  initial_location: Else_9
+}
 
 blue_box_1: {
   dimensions: {

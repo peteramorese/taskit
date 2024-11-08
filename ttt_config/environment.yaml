@@ -8,8 +8,8 @@ location_names:
   - "Else_6"
   - "Else_7"
   - "Else_8"
-  # - "Else_9"
-  # - "Ready"
+  - "Else_9"
+  # - "Ready"1
   - "cell_0"
   - "cell_1"
   - "cell_2"
@@ -110,7 +110,7 @@ Else_5: {
     z: 0.075,  
   },
   detection_radius: 0.10,
-  orientation_type: up_y
+  orientation_type: up_x
 }
 
 
@@ -121,7 +121,7 @@ Else_6: {
     z: 0.075,  
   },
   detection_radius: 0.10,
-  orientation_type: up_y
+  orientation_type: up_x
 }
 
 
@@ -132,7 +132,7 @@ Else_7: {
     z: 0.075,  
   },
   detection_radius: 0.10,
-  orientation_type: up_y
+  orientation_type: up_x
 }
 
 
@@ -143,19 +143,19 @@ Else_8: {
     z: 0.075,  
   },
   detection_radius: 0.10,
-  orientation_type: up_y
+  orientation_type: up_x
 }
 
 
-# Else_9: {
-#   default: {
-#     x: 0.15,
-#     y: -0.45,
-#     z: 0.075,  
-#   },
-#   detection_radius: 0.10,
-#   orientation_type: up_x
-# }
+Else_9: {
+  default: {
+    x: 0.15,
+    y: -0.45,
+    z: 0.075,  
+  },
+  detection_radius: 0.10,
+  orientation_type: up_x
+}
 
 ####################### Actual Tic-Tac-Toe placement cells
 

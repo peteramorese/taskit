@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
 """
-****************************** F(win) **************************************************
-****************************** Robot -1st **********************************************
-This rollout shows both strategy and overly optimistic moves. The robot in 3 step play strategically. 
-Then, in the 5th move is optimistic.
+****************************** F(win | draw) **************************************************
+****************************** Robot - 1st **********************************************
+Sys ensures draw and is playing WCoop stratgies. 
+Thus, under this strtegy it is playing moves that does not allow more room for human to make an error.
 """
+
 import sys
 import time
 from taskit.srv import Grasp, Release, Stow, Transit, UpdateEnv, SetObjectLocations
@@ -108,14 +109,15 @@ if __name__ == "__main__":
 
 	# init and update the status of all the boxes
 	update_env_status()
-
-	# to robustify this code, we can regularly call update_environment. Currently, the VICON tracking is very reliable.
 	send_commands_to_robot(obj_id='',start_loc='Else_0', end_loc='cell_0')
 	send_human_move_command(box="pink_box_1", loc="cell_4")
-	send_commands_to_robot(obj_id='',start_loc='Else_1', end_loc='cell_8')
-	send_human_move_command(box="pink_box_2", loc="cell_1")
+	send_commands_to_robot(obj_id='',start_loc='Else_1', end_loc='cell_1')
+	send_human_move_command(box="pink_box_2", loc="cell_2")
 	send_commands_to_robot(obj_id='',start_loc='Else_2', end_loc='cell_6')
-	send_human_move_command(box="pink_box_3", loc="cell_7")
+	send_human_move_command(box="pink_box_3", loc="cell_3")
+	send_commands_to_robot(obj_id='',start_loc='Else_3', end_loc='cell_5')
+	send_human_move_command(box="pink_box_4", loc="cell_7")
+	send_commands_to_robot(obj_id='',start_loc='Else_4', end_loc='cell_8')
 	stow_robot()
 
 	print("Done with the planning.")

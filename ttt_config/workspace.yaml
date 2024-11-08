@@ -8,6 +8,7 @@ object_ids:
   - else6
   - else7
   - else8
+  - else9
   - cell0
   - cell1
   - cell2
@@ -176,6 +177,22 @@ else8: {
   },
   primitive_type: box,
   orientation_type: up_x,
+}
+
+
+else9: {
+  position: {
+    x: 0.15,
+    y: -0.45,
+    z: -0.05,  
+  },
+  dimensions: {
+    length: 0.1,
+    width: 0.1,
+    height: 0.1,
+  },
+  primitive_type: box,
+  orientation_type: up_x
 }
 
 
