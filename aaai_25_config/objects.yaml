@@ -1,0 +1,41 @@
+object_ids:
+  - B_0
+  - B_1
+  - B_2
+
+
+# Original size 6 cm. Shrinking dynamic objects by 1 cm. This to avoid panda finger ocllision and panda start state colliding with ground error.
+# These error are primarly caused due to inaccurate tracking by Vicon.
+B_0: {
+  dimensions: {
+    length: 0.055,
+    width: 0.055,
+    height: 0.155,
+  },
+  primitive_type: box,
+  orientation_type: up_x,
+  initial_location: L6
+}
+
+
+B_1: {
+  dimensions: {
+    radius: 0.025,
+    height: 0.155,
+  },
+  primitive_type: cylinder,
+  orientation_type: up_x,
+  initial_location: L7
+}
+
+
+B_2: {
+  dimensions: {
+    length: 0.055,
+    width: 0.055,
+    height: 0.155,
+  },
+  primitive_type: box,
+  orientation_type: up_x,
+  initial_location: L0
+}
