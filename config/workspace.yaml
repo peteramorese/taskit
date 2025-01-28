@@ -1,12 +1,8 @@
 object_ids:
-  - groundrobot
-  - grounddishwasher
-  - groundhuman
-  - groundhumanfar
+  - construction
+  # - staging
 
-
-
-groundrobot: {
+construction: {
   position: {
     x: 0.6,
     y: 0.0,
@@ -21,50 +17,18 @@ groundrobot: {
   orientation_type: up_x,
 }
 
-
-
-grounddishwasher: {
-  position: {
-    x: -0.075,
-    y: 0.4,
-    z: -0.05,
-  },
-  dimensions: {
-    length: 0.5,
-    width: 0.2,
-    height: 0.1,
-  },
-  primitive_type: box,
-  orientation_type: up_x,
-}
-
-
-groundhuman: {
-  position: {
-    x: -0.5,
-    y: 0.0,
-    z: -0.05,
-  },
-  dimensions: {
-    length: 0.3,
-    width: 0.7,
-    height: 0.1,
-  },
-  primitive_type: box,
-  orientation_type: up_x,
-}
-
-groundhumanfar: {
-  position: {
-    x: -1.0,
-    y: -0.0,
-    z: -0.05,
-  },
-  dimensions: {
-    length: 0.2,
-    width: 0.2,
-    height: 0.1,
-  },
-  primitive_type: box,
-  orientation_type: up_x,
-}
+# staging area
+# staging: {
+#   position: {
+#     x: 0.0,
+#     y: 0.4,
+#     z: -0.05,
+#   },
+#   dimensions: {
+#     length: 0.5,
+#     width: 0.5,
+#     height: 0.1,
+#   },
+#   primitive_type: box,
+#   orientation_type: up_x,
+# }

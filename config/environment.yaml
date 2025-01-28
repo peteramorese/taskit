@@ -2,84 +2,80 @@ location_names:
   - "L0"
   - "L1"
   - "L2"
+  - "L3"
+  - "L4"
+  - "L5"
   - "L6"
-  - "L7"
-  - "L8"
-  - "L9"
 
+
+L4: {
+  default: {
+    x: 0.60,
+    y: -0.075,
+    z: 0.075,
+  },
+  detection_radius: 0.0,
+  orientation_type: up_x
+}
+
+L5: {
+  default: {
+    x: 0.60,
+    y: 0.075,
+    z: 0.075,
+  },
+  detection_radius: 0.0,
+  orientation_type: up_x 
+}
+
+L6: {
+  default: {
+    x: 0.60,
+    y: 0.0,
+    z: 0.18,
+  },
+  detection_radius: 0.0,
+  orientation_type: side_y
+}
 
 L0: {
   default: {
-    x: 0.60,
-    y: -0.20,
+    x: 0.15,
+    y: 0.40,
     z: 0.075,
+    # z: 0.75,
   },
-  detection_radius: 0.10,
+  detection_radius: 0.0,
   orientation_type: up_x
 }
 
 L1: {
   default: {
-    x: 0.60,
-    y: 0.20,
+    x: -0.25,
+    y: 0.40,
     z: 0.075,
   },
-  detection_radius: 0.10,
+  detection_radius: 0.0,
   orientation_type: up_x 
 }
-
-
-L6: {
-  default: {
-    x: -0.50,
-    y: -0.20,
-    z: 0.075,
-  },
-  detection_radius: 0.10,
-  orientation_type: up_x
-}
-
-L7: {
-  default: {
-    x: -0.50,
-    y: 0.20,
-    z: 0.075,
-  },
-  detection_radius: 0.10,
-  orientation_type: up_x 
-}
-
 
 L2: {
   default: {
     x: 0.15,
-    y: 0.40,
+    y: 0.60,
     z: 0.075,
   },
-  detection_radius: 0.10,
-  orientation_type: up_x
+  detection_radius: 0.0,
+  orientation_type: up_y
 }
 
-L8: {
+
+L3: {
   default: {
-    x: -0.20,
-    y: 0.40,
+    x: -0.25,
+    y: 0.60,
     z: 0.075,
   },
-  detection_radius: 0.10,
+  detection_radius: 0.0,
   orientation_type: up_x 
 }
-
-
-L9: {
-  default: {
-    x: -1.0,
-    y: 0.0,
-    z: 0.075,
-  },
-  detection_radius: 0.10,
-  orientation_type: up_x 
-}
-
-
-
