@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  ros_ws:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    cap_add:
+      - SYS_NICE
+    ulimits:
+      rtprio: 99
+      rttime: -1
+      memlock: 8428281856
+    network_mode: host
+    privileged: true
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+      - XAUTHORITY=/tmp/.docker.xauth
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - /home/arias/code/karan_code/karan-taskit:/root/ws/src/taskit:rw
+      - /dev/shm:/dev/shm # add shared memory settings to prevent memory-related freezes
+    command: tail -f /dev/null  # Temporary command to keep the container running

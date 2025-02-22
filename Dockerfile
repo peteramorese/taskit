@@ -12,6 +12,10 @@ RUN apt-get update && apt-get install -y \
     lsb-release \
     wget \
     build-essential \
+    mesa-utils \
+    libgl1-mesa-glx \
+    libgl1-mesa-dri \
+    x11-xserver-utils \
     vim \
     python3-pip \
     apt-utils flex bison mona 
