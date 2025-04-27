@@ -2,6 +2,7 @@ version: '3.8'
 
 services:
   ros_ws:
+    image: karan-taskit-vbind
     build:
       context: ./
       dockerfile: Dockerfile

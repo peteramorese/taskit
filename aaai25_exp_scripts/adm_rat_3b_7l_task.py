@@ -107,13 +107,14 @@ if __name__ == "__main__":
 	# init and update the status of all the boxes
     update_env_status()
     send_transit_command_to_robot(loc='L7')
-    send_grasp_command_to_robot(obj_id='b1')
+    send_grasp_command_to_robot(obj_id='blue_box_5')
     send_transport_command_to_robot(loc='L2')
-    send_release_command_to_robot(obj_id='b1')
+    send_release_command_to_robot(obj_id='blue_box_5')
+    update_env_status()
     send_transit_command_to_robot(loc='L2')
-    send_grasp_command_to_robot(obj_id='b1')
+    send_grasp_command_to_robot(obj_id='blue_box_5')
     send_transport_command_to_robot(loc='L1')
-    send_release_command_to_robot(obj_id='b1')
+    send_release_command_to_robot(obj_id='blue_box_5')
 	
 	# human move - coop HL3 to HL2
 	# send_human_move_command(box="B_1", loc="HL2")

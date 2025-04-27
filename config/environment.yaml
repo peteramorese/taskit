@@ -32,7 +32,7 @@ L6: {
   default: {
     x: 0.60,
     y: 0.0,
-    z: 0.18,
+    z: 0.075,
   },
   detection_radius: 0.0,
   orientation_type: side_y

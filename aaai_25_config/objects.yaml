@@ -1,41 +1,68 @@
 object_ids:
-  - B_0
-  - B_1
-  - B_2
+  # - pink_box_3
+  # - blue_box_3
+  - pink_box_4
+  # - green_box
 
 
 # Original size 6 cm. Shrinking dynamic objects by 1 cm. This to avoid panda finger ocllision and panda start state colliding with ground error.
 # These error are primarly caused due to inaccurate tracking by Vicon.
-B_0: {
+# b_0 -> pink_box_3 
+# B_1 -> blue_box_5
+# b_2 -> pink_box_4
+# pink_box_3: {
+#   dimensions: {
+#     length: 0.04,
+#     width: 0.04,
+#     height: 0.15,
+#   },
+#   primitive_type: box,
+#   orientation_type: up_x,
+#   initial_location: L6
+# }
+
+
+# green_box: {
+#   dimensions: {
+#     length: 0.042,
+#     width: 0.042,
+#     height: 0.15,
+#   },
+#   primitive_type: box,
+#   orientation_type: up_x,
+#   initial_location: L0
+# }
+
+
+# blue_box_5: {
+#   dimensions: {
+#     radius: 0.025,
+#     height: 0.155,
+#   },
+#   primitive_type: cylinder,
+#   orientation_type: up_x,
+#   initial_location: L7
+# }
+
+# blue_box_3: {
+#   dimensions: {
+#     length: 0.042,
+#     width: 0.042,
+#     height: 0.145,
+#   },
+#   primitive_type: box,
+#   orientation_type: up_x,
+#   initial_location: L1
+# }
+
+
+pink_box_4: {
   dimensions: {
-    length: 0.055,
-    width: 0.055,
-    height: 0.155,
+    length: 0.042,
+    width: 0.042,
+    height: 0.145,
   },
   primitive_type: box,
   orientation_type: up_x,
-  initial_location: L6
-}
-
-
-B_1: {
-  dimensions: {
-    radius: 0.025,
-    height: 0.155,
-  },
-  primitive_type: cylinder,
-  orientation_type: up_x,
-  initial_location: L7
-}
-
-
-B_2: {
-  dimensions: {
-    length: 0.055,
-    width: 0.055,
-    height: 0.155,
-  },
-  primitive_type: box,
-  orientation_type: up_x,
-  initial_location: L0
+  initial_location: L1
 }

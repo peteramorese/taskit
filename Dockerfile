@@ -64,17 +64,24 @@ RUN rm -rf ros.asc cmake-3.20.0-linux-x86_64.tar.gz cmake-3.20.0-linux-x86_64
 RUN wget -q -O - https://www.lrde.epita.fr/repo/debian.gpg | apt-key add -
 SHELL ["/bin/bash", "-c"] 
 RUN pip3 install pyyaml numpy bidict networkx graphviz ply pybullet pyperplan==1.3 cython IPython svgwrite matplotlib imageio lark-parser==0.9.0 sympy==1.6.1
-RUN echo 'deb http://www.lrde.epita.fr/repo/debian/ stable/' >> /etc/apt/sources.list
-RUN apt-get -y update && apt -y install spot \
-    libspot-dev \
-    spot-doc
+#RUN echo 'deb http://www.lrde.epita.fr/repo/debian/ stable/' >> /etc/apt/sources.list
+
+# LATEST Spot 2.12 seems to have come issues with libltdl version
+# RUN echo 'deb [trusted=true] http://www.lrde.epita.fr/repo/debian/ stable/' >> /etc/apt/sources.list
+
+# Based on https://gitlab.lre.epita.fr/spot/spot/-/issues/544#note_29198
+# RUN echo 'deb [trusted=true] https://download.opensuse.org/repositories/home:/adl/xUbuntu_22.04/ ./' >/etc/apt/sources.list
+
+# RUN apt-get -y update && apt -y install spot \
+#    libspot-dev \
+#    spot-doc
 
 # Set environment variables
 ENV PATH="/usr/local/bin:${PATH}"
 ENV ROS_DISTRO noetic
 
 # Initialize ROS workspace
-RUN apt-get install -y python3-rosinstall python3-rosinstall-generator python3-wstool
+RUN apt-get -y update &&  apt-get install -y python3-rosinstall python3-rosinstall-generator python3-wstool
 
 # Create a catkin workspace
 RUN mkdir -p /root/ws/src
